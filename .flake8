@@ -1,0 +1,13 @@
+[flake8]
+
+ignore =
+    H101
+    N
+    W504
+
+per-file-ignores =
+    *lib.py:E221,E501
+    setup.py:E
+    __init__.py:E402,F401,F403
+
+max-line-length = 99
