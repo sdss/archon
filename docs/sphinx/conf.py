@@ -18,6 +18,7 @@ try:
     from archon import __version__
 except ModuleNotFoundError:
     from sdsstools import get_package_version
+
     __version__ = get_package_version(__file__, 'sdss-archon') or 'dev'
 
 
@@ -46,9 +47,15 @@ if sphinx_template == 'sphinx-bootstrap':
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.autosummary',
-              'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.mathjax',
-              'sphinx.ext.intersphinx']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.intersphinx',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -120,9 +127,11 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 # Intersphinx mappings
-intersphinx_mapping = {'python': ('https://docs.python.org/3.6', None),
-                       'astropy': ('http://docs.astropy.org/en/latest', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6', None),
+    'astropy': ('http://docs.astropy.org/en/latest', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+}
 
 autodoc_mock_imports = ['_tkinter']
 autodoc_member_order = 'groupwise'
@@ -139,9 +148,7 @@ rst_epilog = f"""
 
 # -- Options for HTML output ----------------------------------------------
 
-html_css_files = [
-    'pygments.css'
-]
+html_css_files = ['pygments.css']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
@@ -158,10 +165,8 @@ if sphinx_template == 'sphinx-bootstrap':
     html_theme_options = {
         # Navigation bar title. (Default: ``project`` value)
         'navbar_title': "SDSS: {0}".format(project),
-
         # Tab name for entire site. (Default: "Site")
         'navbar_site_name': "Site",
-
         # A list of tuples containing pages or urls to link to.
         # Valid tuples should be in the following forms:
         #    (name, page)                 # a link to a page
@@ -169,22 +174,16 @@ if sphinx_template == 'sphinx-bootstrap':
         #    (name, "http://example.com", True) # arbitrary absolute url
         # Note the "1" or "True" value above as the third argument to indicate
         # an arbitrary url.
-        'navbar_links': [
-        ],
-
+        'navbar_links': [],
         # Render the next and previous page links in navbar. (Default: true)
         'navbar_sidebarrel': False,
-
         # Render the current pages TOC in the navbar. (Default: true)
         'navbar_pagenav': False,
-
         # Tab name for the current pages TOC. (Default: "Page")
         'navbar_pagenav_name': "Page",
-
         # Global TOC depth for "site" navbar tab. (Default: 1)
         # Switching to -1 shows all levels.
         'globaltoc_depth': 2,
-
         # Include hidden TOCs in Site navbar?
         #
         # Note: If this is "false", you cannot have mixed ``:hidden:`` and
@@ -193,25 +192,20 @@ if sphinx_template == 'sphinx-bootstrap':
         #
         # Values: "true" (default) or "false"
         'globaltoc_includehidden': "true",
-
         # HTML navbar class (Default: "navbar") to attach to <div> element.
         # For black navbar, do "navbar navbar-inverse"
         'navbar_class': "navbar",
-
         # Fix navigation bar to top of page?
         # Values: "true" (default) or "false"
         'navbar_fixed_top': "true",
-
         # Location of link to source.
         # Options are "nav" (default), "footer" or anything else to exclude.
         'source_link_position': "",
-
         # Bootswatch (http://bootswatch.com/) theme.
         #
         # Options are nothing (default) or the name of a valid theme
         # such as "amelia" or "cosmo".
         'bootswatch_theme': "paper",
-
         # Choose Bootstrap version.
         # Values: "3" (default) or "2" (in quotes)
         'bootstrap_version': "3",
@@ -237,7 +231,7 @@ elif sphinx_template == 'alabaster':
         'github_button': True,
         'github_type': 'star',
         'sidebar_collapse': True,
-        'page_width': '80%'
+        'page_width': '80%',
     }
 
     html_sidebars = {
@@ -276,15 +270,12 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     #
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     #
     # 'preamble': '',
-
     # Latex figure (float) alignment
     #
     # 'figure_align': 'htbp',
@@ -294,18 +285,20 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, '{0}.tex'.format(project), u'{0} Documentation'.format(project),
-     author, 'manual'),
+    (
+        master_doc,
+        '{0}.tex'.format(project),
+        u'{0} Documentation'.format(project),
+        author,
+        'manual',
+    ),
 ]
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'archon', u'{0} Documentation'.format(project),
-     [author], 1)
-]
+man_pages = [(master_doc, 'archon', u'{0} Documentation'.format(project), [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -313,9 +306,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, project, u'{0} Documentation'.format(project),
-     author, project, 'One line description of project.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        project,
+        u'{0} Documentation'.format(project),
+        author,
+        project,
+        'One line description of project.',
+        'Miscellaneous',
+    ),
 ]
 
 if use_releases == 'yes':

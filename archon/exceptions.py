@@ -19,4 +19,5 @@ class ArchonWarning(Warning):
 
 class ArchonUserWarning(UserWarning, ArchonWarning):
     """The primary warning class."""
+
     pass

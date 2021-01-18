@@ -36,8 +36,9 @@ try:
         from poetry.factory import Factory
     from poetry.__version__ import __version__
 except (ImportError, ModuleNotFoundError) as ee:
-    raise ImportError('install poetry by doing pip install poetry to use '
-                      f'this script: {ee}')
+    raise ImportError(
+        'install poetry by doing pip install poetry to use ' f'this script: {ee}'
+    )
 
 
 # Generate a Poetry object that knows about the metadata in pyproject.toml
