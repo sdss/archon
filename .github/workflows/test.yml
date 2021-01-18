@@ -53,7 +53,7 @@ jobs:
 
     - name: Lint with black
       run: |
-        black --check .
+        poetry run black --check .
 
     - name: Lint with isort
       run: |
