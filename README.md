@@ -42,4 +42,8 @@ python create_setup.py
 pip install -e .
 ```
 
-Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see ``pyproject.toml`` ``[tool.poetry.dev-dependencies]``).
+Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see `pyproject.toml` `[tool.poetry.dev-dependencies]`).
+
+### Style
+
+This project uses the [black](https://github.com/psf/black) code style with 88-character line lengths. It is recommended that you run `black` on save. The GitHub test workflow checks all the Python file to make sure they comply with the black formatting.
