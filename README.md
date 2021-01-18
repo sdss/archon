@@ -41,3 +41,5 @@ pip install --pre poetry
 python create_setup.py
 pip install -e .
 ```
+
+Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see ``pyproject.toml`` ``[tool.poetry.dev-dependencies]``).
