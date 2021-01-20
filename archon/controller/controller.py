@@ -74,7 +74,7 @@ class ArchonController(Device):
                 f"Received invalid command {line.decode()}", ArchonUserWarning
             )
 
-        command_id = int(match[0], 16)
+        command_id = int(match[1], 16)
         if command_id not in self.__running_commands:
             warnings.warn(f"Cannot find running command for {line}")
             return
