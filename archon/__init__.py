@@ -2,12 +2,11 @@
 
 from sdsstools import get_config, get_logger, get_package_version
 
-
 # pip package name
-NAME = 'sdss-archon'
+NAME = "sdss-archon"
 
 # Loads config. config name is the package name.
-config = get_config('archon')
+config = get_config("archon")
 
 # Inits the logging system as NAME. Only shell logging,
 # and exception and warning catching.

@@ -53,16 +53,16 @@ black = "^20.8b1"
 [tool.black]
 line-length = 88
 target-version = ['py38']
-skip-string-normalization = true
+# skip-string-normalization = true
 fast = true
 
 [tool.isort]
 profile = "black"
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "SDSS", "FIRSTPARTY", "LOCALFOLDER"]
+sections = ["FUTURE", "STDLIB", "TYPING", "THIRDPARTY", "SDSS", "FIRSTPARTY", "LOCALFOLDER"]
 default_section = "THIRDPARTY"
 known_first_party = "archon"
+known_typing = ["typing"]
 known_sdss = ["sdsstools"]
-lines_after_imports = 2
 
 [tool.pytest.ini_options]
 addopts = "--cov archon --cov-report xml --cov-report html --cov-report term"
