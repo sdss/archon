@@ -4,12 +4,12 @@
 archon Reference
 ================
 
-.. _api-main:
+.. _api-archon:
 
-Main
-----
+Controller
+----------
 
-.. automodule:: archon.main
+.. automodule:: archon.controller
    :members:
    :undoc-members:
    :show-inheritance:
