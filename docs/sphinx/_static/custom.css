@@ -1,8 +1,8 @@
-/* This is the custom CSS for alabaster. The theme does not allow for it to be set differently. */
+@charset "utf-8";
 
 .red {
-  color: red;
-}
+    color: red;
+  }
 
 .green {
   color: green;
@@ -41,3 +41,23 @@ a.reference {
 td.field-body > ul > li > em {
     font-style: normal !important;
 }
+
+.underline{
+  text-decoration: underline;
+}
+
+dl + .class, dl + .function, span + .class, span + .function {
+  padding-top: 40px;
+}
+
+dl.py.method, dl.py.attribute {
+  padding-top: 10px;
+}
+
+dl.method > dt > code.descname {
+  font-weight: normal;
+}
+
+/* code.sig-name.descname {
+  color: rgba(140, 42, 42);
+} */
