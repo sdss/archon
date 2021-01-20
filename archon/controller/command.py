@@ -13,8 +13,6 @@ import enum
 import re
 import warnings
 
-from typing import List
-
 from archon.exceptions import ArchonUserWarning
 
 __all__ = ["ArchonCommand", "ArchonCommandStatus"]
@@ -53,7 +51,7 @@ class ArchonCommand(asyncio.Future):
         self._expected_replies = expected_replies
 
         #: List of str or bytes: List of replies received for this command.
-        self.replies: List[str | bytes] = []
+        self.replies: list[str | bytes] = []
 
         #: .ArchonCommandStatus: The status of the command.
         self.status = ArchonCommandStatus.RUNNING

@@ -11,8 +11,6 @@ from __future__ import annotations
 import re
 import warnings
 
-from typing import Dict
-
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
@@ -33,7 +31,7 @@ class ArchonController(Device):
         Defaults to 4242.
     """
 
-    __running_commands: Dict[int, ArchonCommand] = {}
+    __running_commands: dict[int, ArchonCommand] = {}
     __next_id = 0
 
     def __init__(self, host: str, port: int = 4242):
