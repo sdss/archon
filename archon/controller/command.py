@@ -118,3 +118,6 @@ class ArchonCommand(asyncio.Future):
         """Marks the command done with ``status``."""
         self.status = status
         self.set_result(self)
+
+    def __repr__(self):
+        return f"<ArchonCommand ({self.raw}, status={self.status})>"
