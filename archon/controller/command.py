@@ -46,6 +46,8 @@ class ArchonCommand(asyncio.Future):
     """
 
     def __init__(self, command_string: str, command_id: int, expected_replies: int = 1):
+        super().__init__()
+
         self.command_string = command_string.upper()
         self.command_id = command_id
         self._expected_replies = expected_replies
