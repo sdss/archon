@@ -19,7 +19,7 @@ from archon.exceptions import ArchonUserWarning
 
 __all__ = ["ArchonCommand", "ArchonCommandStatus"]
 
-REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?$'")
+REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?$")
 
 
 class ArchonCommandStatus(enum.Enum):
