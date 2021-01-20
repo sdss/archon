@@ -97,7 +97,7 @@ class ArchonController(Device):
             line = await self._client.reader.read(4)
             if line[-1] == b"\n":
                 pass
-            elif line[-1] == b":":
+            elif line[-1] == 58:  # ASCII for :
                 line += await self._client.reader.read(1024)
             else:
                 line += await self._client.reader.readuntil(b"\n")
