@@ -24,32 +24,31 @@ class TCPProtocol(asyncio.Protocol):
         are allowed.
 
     """
-    def __init__(self, loop=..., connection_callback=..., data_received_callback=..., max_connections=...) -> None:
-        ...
-    
+
+    def __init__(
+        self,
+        loop=...,
+        connection_callback=...,
+        data_received_callback=...,
+        max_connections=...,
+    ) -> None: ...
     @classmethod
     async def create_server(cls, host, port, **kwargs):
         """Returns a `~asyncio.Server` connection."""
         ...
-    
     @classmethod
     async def create_client(cls, host, port, **kwargs):
         """Returns a `~asyncio.Transport` and `~asyncio.Protocol`."""
         ...
-    
     def connection_made(self, transport):
         """Receives a connection and calls the connection callback."""
         ...
-    
     def data_received(self, data):
         """Decodes the received data."""
         ...
-    
     def connection_lost(self, exc):
         """Called when connection is lost."""
         ...
-    
-
 
 class PeriodicTCPServer(TCPProtocol):
     """A TCP server that runs a callback periodically.
@@ -64,29 +63,22 @@ class PeriodicTCPServer(TCPProtocol):
         Parameters to pass to `TCPProtocol`
 
     """
-    def __init__(self, periodic_callback=..., sleep_time=..., **kwargs) -> None:
-        ...
-    
+
+    def __init__(self, periodic_callback=..., sleep_time=..., **kwargs) -> None: ...
     @classmethod
-    async def create_client(cls, *args, **kwargs):
-        ...
-    
+    async def create_client(cls, *args, **kwargs): ...
     @classmethod
     async def create_server(cls, host, port, *args, **kwargs):
         """Returns a `~asyncio.Server` connection."""
         ...
-    
     @property
     def periodic_callback(self):
         """Returns the periodic callback."""
         ...
-    
     @periodic_callback.setter
     def periodic_callback(self, func):
         """Sets the periodic callback."""
         ...
-    
-
 
 class TCPStreamServer(object):
     """A TCP server based on asyncio streams.
@@ -112,24 +104,26 @@ class TCPStreamServer(object):
         are allowed.
 
     """
-    def __init__(self, host, port, connection_callback=..., data_received_callback=..., loop=..., max_connections=...) -> None:
-        ...
-    
+
+    def __init__(
+        self,
+        host,
+        port,
+        connection_callback=...,
+        data_received_callback=...,
+        loop=...,
+        max_connections=...,
+    ) -> None: ...
     async def start(self):
         """Starts the server and returns a `~asyncio.Server` connection."""
         ...
-    
     def stop(self):
         """Stops the server."""
         ...
-    
     def serve_forever(self):
         """Exposes ``TCPStreamServer.server.serve_forever``."""
         ...
-    
-    def is_serving(self):
-        ...
-    
+    def is_serving(self): ...
     async def connection_made(self, reader, writer):
         """Called when a new client connects to the server.
 
@@ -138,23 +132,22 @@ class TCPStreamServer(object):
 
         """
         ...
-    
-
 
 class TCPStreamClient:
     """An object containing a writer and reader stream to a TCP server."""
+
     def __init__(self, host, port) -> None:
+        self.host: str
+        self.port: int
+        self.reader: asyncio.StreamReader
+        self.writer: asyncio.StreamWriter
         ...
-    
     async def open_connection(self):
         """Creates the connection."""
         ...
-    
     def close(self):
         """Closes the stream."""
         ...
-    
-
 
 async def open_connection(host, port):
     """Returns a TCP stream connection with a writer and reader.
@@ -202,27 +195,22 @@ class TCPStreamPeriodicServer(TCPStreamServer):
         Parameters to pass to `TCPStreamServer`
 
     """
-    def __init__(self, host, port, periodic_callback=..., sleep_time=..., **kwargs) -> None:
-        ...
-    
+
+    def __init__(
+        self, host, port, periodic_callback=..., sleep_time=..., **kwargs
+    ) -> None: ...
     async def start(self):
         """Starts the server and returns a `~asyncio.Server` connection."""
         ...
-    
-    def stop(self):
-        ...
-    
+    def stop(self): ...
     @property
     def periodic_callback(self):
         """Returns the periodic callback."""
         ...
-    
     @periodic_callback.setter
     def periodic_callback(self, func):
         """Sets the periodic callback."""
         ...
-    
-
 
 class TopicListener(object):
     """A class to declare and listen to AMQP queues with topic conditions.
@@ -246,9 +234,17 @@ class TopicListener(object):
         Whether to use TLS/SSL connection.
 
     """
-    def __init__(self, url=..., user=..., password=..., host=..., virtualhost=..., port=..., ssl=...) -> None:
-        ...
-    
+
+    def __init__(
+        self,
+        url=...,
+        user=...,
+        password=...,
+        host=...,
+        virtualhost=...,
+        port=...,
+        ssl=...,
+    ) -> None: ...
     async def connect(self, exchange_name, exchange_type=...):
         """Initialise the connection.
 
@@ -261,7 +257,6 @@ class TopicListener(object):
 
         """
         ...
-    
     async def add_queue(self, queue_name, callback=..., bindings=...):
         """Adds a queue with bindings.
 
@@ -278,10 +273,6 @@ class TopicListener(object):
 
         """
         ...
-    
     async def stop(self):
         """Cancels queues and closes the connection."""
         ...
-    
-
-

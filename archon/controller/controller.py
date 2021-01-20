@@ -81,6 +81,29 @@ class ArchonController(Device):
 
         self.__running_commands[command_id].process_reply(line)
 
+    async def _listen(self):
+        """Listens to the reader stream and callbacks on message received."""
+
+        if not self._client:
+            raise RuntimeError("Connection is not open.")
+
+        while True:
+            # Max length of a reply is 1024 bytes for the message preceded by <xx:
+            # We read the first four characters (the maximum length of a complete
+            # message: ?xx\n). If the message ends in a newline, notify the callback;
+            # if the message ends with ":", it means what follows are 1024 binary
+            # characters without a newline; otherwise, read until the newline which
+            # marks the end of this message.
+            line = await self._client.reader.read(4)
+            if line[-1] == b"\n":
+                pass
+            elif line[-1] == b":":
+                line += await self._client.reader.read(1024)
+            else:
+                line += await self._client.reader.readuntil(b"\n")
+
+            self.notify(line)
+
     def __get_id(self) -> int:
         """Returns an identifier and increases the counter."""
         id = self.__next_id
