@@ -83,10 +83,18 @@ def test_command_process_reply_failed():
     assert command.status == command.status.FAILED
 
 
-def test_command_two_replies():
-    command = ArchonCommand("ping", 1, expected_replies=2)
+async def test_command_two_replies():
+    command = ArchonCommand("ping", 1, expected_replies=2, timeout=0.1)
     assert command.status == command.status.RUNNING
     command.process_reply(b"<01pong1")
     assert command.status == command.status.RUNNING
+    await asyncio.sleep(0.01)
     command.process_reply(b"<01pong2")
     assert command.status == command.status.DONE
+
+
+async def test_command_timeout():
+    command = ArchonCommand("ping", 1, expected_replies=2, timeout=0.01)
+    assert command.status == command.status.RUNNING
+    await asyncio.sleep(0.02)
+    assert command.status == command.status.TIMEDOUT

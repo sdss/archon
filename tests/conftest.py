@@ -47,7 +47,6 @@ async def controller(request, unused_tcp_port: int):
 
             cid, com = matched.groups()
 
-            replied = False
             for (command, replies) in commands:
                 if command.upper() == com.upper():
                     if isinstance(replies, str):
@@ -61,11 +60,7 @@ async def controller(request, unused_tcp_port: int):
                             )
                         writer.write(reply)
                         await writer.drain()
-                        replied = True
                     break
-            if replied:
-                continue
-            writer.write(b"?{cid}\n")
 
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
 
