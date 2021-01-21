@@ -13,9 +13,9 @@ import enum
 import re
 import warnings
 
-from archon.exceptions import ArchonUserWarning
+from archon.exceptions import ArchonError, ArchonUserWarning
 
-__all__ = ["ArchonCommand", "ArchonCommandStatus"]
+__all__ = ["ArchonCommand", "ArchonCommandStatus", "ArchonCommandReply"]
 
 REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?$")
 
@@ -53,7 +53,7 @@ class ArchonCommand(asyncio.Future):
         self._expected_replies = expected_replies
 
         #: List of str or bytes: List of replies received for this command.
-        self.replies: list[str | bytes] = []
+        self.replies: list[ArchonCommandReply] = []
 
         #: .ArchonCommandStatus: The status of the command.
         self.status = ArchonCommandStatus.RUNNING
@@ -66,7 +66,7 @@ class ArchonCommand(asyncio.Future):
         """Returns the raw command sent to the Archon (without the newline)."""
         return f">{self.command_id:02x}{self.command_string}"
 
-    def process_reply(self, reply: bytes):
+    def process_reply(self, reply: bytes) -> ArchonCommandReply | None:
         """Processes a new reply to this command.
 
         The Archon can reply to a command of the form ``>xxCOMMAND`` (where ``xx``
@@ -81,21 +81,15 @@ class ArchonCommand(asyncio.Future):
         reply
             The received reply, as bytes.
         """
-        parsed = REPLY_RE.match(reply)
-        if parsed is None:
-            warnings.warn(
-                f"Received unparseable reply to command {self.raw}: {reply.decode()}",
-                ArchonUserWarning,
-            )
+
+        try:
+            archon_reply = ArchonCommandReply(reply, self)
+        except ArchonError as err:
+            warnings.warn(str(err), ArchonUserWarning)
             self._mark_done(self.status.FAILED)
             return
 
-        rtype, rcid, rbin, rmessage = parsed.groups()
-        rtype = rtype.decode()
-        rcid = int(rcid, 16)
-        rbin = rbin.decode()
-
-        if rcid != self.command_id:
+        if archon_reply.command_id != self.command_id:
             warnings.warn(
                 f"Received reply to command {self.raw} that does not match "
                 f"the command id: {reply.decode()}",
@@ -104,17 +98,16 @@ class ArchonCommand(asyncio.Future):
             self._mark_done(self.status.FAILED)
             return
 
-        if rtype == "?":
-            self._mark_done(self.status.FAILED)
-            return
+        self.replies.append(archon_reply)
 
-        if rbin == "":
-            self.replies.append(rmessage.decode().strip())
-        else:
-            self.replies.append(rmessage)
+        if archon_reply.type == "?":
+            self._mark_done(self.status.FAILED)
+            return archon_reply
 
         if len(self.replies) == self._expected_replies:
             self._mark_done()
+
+        return archon_reply
 
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
@@ -123,3 +116,55 @@ class ArchonCommand(asyncio.Future):
 
     def __repr__(self):
         return f"<ArchonCommand ({self.raw}, status={self.status})>"
+
+
+class ArchonCommandReply:
+    """A reply received from the Archon to a given command.
+
+    When ``str(archon_command_reply)`` is called, the reply (without the reply code or
+    command id) is returned, except when the reply is binary in which case an error
+    is raised.
+
+    Parameters
+    ----------
+    raw_reply
+        The raw reply received from the Archon.
+    command
+        The command associated with the reply.
+
+    Raise
+    -----
+    .ArchonError
+        Raised if the reply cannot be parsed.
+
+    """
+
+    def __init__(self, raw_reply: bytes, command: ArchonCommand):
+        parsed = REPLY_RE.match(raw_reply)
+        if not parsed:
+            raise ArchonError(
+                f"Received unparseable reply to command "
+                f"{command.raw}: {raw_reply.decode()}"
+            )
+
+        self.command = command
+        self.raw_reply = raw_reply
+
+        rtype, rcid, rbin, rmessage = parsed.groups()
+        self.type: str = rtype.decode()
+        self.command_id: int = int(rcid, 16)
+        self.is_binary: bool = rbin.decode() == ":"
+
+        self.reply: str | bytes
+        if self.is_binary:
+            self.reply = rmessage
+        else:
+            self.reply = rmessage.decode().strip()
+
+    def __str__(self) -> str:
+        if isinstance(self.reply, bytes):
+            raise ArchonError("The reply is binary and cannot be converted to string.")
+        return self.reply
+
+    def __repr__(self):
+        return f"<ArchonCommandReply ({self.raw_reply})>"

@@ -12,7 +12,7 @@ import pytest
 
 from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
-from archon.exceptions import ArchonUserWarning
+from archon.exceptions import ArchonError, ArchonUserWarning
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -23,7 +23,8 @@ async def test_controller(controller: ArchonController):
     command = controller.send_command("ping")
     await command
     assert command.status == command.status.DONE
-    assert command.replies == ["PONG"]
+    assert command.replies[0].reply == "PONG"
+    assert str(command.replies[0]) == "PONG"
 
 
 @pytest.mark.commands([["PING", [b"<{cid}:12345"]]])
@@ -32,8 +33,10 @@ async def test_controller_binary_reply(controller: ArchonController):
     await command
     assert command.status == command.status.DONE
     assert len(command.replies) == 1
-    assert len(command.replies[0]) == 1024
-    assert command.replies[0].strip() == b"12345"
+    assert len(command.replies[0].reply) == 1024
+    assert command.replies[0].reply.strip() == b"12345"
+    with pytest.raises(ArchonError):
+        str(command.replies[0])
 
 
 @pytest.mark.commands([["PING", ["?{cid}"]]])
@@ -41,7 +44,7 @@ async def test_controller_error(controller: ArchonController):
     command = controller.send_command("ping")
     await command
     assert command.status == command.status.FAILED
-    assert command.replies == []
+    assert command.replies[0].type == "?"
 
 
 @pytest.mark.commands([["PING", ["<?!PONG"]]])

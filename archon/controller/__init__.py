@@ -6,7 +6,12 @@
 # @Filename: __init__.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-__all__ = ["ArchonController", "ArchonCommandStatus", "ArchonCommand"]
+__all__ = [
+    "ArchonController",
+    "ArchonCommandStatus",
+    "ArchonCommand",
+    "ArchonCommandReply",
+]
 
-from .command import ArchonCommand, ArchonCommandStatus
+from .command import ArchonCommand, ArchonCommandReply, ArchonCommandStatus
 from .controller import ArchonController
