@@ -17,8 +17,8 @@ from archon.exceptions import ArchonUserWarning
 pytestmark = [pytest.mark.asyncio]
 
 
-@pytest.mark.commands([["PING", ["PONG"]]])
-async def test_connection(controller: ArchonController):
+@pytest.mark.commands([["PING", ["<{cid}PONG"]]])
+async def test_controller(controller: ArchonController):
     assert controller.host == "localhost"
     command = controller.send_command("ping")
     await command
@@ -26,15 +26,36 @@ async def test_connection(controller: ArchonController):
     assert command.replies == ["PONG"]
 
 
-@pytest.mark.commands([["PING", [b"12345"]]])
-async def test_binary_reply(controller: ArchonController):
-    assert controller.host == "localhost"
+@pytest.mark.commands([["PING", [b"<{cid}:12345"]]])
+async def test_controller_binary_reply(controller: ArchonController):
     command = controller.send_command("ping")
     await command
     assert command.status == command.status.DONE
     assert len(command.replies) == 1
     assert len(command.replies[0]) == 1024
     assert command.replies[0].strip() == b"12345"
+
+
+@pytest.mark.commands([["PING", ["?{cid}"]]])
+async def test_controller_error(controller: ArchonController):
+    command = controller.send_command("ping")
+    await command
+    assert command.status == command.status.FAILED
+    assert command.replies == []
+
+
+@pytest.mark.commands([["PING", ["<?!PONG"]]])
+async def test_controller_command_not_running(controller: ArchonController):
+    with pytest.warns(ArchonUserWarning):
+        controller.send_command("ping")
+        await asyncio.sleep(0.01)
+
+
+@pytest.mark.commands([["PING", ["<02PONG"]]])
+async def test_controller_bad_reply(controller: ArchonController):
+    with pytest.warns(ArchonUserWarning):
+        controller.send_command("ping", command_id=1)
+        await asyncio.sleep(0.01)
 
 
 @pytest.mark.parametrize("command_id", [-5, 2 ** 8 + 1])

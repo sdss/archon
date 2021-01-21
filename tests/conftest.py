@@ -53,14 +53,12 @@ async def controller(request, unused_tcp_port: int):
                         replies = [replies]
                     for reply in replies:
                         if isinstance(reply, str):
-                            reply = reply.encode()
-                            binary_sep = b""
-                            endline = b"\n"
+                            reply = (reply.format(cid=cid) + "\n").encode()
                         else:
-                            reply = reply.ljust(1024, b" ")
-                            binary_sep = b":"
-                            endline = b"\n"
-                        writer.write(b"<" + cid.encode() + binary_sep + reply + endline)
+                            reply = reply.replace(b"{cid}", cid.encode()).ljust(
+                                1028, b" "
+                            )
+                        writer.write(reply)
                         await writer.drain()
                         replied = True
                     break
