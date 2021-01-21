@@ -24,9 +24,10 @@ async def controller(request, unused_tcp_port: int):
 
     Tests that use this fixture must be decorated with ``@pytest.mark.commands``. The
     arguments are a list of input commands and replies. For example
-    ``@pytest.mark.commands.commands=[['STATUS', ['VALID=1 COUNT=379780 LOG=4']]]``
-    will reply with ``<xxVALID=1 COUNT=379780 LOG=4`` to the commands ``>xxSTATUS``.
-    Do not include the command id in the definition. If the reply is an instance of
+    ``@pytest.mark.commands.commands=[['STATUS', ['<{cid}VALID=1 COUNT=379780']]]``
+    will reply with ``<01VALID=1 COUNT=379780\n`` to the commands ``>01STATUS``.
+    The command of the reply can be hardcoded or use ``{cid}`` for a placeholder that
+    will be replaced with the actual command id. If the reply is an instance of
     bytes, it will be returned as a binary response.
     """
     commands: Iterable[
