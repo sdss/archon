@@ -95,9 +95,10 @@ class ArchonController(Device):
             # characters without a newline; otherwise, read until the newline which
             # marks the end of this message.
             line = await self._client.reader.read(4)
-            if line[-1] == b"\n":
+
+            if line[-1] == ord(b"\n"):
                 pass
-            elif line[-1] == 58:  # ASCII for :
+            elif line[-1] == ord(b":"):
                 line += await self._client.reader.read(1024)
             else:
                 line += await self._client.reader.readuntil(b"\n")
