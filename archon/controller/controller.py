@@ -76,15 +76,14 @@ class ArchonController(Device):
 
         command_id = int(match[1], 16)
         if command_id not in self.__running_commands:
-            warnings.warn(f"Cannot find running command for {line}")
+            warnings.warn(f"Cannot find running command for {line}", ArchonUserWarning)
             return
 
         self.__running_commands[command_id].process_reply(line)
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
-
-        if not self._client:
+        if not self._client:  # pragma: no cover
             raise RuntimeError("Connection is not open.")
 
         while True:
