@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 import warnings
 
@@ -36,6 +37,8 @@ class ArchonController(Device):
 
     def __init__(self, host: str, port: int = 4242):
         super().__init__(host, port)
+
+        self._job = asyncio.create_task(self.__track_commands())
 
     def send_command(
         self,
@@ -83,6 +86,11 @@ class ArchonController(Device):
 
         self.__running_commands[command_id].process_reply(line)
 
+    async def stop(self):
+        """Stops the client and cancels the command tracker."""
+        self._job.cancel()
+        await super().stop()
+
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
         if not self._client:  # pragma: no cover
@@ -111,3 +119,13 @@ class ArchonController(Device):
         id = self.__next_id
         self.__next_id += 1
         return id
+
+    async def __track_commands(self):
+        """Removes complete commands from the list of running commands."""
+        while True:
+            self.__running_commands = {
+                cid: cmd
+                for (cid, cmd) in self.__running_commands.items()
+                if cmd.status == cmd.status.RUNNING
+            }
+            await asyncio.sleep(0.5)
