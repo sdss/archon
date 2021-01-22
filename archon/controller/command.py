@@ -34,7 +34,7 @@ class ArchonCommandStatus(enum.Enum):
     TIMEDOUT = enum.auto()
 
 
-class ArchonCommand(asyncio.Future["ArchonCommand"]):
+class ArchonCommand(asyncio.Future):
     """Tracks the status and replies to a command sent to the Archon.
 
     ``ArchonCommand`` is a `~asyncio.Future` and can be awaited, at which point the
