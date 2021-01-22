@@ -11,6 +11,7 @@ __all__ = [
     "ArchonCommandStatus",
     "ArchonCommand",
     "ArchonCommandReply",
+    "ModType",
 ]
 
 
@@ -18,3 +19,4 @@ MAX_COMMAND_ID = 0xFF
 
 from .command import ArchonCommand, ArchonCommandReply, ArchonCommandStatus
 from .controller import ArchonController
+from .maskbits import ModType
