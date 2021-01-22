@@ -61,6 +61,13 @@ async def test_controller_bad_reply(controller: ArchonController):
         await asyncio.sleep(0.01)
 
 
+@pytest.mark.commands([])
+async def test_controller_wrap_command_id(controller: ArchonController):
+    controller.__next_id = 2 ** 8
+    command = controller.send_command("PING")
+    assert command.command_id == 0
+
+
 @pytest.mark.parametrize("command_id", [-5, 2 ** 8 + 1])
 def test_command_bad_command_id(command_id):
     with pytest.raises(ValueError):

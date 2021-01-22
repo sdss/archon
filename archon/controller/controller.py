@@ -125,6 +125,8 @@ class ArchonController(Device):
         """Returns an identifier and increases the counter."""
         id = self.__next_id
         self.__next_id += 1
+        if self.__next_id > 2 ** 8:
+            self.__next_id = 0
         return id
 
     async def __track_commands(self):
