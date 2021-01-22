@@ -51,7 +51,6 @@ class ArchonCommand(asyncio.Future):
     timeout
         Time without receiving a reply after which the command will be timed out.
         `None` disables the timeout.
-
     """
 
     def __init__(
@@ -181,7 +180,6 @@ class ArchonCommandReply:
     -----
     .ArchonError
         Raised if the reply cannot be parsed.
-
     """
 
     def __init__(self, raw_reply: bytes, command: ArchonCommand):

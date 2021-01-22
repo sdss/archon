@@ -52,7 +52,7 @@ class ArchonController(Device):
     def send_command(
         self,
         command_string: str,
-        command_id: int | None = None,
+        command_id: Optional[int] = None,
         **kwargs,
     ) -> ArchonCommand:
         """Sends a command to the Archon.

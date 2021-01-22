@@ -55,7 +55,6 @@ def parallel_controllers():
     :meth:`~clu.command.BaseCommand.error` or :meth:`~clu.command.BaseCommand.warning`.
     Your replies to the users must indicate to what controller they refer. If you want
     to force all the concurrent tasks to fail, raise an exception.
-
     """
 
     def decorator(f):

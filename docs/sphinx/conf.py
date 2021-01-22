@@ -238,7 +238,7 @@ elif sphinx_template == "alabaster":
     html_sidebars = {
         "**": [
             "about.html",
-            "navigation.html",
+            "fulltoc.html",
             "relations.html",
             "searchbox.html",
         ]

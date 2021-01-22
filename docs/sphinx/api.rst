@@ -18,6 +18,11 @@ Controller
 Actor
 -----
 
+.. automodule:: archon.actor.actor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: archon.actor.tools
    :members:
    :undoc-members:

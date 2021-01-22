@@ -17,6 +17,17 @@ __all__ = ["ArchonActor"]
 
 
 class ArchonActor(AMQPActor):
+    """Archon controller actor.
+
+    In addition to the normal arguments and keyword parameters for `~clu.actor.AMQPActor`,
+    the class accepts the following parameters.
+
+    Parameters
+    ----------
+    controllers
+        A mapping of controller name to `.ArchonController`.
+    """
+
     parser = archon_command_parser
 
     def __init__(self, *args, controllers: dict[str, ArchonController] = {}, **kwargs):
@@ -35,6 +46,7 @@ class ArchonActor(AMQPActor):
 
     @classmethod
     def from_config(cls, config, *args, **kwargs):
+        """Creates an actor from a configuration file."""
         instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
         if "controllers" in instance.config:
             controllers = {
