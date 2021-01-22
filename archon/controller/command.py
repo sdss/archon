@@ -34,7 +34,7 @@ class ArchonCommandStatus(enum.Enum):
     TIMEDOUT = enum.auto()
 
 
-class ArchonCommand(asyncio.Future):
+class ArchonCommand(asyncio.Future["ArchonCommand"]):
     """Tracks the status and replies to a command sent to the Archon.
 
     ``ArchonCommand`` is a `~asyncio.Future` and can be awaited, at which point the
@@ -148,13 +148,15 @@ class ArchonCommand(asyncio.Future):
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
         self.status = status
-        # Release the event one last time to let the loop to finish.
-        self.__event.set()
         self.set_result(self)
+
+        # Release the event one last time to let the loop to finish and cancel timer.
+        self.__event.set()
+        if self.timer:
+            self.timer.cancel()
 
     def _timeout(self):
         """Marks the command timed out."""
-        self.timer.cancel()
         self._mark_done(self.status.TIMEDOUT)
 
     def __repr__(self):
