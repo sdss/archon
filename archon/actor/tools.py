@@ -115,7 +115,7 @@ def check_controller(command: Command, controller: ArchonController) -> bool:
     is not in a valid state.
     """
     if not controller.is_connected():
-        error_controller(command, controller, "The controller is not connected.")
+        error_controller(command, controller, "Controller not connected.")
         return False
 
     return True
