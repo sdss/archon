@@ -6,17 +6,19 @@
 # @Filename: tools.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+from __future__ import annotations
+
 import asyncio
 import functools
 
 from typing import Optional
 
 import click
-from clu.command import BaseCommand
+from clu.command import BaseCommand, Command
 
 from archon.controller.controller import ArchonController
 
-__all__ = ["parallel_controllers"]
+__all__ = ["parallel_controllers", "error_controller", "check_controller"]
 
 
 controller_list = click.option(
@@ -95,3 +97,26 @@ def parallel_controllers():
         return functools.update_wrapper(wrapper, f)
 
     return decorator
+
+
+def error_controller(command: Command, controller: ArchonController, message: str):
+    """Issues a ``error_controller`` message."""
+    command.error(
+        controller_error={
+            "controller": controller.name,
+            "error": message,
+        }
+    )
+
+
+def check_controller(command: Command, controller: ArchonController) -> bool:
+    """Performs sanity check in the controller.
+
+    Outputs error messages if a problem is found. Return `False` if the controller
+    is not in a valid state.
+    """
+    if not controller.is_connected():
+        error_controller(command, controller, "The controller is not connected.")
+        return False
+
+    return True
