@@ -30,12 +30,15 @@ class ArchonController(Device):
     port
         The port on which the Archon listens to incoming connections.
         Defaults to 4242.
+    name
+        A name identifying this controller.
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
     __next_id = 0
 
-    def __init__(self, host: str, port: int = 4242):
+    def __init__(self, host: str, port: int = 4242, name: Optional[str] = None):
+        self.name = name
         super().__init__(host, port)
 
         self._job = asyncio.create_task(self.__track_commands())
