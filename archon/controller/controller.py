@@ -12,6 +12,8 @@ import asyncio
 import re
 import warnings
 
+from typing import Optional
+
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
@@ -41,7 +43,9 @@ class ArchonController(Device):
         self.name = name
         super().__init__(host, port)
 
-        self._job = asyncio.create_task(self.__track_commands())
+        # TODO: asyncio recommends using asyncio.create_task directly, but that
+        # call get_running_loop() which fails in iPython.
+        self._job = asyncio.get_event_loop().create_task(self.__track_commands())
 
     def send_command(
         self,
