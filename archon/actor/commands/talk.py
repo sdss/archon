@@ -12,7 +12,7 @@ from clu.command import Command
 
 from archon.controller.controller import ArchonController
 
-from ..tools import parallel_controllers
+from ..tools import check_controller, parallel_controllers
 from . import parser
 
 
@@ -25,8 +25,12 @@ async def talk(
     archon_command: str,
 ):
     """Sends a command to the controller."""
+    if not check_controller(command, controller):
+        return
+
     cmd = controller.send_command(archon_command)
     await cmd
+
     async for reply in cmd.get_replies():
         # Need to decode so that's serializable.
         raw = reply.raw_reply.decode().strip()
