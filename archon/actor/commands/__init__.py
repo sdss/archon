@@ -39,10 +39,7 @@ files = [
 ]
 
 for file_ in files:
-    try:
-        modname = file_[0:-3].replace("/", ".")
-        mod = importlib.import_module("archon.actor.commands." + modname)
-    except Exception as ee:
-        warnings.warn(f"Cannot import file {file_}: {ee}", ArchonUserWarning)
+    modname = file_[0:-3].replace("/", ".")
+    mod = importlib.import_module("archon.actor.commands." + modname)
 
 os.chdir(cwd)
