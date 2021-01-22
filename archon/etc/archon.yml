@@ -1,9 +1,11 @@
 ---
 
-option1:
-    suboption1: 1
-    suboption2: "some text"
-    suboption3:
-        subsuboption1: [1, 2, 3]
+controllers:
+    sp1:
+        host: localhost
+        port: 4242
 
-option2: 2.0
+actor:
+    name: archon
+    host: localhost
+    port: 5672
