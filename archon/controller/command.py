@@ -13,6 +13,8 @@ import enum
 import re
 import warnings
 
+from typing import AsyncGenerator, Generator, Iterator, Optional
+
 from archon.exceptions import ArchonError, ArchonUserWarning
 from archon.tools import Timer
 
@@ -54,8 +56,8 @@ class ArchonCommand(asyncio.Future):
         self,
         command_string: str,
         command_id: int,
-        expected_replies: int = 1,
-        timeout: float | None = None,
+        expected_replies: Optional[int] = 1,
+        timeout: Optional[float] = None,
     ):
         super().__init__()
 
@@ -72,7 +74,8 @@ class ArchonCommand(asyncio.Future):
         if self.command_id < 0 or self.command_id > 2 ** 8:
             raise ValueError("command_id must be between 0x00 and 0xFF")
 
-        self.timer: Timer | None = Timer(timeout, self._timeout) if timeout else None
+        self.timer: Optional[Timer] = Timer(timeout, self._timeout) if timeout else None
+        self.__event = asyncio.Event()
 
     @property
     def raw(self):
@@ -112,6 +115,7 @@ class ArchonCommand(asyncio.Future):
             return
 
         self.replies.append(archon_reply)
+        self.__event.set()  # Release the event to indicate a new reply has been added.
         if self.timer:
             self.timer.reset()
 
@@ -119,14 +123,29 @@ class ArchonCommand(asyncio.Future):
             self._mark_done(self.status.FAILED)
             return archon_reply
 
-        if len(self.replies) == self._expected_replies:
+        if self._expected_replies and len(self.replies) == self._expected_replies:
             self._mark_done()
 
         return archon_reply
 
+    async def get_replies(self) -> AsyncGenerator[ArchonCommandReply, None]:
+        """Yields an asynchronous generator of replies as they are produced."""
+        n_output = 0
+        while True:
+            await self.__event.wait()
+            if len(self.replies) > n_output:
+                yield self.replies[-1]
+                n_output += 1
+            if self.done():
+                break
+            else:
+                self.__event.clear()
+
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
         self.status = status
+        # Release the event one last time to let the loop to finish.
+        self.__event.set()
         self.set_result(self)
 
     def _timeout(self):

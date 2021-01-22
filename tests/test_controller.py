@@ -98,3 +98,22 @@ async def test_command_timeout():
     assert command.status == command.status.RUNNING
     await asyncio.sleep(0.02)
     assert command.status == command.status.TIMEDOUT
+
+
+async def test_command_get_replies():
+    async def background(command: ArchonCommand):
+        command.process_reply(b"<01pong1")
+        await asyncio.sleep(0.01)
+        command.process_reply(b"<01pong1")
+        await asyncio.sleep(0.02)
+        command._mark_done()
+
+    command = ArchonCommand("ping", 1, expected_replies=None)
+    asyncio.create_task(background(command))
+
+    replies = []
+    async for reply in command.get_replies():
+        replies.append(reply)
+
+    assert command.status == command.status.DONE
+    assert len(replies) == 2
