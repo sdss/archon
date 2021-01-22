@@ -28,7 +28,8 @@ async def talk(
     cmd = controller.send_command(archon_command)
     await cmd
     async for reply in cmd.get_replies():
-        raw = reply.raw_reply.decode()  # Need to decode so that's serializable.
+        # Need to decode so that's serializable.
+        raw = reply.raw_reply.decode().strip()
         if reply.type == "?":
             output_func = command.error
         else:
@@ -38,7 +39,8 @@ async def talk(
             message={
                 "raw_reply": {
                     "controller": controller.name,
-                    "message": raw,
+                    "command": cmd.raw,
+                    "response": raw,
                 }
             }
         )
