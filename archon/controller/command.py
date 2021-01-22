@@ -13,10 +13,12 @@ import enum
 import re
 import warnings
 
-from typing import AsyncGenerator, Generator, Iterator, Optional
+from typing import AsyncGenerator, Optional
 
 from archon.exceptions import ArchonError, ArchonUserWarning
 from archon.tools import Timer
+
+from . import MAX_COMMAND_ID
 
 __all__ = ["ArchonCommand", "ArchonCommandStatus", "ArchonCommandReply"]
 
@@ -71,8 +73,10 @@ class ArchonCommand(asyncio.Future):
         #: .ArchonCommandStatus: The status of the command.
         self.status = ArchonCommandStatus.RUNNING
 
-        if self.command_id < 0 or self.command_id > 2 ** 8:
-            raise ValueError("command_id must be between 0x00 and 0xFF")
+        if self.command_id < 0 or self.command_id > MAX_COMMAND_ID:
+            raise ValueError(
+                f"command_id must be between 0x00 and 0x{MAX_COMMAND_ID:X}"
+            )
 
         self.timer: Optional[Timer] = Timer(timeout, self._timeout) if timeout else None
         self.__event = asyncio.Event()

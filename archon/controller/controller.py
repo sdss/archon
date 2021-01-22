@@ -17,7 +17,9 @@ from typing import Optional
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
-from archon.exceptions import ArchonUserWarning
+from archon.exceptions import ArchonError, ArchonUserWarning
+
+from . import MAX_COMMAND_ID
 
 __all__ = ["ArchonController"]
 
@@ -66,6 +68,10 @@ class ArchonController(Device):
             Other keyword arguments to pass to `.ArchonCommand`.
         """
         command_id = command_id or self.__get_id()
+        if command_id > MAX_COMMAND_ID or command_id < 0:
+            raise ArchonError(
+                f"Command ID must be in the range [0, {MAX_COMMAND_ID:d}]."
+            )
 
         command = ArchonCommand(
             command_string,
@@ -125,7 +131,7 @@ class ArchonController(Device):
         """Returns an identifier and increases the counter."""
         id = self.__next_id
         self.__next_id += 1
-        if self.__next_id > 2 ** 8:
+        if self.__next_id > 2 ** 8 - 1:
             self.__next_id = 0
         return id
 

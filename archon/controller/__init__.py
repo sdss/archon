@@ -13,5 +13,8 @@ __all__ = [
     "ArchonCommandReply",
 ]
 
+
+MAX_COMMAND_ID = 0xFF
+
 from .command import ArchonCommand, ArchonCommandReply, ArchonCommandStatus
 from .controller import ArchonController
