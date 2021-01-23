@@ -2,7 +2,7 @@
 
 controllers:
     sp1:
-        host: localhost
+        host: 10.7.45.26
         port: 4242
 
 actor:
