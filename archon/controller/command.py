@@ -91,7 +91,7 @@ class ArchonCommand(FutureType):
     @property
     def raw(self):
         """Returns the raw command sent to the Archon (without the newline)."""
-        return f">{self.command_id:02x}{self.command_string}"
+        return f">{self.command_id:02X}{self.command_string}"
 
     def process_reply(self, reply: bytes) -> ArchonCommandReply | None:
         """Processes a new reply to this command.
