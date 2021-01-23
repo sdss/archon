@@ -19,8 +19,8 @@ __all__ = ["ArchonActor"]
 class ArchonActor(AMQPActor):
     """Archon controller actor.
 
-    In addition to the normal arguments and keyword parameters for `~clu.actor.AMQPActor`,
-    the class accepts the following parameters.
+    In addition to the normal arguments and keyword parameters for
+    `~clu.actor.AMQPActor`, the class accepts the following parameters.
 
     Parameters
     ----------
