@@ -41,7 +41,7 @@ class ArchonController(Device):
     __running_commands: dict[int, ArchonCommand] = {}
     __next_id = 0
 
-    def __init__(self, host: str, port: int = 4242, name: Optional[str] = None):
+    def __init__(self, host: str, port: int = 4242, name: str = ""):
         self.name = name
         super().__init__(host, port)
 
