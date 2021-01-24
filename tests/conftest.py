@@ -11,11 +11,13 @@ from __future__ import annotations
 import asyncio
 import re
 
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Union
 
 import pytest
 
 from archon.controller.controller import ArchonController
+
+CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 
 @pytest.fixture()
@@ -30,9 +32,10 @@ async def controller(request, unused_tcp_port: int):
     will be replaced with the actual command id. If the reply is an instance of
     bytes, it will be returned as a binary response.
     """
-    commands: Iterable[
-        Tuple[str, Iterable[str | bytes]]
-    ] = request.node.get_closest_marker("commands").args[0]
+    try:
+        commands: CommandsType = request.node.get_closest_marker("commands").args[0]
+    except AttributeError:
+        commands: CommandsType = []
 
     async def handle_connection(
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter

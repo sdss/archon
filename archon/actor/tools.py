@@ -91,6 +91,8 @@ def parallel_controllers():
                     p.cancel()
                 return command.fail("Some tasks raised exceptions.")
 
+            if False in done:
+                return command.fail("Some controllers failed.")
             return command.finish()
 
         return functools.update_wrapper(wrapper, f)
@@ -101,9 +103,9 @@ def parallel_controllers():
 def error_controller(command: Command, controller: ArchonController, message: str):
     """Issues a ``error_controller`` message."""
     command.error(
-        controller_error={
+        message={
             "controller": controller.name,
-            "error": message,
+            "text": message,
         }
     )
 
