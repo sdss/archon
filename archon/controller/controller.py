@@ -112,10 +112,11 @@ class ArchonController(Device):
         while True:
             # Max length of a reply is 1024 bytes for the message preceded by <xx:
             # We read the first four characters (the maximum length of a complete
-            # message: ?xx\n). If the message ends in a newline, notify the callback;
+            # message: ?xx\n). If the message ends in a newline, we are done;
             # if the message ends with ":", it means what follows are 1024 binary
             # characters without a newline; otherwise, read until the newline which
-            # marks the end of this message.
+            # marks the end of this message. In binary, if the response is < 1024
+            # bytes, the remaining bytes are filled with NULL (0x00).
             line = await self._client.reader.read(4)
 
             if line[-1] == ord(b"\n"):
