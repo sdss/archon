@@ -27,7 +27,10 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(self._timeout)
-        await self._callback()
+        try:
+            await self._callback()
+        except TypeError:  # Happens when the callback becomes None during an error.
+            pass
 
     def cancel(self):
         """Cancel the timer."""
