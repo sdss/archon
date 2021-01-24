@@ -108,7 +108,6 @@ class ArchonCommand(FutureType):
         reply
             The received reply, as bytes.
         """
-
         try:
             archon_reply = ArchonCommandReply(reply, self)
         except ArchonError as err:
@@ -151,6 +150,14 @@ class ArchonCommand(FutureType):
                 break
             else:
                 self.__event.clear()
+
+    def succeeded(self):
+        """Reports the command success status.
+
+        Returns `True` if the command succeeded, or `False` if it failed, timed out, or
+        if the command is not yet done.
+        """
+        return self.status == self.status.DONE
 
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
