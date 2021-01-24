@@ -9,14 +9,17 @@
 from __future__ import annotations
 
 import asyncio
+import configparser
+import os
 import re
 import warnings
 
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
+from archon.controller.maskbits import ModType
 from archon.exceptions import ArchonError, ArchonUserWarning
 
 from . import MAX_COMMAND_ID
@@ -103,6 +106,175 @@ class ArchonController(Device):
         """Stops the client and cancels the command tracker."""
         self._job.cancel()
         await super().stop()
+
+    async def get_system(self) -> dict[str, Any]:
+        """Returns a dictionary with the output of the ``SYSTEM`` command."""
+        cmd = await self.send_command("SYSTEM", timeout=1)
+        if cmd.status != cmd.status.DONE:
+            raise ArchonError(f"Command finished with status {cmd.status.name!r}")
+
+        keywords = str(cmd.replies[0].reply).split()
+        system = {}
+        for (key, value) in map(lambda k: k.split("="), keywords):
+            system[key.lower()] = value
+            if match := re.match(r"^MOD([0-9]{1,2})_TYPE", key, re.IGNORECASE):
+                name_key = f"mod{match.groups()[0]}_name"
+                system[name_key] = ModType(int(value)).name
+
+        return system
+
+    async def get_status(self) -> dict[str, Any]:
+        """Returns a dictionary with the output of the ``STATUS`` command."""
+
+        def check_int(s):
+            if s[0] in ("-", "+"):
+                return s[1:].isdigit()
+            return s.isdigit()
+
+        cmd = await self.send_command("STATUS", timeout=1)
+        if cmd.status != cmd.status.DONE:
+            raise ArchonError(f"Command finished with status {cmd.status.name!r}")
+
+        keywords = str(cmd.replies[0].reply).split()
+        status = {
+            key.lower(): int(value) if check_int(value) else float(value)
+            for (key, value) in map(lambda k: k.split("="), keywords)
+        }
+
+        return status
+
+    async def read_config(
+        self, save: str | bool = False, full: bool = False
+    ) -> list[str]:
+        """Reads the configuration from the controller.
+
+        Parameters
+        ----------
+        save
+            Save the configuration to a file. If ``save=True``, the configuration will
+            be saved to ``~/archon_<controller_name>.acf``, or set ``save`` to the path
+            of the file to save.
+        full
+            Whether to read all the configuration lines. If `False`, reads until two
+            consecutive empty lines are found.
+
+        """
+        key_value_re = re.compile("^(.+?)=(.*)$")
+
+        def parse_line(line):
+            k, v = key_value_re.match(line).groups()
+            # It seems the GUI replaces / with \ even if that doesn't seem
+            # necessary in the INI format.
+            k = k.replace("/", "\\")
+            return k, v
+
+        lines: list[str] = []
+        n_blank = 0
+        max_lines = 16384
+        for n_line in range(max_lines):
+            cmd = await self.send_command(f"RCONFIG{n_line:04X}", timeout=0.1)
+            if not cmd.succeeded():
+                status = cmd.status.name
+                raise ArchonError(f"An RCONFIG command returned with code {status!r}")
+            if cmd.replies == []:
+                raise ArchonError("An RCONFIG command did not return.")
+            reply = str(cmd.replies[0])
+            if reply == "" and not full:
+                n_blank += 1
+            else:
+                n_blank = 0
+                lines.append(reply)
+
+            if n_blank == 2:
+                break
+
+        # Trim possible empty lines at the end.
+        config = "\n".join(lines).strip().splitlines()
+        if not save:
+            return config
+
+        # The GUI ACF file includes the system information, so we get it.
+        system = await self.get_system()
+
+        c = configparser.ConfigParser()
+        c.optionxform = str  # Make it case-sensitive
+        c.add_section("SYSTEM")
+        for sk, sv in system.items():
+            sl = f"{sk}={sv}"
+            k, v = parse_line(sl)
+            c.set("SYSTEM", k, v)
+        c.add_section("CONFIG")
+        for cl in config:
+            k, v = parse_line(cl)
+            c.set("CONFIG", k, v)
+
+        if isinstance(save, str):
+            path = save
+        else:
+            path = os.path.expanduser(f"~/archon_{self.name}.acf")
+        with open(path, "w") as f:
+            c.write(f)
+
+        return config
+
+    async def write_config(
+        self,
+        path: str | os.PathLike[str],
+        applyall: bool = False,
+        poweron: bool = False,
+        timeout: float = 0.1,
+        notifier: Optional[Callable[[str], None]] = None,
+    ):
+        """Writes a configuration file to the contoller.
+
+        Parameters
+        ----------
+        path
+            The path to the configuration file to load. It must be in INI format with
+            a section called ``[CONFIG]``.
+        applyall
+            Whether to run ``APPLYALL`` after successfully sending the configuration.
+        poweron
+            Whether to run ``POWERON`` after successfully sending the configuration.
+            Requires ``applyall=True``.
+        timeout
+            The amount of time to wait for each command to succeed.
+        notifier
+            A callback that receives a message with the current operation. Useful when
+            `.write_config` is called by the actor to report progress to the users.
+        """
+        notifier = notifier or (lambda x: None)
+
+        notifier("Reading configuration file")
+
+        c = configparser.ConfigParser()
+        c.read(path)
+        if not c.has_section("CONFIG"):
+            raise ArchonError("The config file does not have a CONFIG section.")
+        config = c["CONFIG"]
+        config_lines = map(lambda k: k.replace("\\", "/") + "=" + config[k], config)
+
+        notifier("Clearing previous configuration")
+        if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
+            raise ArchonError("Failed running CLEARCONFIG.")
+
+        notifier("Sending configuration lines")
+        n_line = 0
+        for line in config_lines:
+            cmd_str = f"WCONFIG{n_line:04X}{line}"
+            if not (await self.send_command(cmd_str, timeout=timeout)).succeeded():
+                raise ArchonError(f"Failed sending line {cmd_str!r}")
+        notifier("Sucessfully sent config lines")
+
+        if applyall:
+            notifier("Sending APPLYALL")
+            if not (await self.send_command("APPLYALL", timeout=timeout)).succeeded():
+                raise ArchonError("Failed sending APPLYALL")
+
+        if applyall and poweron:
+            notifier("Sending POWERON")
+            if not (await self.send_command("POWERON", timeout=timeout)).succeeded():
+                raise ArchonError("Failed sending POWERON")
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
