@@ -1,14 +1,6 @@
 {
   "type": "object",
   "properties": {
-    "text": { "type": "string" },
-    "version": { "type": "string" },
-    "help": {
-      "oneOf": [
-        { "type": "array", "items": { "type": "string" } },
-        { "type": "string" }
-      ]
-    },
     "system": {
       "type": "object",
       "properties": {
