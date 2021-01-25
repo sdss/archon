@@ -80,7 +80,7 @@ async def read(
             }
         )
 
-    return command.finish(text=f"Config written to {save!r}")
+    return command.finish(text=f"Config written to {path!r}")
 
 
 @config.command()
