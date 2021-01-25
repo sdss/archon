@@ -91,9 +91,7 @@ class ArchonController(Device):
         """Processes a message from the Archon and associates it with its command."""
         match = re.match(b"^[<|?]([0-9A-F]{2})", line)
         if match is None:
-            warnings.warn(
-                f"Received invalid command {line.decode()}", ArchonUserWarning
-            )
+            warnings.warn(f"Received invalid reply {line.decode()}", ArchonUserWarning)
 
         command_id = int(match[1], 16)
         if command_id not in self.__running_commands:
@@ -309,7 +307,7 @@ class ArchonController(Device):
         while True:
             # Max length of a reply is 1024 bytes for the message preceded by <xx:
             # We read the first four characters (the maximum length of a complete
-            # message: ?xx\n). If the message ends in a newline, we are done;
+            # message: ?xx\n or <xx\n). If the message ends in a newline, we are done;
             # if the message ends with ":", it means what follows are 1024 binary
             # characters without a newline; otherwise, read until the newline which
             # marks the end of this message. In binary, if the response is < 1024
