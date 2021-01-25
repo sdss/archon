@@ -66,15 +66,15 @@ async def read(
         config = await controller.read_config(save=path, full=full)
     except ArchonError as err:
         return command.fail(
-            message={
+            controller_message={
                 "controller": controller.name,
-                "text": err,
+                "text": str(err),
             }
         )
 
     if save is False:
         return command.finish(
-            status={
+            config={
                 "controller": controller.name,
                 "config": config,
             }
@@ -122,7 +122,7 @@ async def write(
 
     def notifier(msg):
         command.info(
-            message={
+            controller_message={
                 "controller": controller.name,
                 "text": msg,
             }
@@ -137,9 +137,9 @@ async def write(
         )
     except ArchonError as err:
         return command.fail(
-            message={
+            controller_message={
                 "controller": controller.name,
-                "text": err,
+                "text": str(err),
             }
         )
 

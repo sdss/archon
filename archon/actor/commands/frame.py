@@ -40,7 +40,7 @@ async def status(
         frame = await controller.get_frame()
     except ArchonError as err:
         return command.fail(
-            message={
+            controller_message={
                 "controller": controller.name,
                 "text": err,
             }

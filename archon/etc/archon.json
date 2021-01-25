@@ -32,12 +32,10 @@
       "additionalProps": false,
       "required": ["controller", "config"]
     },
-    "message": {
+    "controller_message": {
       "type": "object",
       "properties": {
-        "controller": {
-          "type": "string"
-        },
+        "controller": { "type": "string" },
         "text": { "type": "string" }
       },
       "additionalProperties": false,
