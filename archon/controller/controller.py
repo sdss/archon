@@ -188,7 +188,7 @@ class ArchonController(Device):
         n_blank = 0
         max_lines = 16384
         for n_line in range(max_lines):
-            cmd = await self.send_command(f"RCONFIG{n_line:04X}", timeout=0.1)
+            cmd = await self.send_command(f"RCONFIG{n_line:04X}", timeout=0.5)
             if not cmd.succeeded():
                 status = cmd.status.name
                 raise ArchonError(f"An RCONFIG command returned with code {status!r}")
