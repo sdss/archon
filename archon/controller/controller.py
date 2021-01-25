@@ -294,6 +294,13 @@ class ArchonController(Device):
             if not (await self.send_command("POWERON", timeout=timeout)).succeeded():
                 raise ArchonError("Failed sending POWERON")
 
+    async def set_param(self, param: str, value: int) -> ArchonCommand:
+        """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
+        cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
+        if not cmd.succeeded():
+            raise ArchonError(f"Failed setting parameter {param!r}.")
+        return cmd
+
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
         if not self._client:  # pragma: no cover
