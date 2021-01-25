@@ -110,7 +110,7 @@ class ArchonController(Device):
     async def get_system(self) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``SYSTEM`` command."""
         cmd = await self.send_command("SYSTEM", timeout=1)
-        if cmd.status != cmd.status.DONE:
+        if not cmd.succeeded():
             raise ArchonError(f"Command finished with status {cmd.status.name!r}")
 
         keywords = str(cmd.replies[0].reply).split()
@@ -132,7 +132,7 @@ class ArchonController(Device):
             return s.isdigit()
 
         cmd = await self.send_command("STATUS", timeout=1)
-        if cmd.status != cmd.status.DONE:
+        if not cmd.succeeded():
             raise ArchonError(f"Command finished with status {cmd.status.name!r}")
 
         keywords = str(cmd.replies[0].reply).split()
@@ -142,6 +142,24 @@ class ArchonController(Device):
         }
 
         return status
+
+    async def get_frame(self) -> dict[str, int]:
+        """Returns the frame information.
+
+        All the returned values in the dictionary are integers in decimal
+        representation.
+        """
+        cmd = await self.send_command("FRAME", timeout=1)
+        if not cmd.succeeded():
+            raise ArchonError(f"Command FRAME failed with status {cmd.status.name!r}")
+
+        keywords = str(cmd.replies[0].reply).split()
+        frame = {
+            key.lower(): int(value) if "TIME" not in key else int(value, 16)
+            for (key, value) in map(lambda k: k.split("="), keywords)
+        }
+
+        return frame
 
     async def read_config(
         self, save: str | bool = False, full: bool = False
