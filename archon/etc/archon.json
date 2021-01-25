@@ -1,0 +1,56 @@
+{
+  "type": "object",
+  "properties": {
+    "text": { "type": "string" },
+    "version": { "type": "string" },
+    "help": {
+      "oneOf": [
+        { "type": "array", "items": { "type": "string" } },
+        { "type": "string" }
+      ]
+    },
+    "system": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" }
+      },
+      "additionalProperties": true,
+      "required": ["controller"]
+    },
+    "status": {
+      "$ref": "#/properties/system"
+    },
+    "frame": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" }
+      },
+      "patternProperties": {
+        "^(?!controller).+$": { "type": "integer" }
+      },
+      "additionalProperties": false,
+      "required": ["controller"]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "config": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProps": false,
+      "required": ["controller", "config"]
+    },
+    "message": {
+      "type": "object",
+      "properties": {
+        "controller": {
+          "type": "string"
+        },
+        "text": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["controller", "text"]
+    }
+  },
+  "additionalProperties": false
+}

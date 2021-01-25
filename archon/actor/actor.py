@@ -6,6 +6,8 @@
 # @Filename: actor.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+import os
+
 from clu.actor import AMQPActor
 
 from archon import __version__
@@ -33,6 +35,12 @@ class ArchonActor(AMQPActor):
     def __init__(self, *args, controllers: dict[str, ArchonController] = {}, **kwargs):
         self.controllers = controllers
         self.parser_args = [controllers]
+
+        if "schema" not in kwargs:
+            kwargs["schema"] = os.path.join(
+                os.path.dirname(__file__),
+                "../etc/archon.json",
+            )
 
         super().__init__(*args, **kwargs)
 
