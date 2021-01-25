@@ -182,12 +182,17 @@ class ArchonController(Device):
             # It seems the GUI replaces / with \ even if that doesn't seem
             # necessary in the INI format.
             k = k.replace("/", "\\")
+            if ";" in v or "=" in v or "," in v:
+                v = f'"{v}"'
             return k, v
 
         lines: list[str] = []
         n_blank = 0
         max_lines = 16384
         for n_line in range(max_lines):
+            # TODO: It would probably be more efficient to send all the RCONFIG commands
+            # at once and then asyncio.gather them. The problem is that in that case we
+            # don't know when to stop. Maybe it's faster to get all the lines that way.
             cmd = await self.send_command(f"RCONFIG{n_line:04X}", timeout=0.5)
             if not cmd.succeeded():
                 status = cmd.status.name
@@ -216,7 +221,9 @@ class ArchonController(Device):
         c.optionxform = str  # Make it case-sensitive
         c.add_section("SYSTEM")
         for sk, sv in system.items():
-            sl = f"{sk}={sv}"
+            if "_name" in sk.lower():
+                continue
+            sl = f"{sk.upper()}={sv}"
             k, v = parse_line(sl)
             c.set("SYSTEM", k, v)
         c.add_section("CONFIG")
@@ -229,7 +236,7 @@ class ArchonController(Device):
         else:
             path = os.path.expanduser(f"~/archon_{self.name}.acf")
         with open(path, "w") as f:
-            c.write(f)
+            c.write(f, space_around_delimiters=False)
 
         return config
 
