@@ -35,19 +35,11 @@ def config(*args):
     help="Saves the configuration to ~/archon_<controller>.acf. "
     "Does not output to console. Overwrites previous files.",
 )
-@click.option(
-    "--full",
-    "-f",
-    is_flag=True,
-    help="Reads all the possible lines. Otherwise reads until two "
-    "consecutive empty lines are found.",
-)
 async def read(
     command: Command,
     controllers: dict[str, ArchonController],
     controller_name: str,
     save: bool,
-    full: bool,
 ):
     """Reads the configuration from the controller."""
     if controller_name not in controllers:
@@ -63,7 +55,7 @@ async def read(
         path: str | bool = False
 
     try:
-        config = await controller.read_config(save=path, full=full)
+        config = await controller.read_config(save=path)
     except ArchonError as err:
         return command.fail(
             controller_message={
