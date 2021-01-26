@@ -10,6 +10,7 @@ from typing import Callable, Optional
 
 import pytest
 
+import archon.controller.controller
 from archon.controller.command import (
     ArchonCommand,
     ArchonCommandReply,
@@ -19,6 +20,10 @@ from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
 pytestmark = [pytest.mark.asyncio]
+
+
+# Make tests faster by faking the number of config lines
+archon.controller.controller.MAX_CONFIG_LINES = 5
 
 
 def send_command(parser: Optional[Callable[[ArchonCommand], ArchonCommand]] = None):
@@ -87,24 +92,6 @@ async def test_read_config_no_reply(controller: ArchonController, mocker):
 
     with pytest.raises(ArchonError):
         await controller.read_config()
-
-
-async def test_read_config_full(controller: ArchonController, mocker):
-    def parser(cmd: ArchonCommand):
-        r_n = int(cmd.command_string[-2:], 16)
-        cmd._mark_done()
-        reply = f"<{r_n:02X}LINE{r_n}={r_n}\n"
-        cmd.replies = [ArchonCommandReply(reply.encode(), cmd)]
-        return cmd
-
-    mocker.patch.object(
-        ArchonController,
-        "send_command",
-        side_effect=send_command(parser),
-    )
-
-    config = await controller.read_config()
-    assert len(config) == 16384
 
 
 @pytest.mark.parametrize("path", [True, "/home/test/test.acf"])

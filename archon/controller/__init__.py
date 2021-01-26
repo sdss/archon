@@ -16,6 +16,7 @@ __all__ = [
 
 
 MAX_COMMAND_ID = 0xFF
+MAX_CONFIG_LINES = 16384
 
 from .command import ArchonCommand, ArchonCommandReply, ArchonCommandStatus
 from .controller import ArchonController
