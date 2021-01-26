@@ -42,7 +42,7 @@ class ArchonController(Device):
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
-    __id_pool = set(range(MAX_COMMAND_ID))
+    _id_pool = set(range(MAX_COMMAND_ID))
 
     def __init__(self, host: str, port: int = 4242, name: str = ""):
         self.name = name
@@ -70,7 +70,7 @@ class ArchonController(Device):
         kwargs
             Other keyword arguments to pass to `.ArchonCommand`.
         """
-        command_id = command_id or self.__get_id()
+        command_id = command_id or self._get_id()
         if command_id > MAX_COMMAND_ID or command_id < 0:
             raise ArchonError(
                 f"Command ID must be in the range [0, {MAX_COMMAND_ID:d}]."
@@ -122,10 +122,10 @@ class ArchonController(Device):
             pending: list[ArchonCommand] = []
             if len(cmd_strs) < max_chunk:
                 max_chunk = len(cmd_strs)
-            if len(self.__id_pool) >= max_chunk:
-                cmd_ids = (self.__get_id() for __ in range(max_chunk))
+            if len(self._id_pool) >= max_chunk:
+                cmd_ids = (self._get_id() for __ in range(max_chunk))
             else:
-                cmd_ids = (self.__get_id() for __ in range(len(self.__id_pool)))
+                cmd_ids = (self._get_id() for __ in range(len(self._id_pool)))
             for cmd_id in cmd_ids:
                 cmd_str = cmd_strs.pop()
                 cmd = self.send_command(cmd_str, command_id=cmd_id, timeout=timeout)
@@ -137,7 +137,7 @@ class ArchonController(Device):
             if all([cmd.succeeded() for cmd in done_cmds]):
                 done += done_cmds
                 for cmd in done_cmds:
-                    self.__id_pool.add(cmd.command_id)
+                    self._id_pool.add(cmd.command_id)
             else:
                 failed: list[ArchonCommand] = []
                 for cmd in done_cmds:
@@ -398,11 +398,11 @@ class ArchonController(Device):
 
             self.notify(line)
 
-    def __get_id(self) -> int:
+    def _get_id(self) -> int:
         """Returns an identifier from the pool."""
-        if len(self.__id_pool) == 0:
+        if len(self._id_pool) == 0:
             raise ArchonError("No ids reamining in the pool!")
-        return self.__id_pool.pop()
+        return self._id_pool.pop()
 
     async def __track_commands(self):
         """Removes complete commands from the list of running commands."""
@@ -410,7 +410,7 @@ class ArchonController(Device):
             done_cids = []
             for cid in self.__running_commands.keys():
                 if self.__running_commands[cid].done():
-                    self.__id_pool.add(cid)
+                    self._id_pool.add(cid)
                     done_cids.append(cid)
             for cid in done_cids:
                 self.__running_commands.pop(cid)
