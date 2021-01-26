@@ -11,10 +11,9 @@ from __future__ import annotations
 import asyncio
 import enum
 import re
-import sys
 import warnings
 
-from typing import Any, AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional
 
 from archon.exceptions import ArchonError, ArchonUserWarning
 from archon.tools import Timer
