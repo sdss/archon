@@ -42,7 +42,7 @@ class ArchonController(Device):
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
-    __next_id = 0
+    __id_pool = set(range(MAX_COMMAND_ID))
 
     def __init__(self, host: str, port: int = 4242, name: str = ""):
         self.name = name
@@ -355,19 +355,19 @@ class ArchonController(Device):
             self.notify(line)
 
     def __get_id(self) -> int:
-        """Returns an identifier and increases the counter."""
-        id = self.__next_id
-        self.__next_id += 1
-        if self.__next_id > 2 ** 8 - 1:
-            self.__next_id = 0
-        return id
+        """Returns an identifier from the pool."""
+        if len(self.__id_pool) == 0:
+            raise ArchonError("No ids reamining in the pool!")
+        return self.__id_pool.pop()
 
     async def __track_commands(self):
         """Removes complete commands from the list of running commands."""
         while True:
-            self.__running_commands = {
-                cid: cmd
-                for (cid, cmd) in self.__running_commands.items()
-                if cmd.status == cmd.status.RUNNING
-            }
+            done_cids = []
+            for cid in self.__running_commands.keys():
+                if self.__running_commands[cid].done():
+                    self.__id_pool.add(cid)
+                    done_cids.append(cid)
+            for cid in done_cids:
+                self.__running_commands.pop(cid)
             await asyncio.sleep(0.5)
