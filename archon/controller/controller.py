@@ -16,6 +16,7 @@ import warnings
 
 from typing import Any, Callable, Iterable, Optional
 
+import numpy
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
@@ -374,6 +375,83 @@ class ArchonController(Device):
                 f"Failed setting parameter {param!r} ({cmd.status.name})."
             )
         return cmd
+
+    async def fetch(
+        self,
+        buffer_no: int = -1,
+        notifier: Optional[Callable[[str], None]] = None,
+    ) -> numpy.ndarray:  # pragma: no cover
+        """Fetches a frame buffer and returns a Numpy array.
+
+        Parameters
+        ----------
+        buffer_no
+            The frame buffer number to read. Use ``-1`` to read the most recently
+            complete frame.
+        notifier
+            A callback that receives a message with the current operation. Useful when
+            `.fetch` is called by the actor to report progress to the users.
+        """
+        notifier = notifier or (lambda x: None)
+        frame_info = await self.get_frame()
+
+        if buffer_no not in [1, 2, 3, -1]:
+            raise ArchonError(f"Invalid frame buffer {buffer_no}.")
+
+        if buffer_no == -1:
+            buffers = [
+                (n, frame_info[f"buf{n}timestamp"])
+                for n in [1, 2, 3]
+                if n != frame_info["wbuf"] and frame_info[f"buf{n}complete"] == 1
+            ]
+            if len(buffers) == 0:
+                raise ArchonError("There are no buffers ready to be read.")
+            sorted_buffers = sorted(buffers, key=lambda x: x[1], reverse=True)
+            buffer_no = sorted_buffers[0][0]
+        else:
+            if (
+                buffer_no == frame_info["wbuf"]
+                or frame_info[f"buf{buffer_no}complete"] == 0
+            ):
+                raise ArchonError(f"Buffer frame {buffer_no} cannot be read.")
+
+        # Lock for reading
+        notifier(f"Locking buffer {buffer_no}")
+        await self.send_command(f"LOCK{buffer_no}")
+
+        width = frame_info[f"buf{buffer_no}width"]
+        height = frame_info[f"buf{buffer_no}height"]
+        bytes_per_pixel = 2 if frame_info[f"buf{buffer_no}sample"] == 0 else 4
+        n_bytes = width * height * bytes_per_pixel
+        n_blocks: int = int(numpy.ceil(n_bytes / 1024.0))  # type: ignore
+
+        start_address = frame_info[f"buf{buffer_no}base"]
+
+        notifier("Reading frame buffer ...")
+        cmd = await self.send_command(
+            f"FETCH{start_address:08X}{n_blocks:08X}",
+            expected_replies=n_blocks,
+            timeout=None,
+        )
+
+        # Unlock all
+        notifier("Frame buffer readout complete. Unlocking all buffers.")
+        await self.send_command("LOCK0")
+
+        # Convert to array. First, we collect all the replies and concatenate them.
+        replies: list[bytes] = [r.reply for r in cmd.replies]  # type: ignore
+        full = b"".join(replies)
+
+        # The full read buffer probably contains some extra bytes to complete the 1024
+        # reply. We get only the bytes we know are part of the buffer.
+        full = full[0:n_bytes]
+
+        # Convert to uint16 array and reshape.
+        dtype = f"<u{bytes_per_pixel}"  # Buffer is little-endian
+        arr = numpy.frombuffer(full, dtype=dtype)
+        arr = arr.reshape(height, width)
+
+        return arr
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
