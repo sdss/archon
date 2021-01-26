@@ -87,6 +87,63 @@ class ArchonController(Device):
 
         return command
 
+    async def send_many(
+        self, cmd_strs: Iterable[str], max_chunk=100, timeout: Optional[float] = None
+    ) -> tuple[list[ArchonCommand], list[ArchonCommand]]:
+        """Sends many commands and waits until they are all done.
+
+        If any command fails or times out, cancels any future command. Returns a list
+        of done commands and a list failed commands (empty if all the commands
+        have succeeded). Note that ``done+pending`` can be fewer than the length
+        of ``cmd_strs``.
+
+        Parameters
+        ----------
+        cmd_strs
+            List of command strings to send. The command ids are assigned automatically
+            from available IDs in the pool.
+        max_chunk
+            Maximum number of commands to send at once. After sending, waits until all
+            the commands in the chunk are done. This does not guarantee that
+            ``max_chunk`` of commands will be running at once, that depends on the
+            available command ids in the pool.
+        timeout
+            Timeout for each single command.
+        """
+        cmd_strs = list(cmd_strs)  # Copy the strings so that we can pop them.
+        done: list[ArchonCommand] = []
+
+        while len(cmd_strs) > 0:
+            pending: list[ArchonCommand] = []
+            if len(cmd_strs) < max_chunk:
+                max_chunk = len(cmd_strs)
+            if len(self.__id_pool) >= max_chunk:
+                cmd_ids = (self.__get_id() for __ in range(max_chunk))
+            else:
+                cmd_ids = (self.__get_id() for __ in range(len(self.__id_pool)))
+            for cmd_id in cmd_ids:
+                cmd_str = cmd_strs.pop()
+                cmd = self.send_command(cmd_str, command_id=cmd_id, timeout=timeout)
+                pending.append(cmd)
+            done_cmds = await asyncio.gather(
+                *pending,
+                return_exceptions=True,
+            )
+            if all([cmd.succeeded() for cmd in done_cmds]):
+                done += done_cmds
+                for cmd in done_cmds:
+                    self.__id_pool.add(cmd.command_id)
+            else:
+                failed: list[ArchonCommand] = []
+                for cmd in done_cmds:
+                    if cmd.succeeded():
+                        done.append(cmd)
+                    else:
+                        failed.append(cmd)
+                return done, failed
+
+        return (done, [])
+
     async def process_message(self, line: bytes) -> None:
         """Processes a message from the Archon and associates it with its command."""
         match = re.match(b"^[<|?]([0-9A-F]{2})", line)
