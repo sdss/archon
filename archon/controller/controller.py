@@ -245,7 +245,7 @@ class ArchonController(Device):
         path: str | os.PathLike[str],
         applyall: bool = False,
         poweron: bool = False,
-        timeout: float = 0.1,
+        timeout: float = 0.5,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Writes a configuration file to the contoller.
@@ -274,8 +274,16 @@ class ArchonController(Device):
         c.read(path)
         if not c.has_section("CONFIG"):
             raise ArchonError("The config file does not have a CONFIG section.")
-        config = c["CONFIG"]
-        config_lines = map(lambda k: k.replace("\\", "/") + "=" + config[k], config)
+
+        # Undo the INI format: revert \ to / and remove quotes around values.
+        config_lines = list(
+            map(
+                lambda k: k.upper().replace("\\", "/")
+                + "="
+                + c["CONFIG"][k].strip('"'),
+                c["CONFIG"],
+            )
+        )
 
         notifier("Clearing previous configuration")
         if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
@@ -283,16 +291,30 @@ class ArchonController(Device):
 
         notifier("Sending configuration lines")
         n_line = 0
-        for line in config_lines:
-            cmd_str = f"WCONFIG{n_line:04X}{line}"
-            if not (await self.send_command(cmd_str, timeout=timeout)).succeeded():
-                raise ArchonError(f"Failed sending line {cmd_str!r}")
+        # TODO: This could benefit from a better handling of the command_id pool, but
+        # right now it sends ~1200 lines in <5 seconds.
+        for n_chunk in range(len(config_lines) // 100 + 1):
+            commands: list[ArchonCommand] = []
+            for line in list(config_lines)[100 * n_chunk : 100 * n_chunk + 100]:
+                cmd_str = f"WCONFIG{n_line:04X}{line}"
+                commands.append(self.send_command(cmd_str, timeout=timeout))
+                n_line += 1
+
+            done_commands: tuple[ArchonCommand] = await asyncio.gather(*commands)
+            if not all([cmd.succeeded() for cmd in done_commands]):
+                for cmd in done_commands:
+                    if not cmd.succeeded():
+                        raise ArchonError(
+                            f"Failed sending line {cmd.raw!r} ({cmd.status.name})"
+                        )
+
         notifier("Sucessfully sent config lines")
 
         if applyall:
             notifier("Sending APPLYALL")
-            if not (await self.send_command("APPLYALL", timeout=timeout)).succeeded():
-                raise ArchonError("Failed sending APPLYALL")
+            cmd = await self.send_command("APPLYALL", timeout=30)
+            if not cmd.succeeded():
+                raise ArchonError(f"Failed sending APPLYALL ({cmd.status.name})")
 
         if applyall and poweron:
             notifier("Sending POWERON")
@@ -303,7 +325,9 @@ class ArchonController(Device):
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
         if not cmd.succeeded():
-            raise ArchonError(f"Failed setting parameter {param!r}.")
+            raise ArchonError(
+                f"Failed setting parameter {param!r} ({cmd.status.name})."
+            )
         return cmd
 
     async def _listen(self):
