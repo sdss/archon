@@ -79,6 +79,7 @@ class ArchonController(Device):
         command = ArchonCommand(
             command_string,
             command_id,
+            controller=self,
             **kwargs,
         )
         self.__running_commands[command_id] = command

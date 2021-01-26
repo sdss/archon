@@ -54,6 +54,8 @@ class ArchonCommand(FutureType):
         The command to send to the Archon. Will be converted to uppercase.
     command_id
         The command id to associate with this message.
+    controller
+        The controller that is running this command.
     expected_replies
         How many replies to expect from the controller before the command is done.
     timeout
@@ -65,6 +67,7 @@ class ArchonCommand(FutureType):
         self,
         command_string: str,
         command_id: int,
+        controller=None,
         expected_replies: Optional[int] = 1,
         timeout: Optional[float] = None,
     ):
@@ -72,6 +75,7 @@ class ArchonCommand(FutureType):
 
         self.command_string = command_string.upper()
         self.command_id = command_id
+        self.controller = controller
         self._expected_replies = expected_replies
 
         #: List of str or bytes: List of replies received for this command.
@@ -169,6 +173,10 @@ class ArchonCommand(FutureType):
         self.status = status
         if not self.done():
             self.set_result(self)
+
+        # Return ID to the pool
+        if self.controller:
+            self.controller._id_pool.add(self.command_id)
 
     def _timeout(self):
         """Marks the command timed out."""
