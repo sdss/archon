@@ -2,7 +2,7 @@
 
 controllers:
     sp1:
-        host: 10.7.45.26
+        host: 10.7.45.25
         port: 4242
 
 actor:
