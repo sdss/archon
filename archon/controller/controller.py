@@ -22,7 +22,7 @@ from archon.controller.command import ArchonCommand
 from archon.controller.maskbits import ModType
 from archon.exceptions import ArchonError, ArchonUserWarning
 
-from . import MAX_COMMAND_ID
+from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
 
 __all__ = ["ArchonController"]
 
@@ -221,9 +221,7 @@ class ArchonController(Device):
 
         return frame
 
-    async def read_config(
-        self, save: str | bool = False, full: bool = False
-    ) -> list[str]:
+    async def read_config(self, save: str | bool = False) -> list[str]:
         """Reads the configuration from the controller.
 
         Parameters
@@ -232,10 +230,6 @@ class ArchonController(Device):
             Save the configuration to a file. If ``save=True``, the configuration will
             be saved to ``~/archon_<controller_name>.acf``, or set ``save`` to the path
             of the file to save.
-        full
-            Whether to read all the configuration lines. If `False`, reads until two
-            consecutive empty lines are found.
-
         """
         key_value_re = re.compile("^(.+?)=(.*)$")
 
@@ -248,28 +242,17 @@ class ArchonController(Device):
                 v = f'"{v}"'
             return k, v
 
-        lines: list[str] = []
-        n_blank = 0
-        max_lines = 16384
-        for n_line in range(max_lines):
-            # TODO: It would probably be more efficient to send all the RCONFIG commands
-            # at once and then asyncio.gather them. The problem is that in that case we
-            # don't know when to stop. Maybe it's faster to get all the lines that way.
-            cmd = await self.send_command(f"RCONFIG{n_line:04X}", timeout=0.5)
-            if not cmd.succeeded():
-                status = cmd.status.name
-                raise ArchonError(f"An RCONFIG command returned with code {status!r}")
-            if cmd.replies == []:
-                raise ArchonError("An RCONFIG command did not return.")
-            reply = str(cmd.replies[0])
-            if reply == "" and not full:
-                n_blank += 1
-            else:
-                n_blank = 0
-                lines.append(reply)
+        cmd_strs = [f"RCONFIG{n_line:04X}" for n_line in range(MAX_CONFIG_LINES)]
+        done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=0.5)
+        if len(failed) > 0:
+            ff = failed[0]
+            status = ff.status.name
+            raise ArchonError(f"An RCONFIG command returned with code {status!r}")
 
-            if n_blank == 2:
-                break
+        if any([len(cmd.replies) != 1 for cmd in done]):
+            raise ArchonError("Some commands did not get any reply.")
+
+        lines = [str(cmd.replies[0]) for cmd in done]
 
         # Trim possible empty lines at the end.
         config = "\n".join(lines).strip().splitlines()
