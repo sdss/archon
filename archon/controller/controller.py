@@ -132,10 +132,7 @@ class ArchonController(Device):
                 cmd_str = cmd_strs.pop()
                 cmd = self.send_command(cmd_str, command_id=cmd_id, timeout=timeout)
                 pending.append(cmd)
-            done_cmds = await asyncio.gather(
-                *pending,
-                return_exceptions=True,
-            )
+            done_cmds: tuple[ArchonCommand] = await asyncio.gather(*pending)
             if all([cmd.succeeded() for cmd in done_cmds]):
                 done += done_cmds
                 for cmd in done_cmds:

@@ -14,7 +14,7 @@ import re
 import sys
 import warnings
 
-from typing import AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional
 
 from archon.exceptions import ArchonError, ArchonUserWarning
 from archon.tools import Timer
@@ -35,14 +35,7 @@ class ArchonCommandStatus(enum.Enum):
     TIMEDOUT = enum.auto()
 
 
-# Python 3.8 doesn't allow typing Future
-if sys.version_info >= (3, 9):
-    FutureType = asyncio.Future["ArchonCommand"]
-else:
-    FutureType = asyncio.Future
-
-
-class ArchonCommand(FutureType):
+class ArchonCommand(asyncio.Future):
     """Tracks the status and replies to a command sent to the Archon.
 
     ``ArchonCommand`` is a `~asyncio.Future` and can be awaited, at which point the
