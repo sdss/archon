@@ -97,6 +97,9 @@ class ArchonController(Device):
         have succeeded). Note that ``done+pending`` can be fewer than the length
         of ``cmd_strs``.
 
+        The order in which the commands are sent and done is not guaranteed. If that's
+        important, you should use `.send_command`.
+
         Parameters
         ----------
         cmd_strs
@@ -110,7 +113,9 @@ class ArchonController(Device):
         timeout
             Timeout for each single command.
         """
-        cmd_strs = list(cmd_strs)  # Copy the strings so that we can pop them.
+        # Copy the strings so that we can pop them. Also reverse it because
+        # we'll be popping items and we want to conserve the order.
+        cmd_strs = list(cmd_strs)[::-1]
         done: list[ArchonCommand] = []
 
         while len(cmd_strs) > 0:
