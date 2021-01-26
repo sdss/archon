@@ -161,13 +161,14 @@ class ArchonCommand(FutureType):
 
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
-        self.status = status
-        self.set_result(self)
-
         # Release the event one last time to let the loop to finish and cancel timer.
         self.__event.set()
         if self.timer:
             self.timer.cancel()
+
+        self.status = status
+        if not self.done():
+            self.set_result(self)
 
     def _timeout(self):
         """Marks the command timed out."""
