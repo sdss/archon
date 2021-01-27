@@ -6,11 +6,13 @@
 # @Filename: actor.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+import asyncio
 import os
 
 from clu.actor import AMQPActor
 
 from archon import __version__
+from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
 
 from .commands import parser as archon_command_parser
@@ -32,7 +34,12 @@ class ArchonActor(AMQPActor):
 
     parser = archon_command_parser
 
-    def __init__(self, *args, controllers: dict[str, ArchonController] = {}, **kwargs):
+    def __init__(
+        self,
+        *args,
+        controllers: dict[str, ArchonController] = {},
+        **kwargs,
+    ):
         self.controllers = controllers
         self.parser_args = [controllers]
 
@@ -52,6 +59,11 @@ class ArchonActor(AMQPActor):
             await controller.start()
         await super().start()
 
+        self._fetch_log_jobs = [
+            asyncio.create_task(self._fetch_log(controller))
+            for controller in self.controllers.values()
+        ]
+
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
@@ -68,3 +80,23 @@ class ArchonActor(AMQPActor):
             instance.controllers = controllers
             instance.parser_args = [controllers]  # Need to refresh this
         return instance
+
+    async def _fetch_log(self, controller: ArchonController):
+        """Fetches the log and outputs new messages.
+
+        This is not implemented as a timed command because we don't want a new command
+        popping up and running every second. We write to all users only when there's
+        a new log.
+        """
+        while True:
+            cmd: ArchonCommand = await controller.send_command("FETCHLOG")
+            if cmd.succeeded() and len(cmd.replies) == 1:
+                if str(cmd.replies[0].reply) != "(null)":
+                    await self.write(
+                        controller_log=dict(
+                            controller=controller.name,
+                            log=str(cmd.replies[0].reply),
+                        )
+                    )
+                    continue  # There may be more messages, so don't wait.
+            await asyncio.sleep(1)

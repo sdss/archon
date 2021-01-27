@@ -40,6 +40,15 @@
       },
       "additionalProperties": false,
       "required": ["controller", "text"]
+    },
+    "controller_log": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "log": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["controller", "log"]
     }
   },
   "additionalProperties": false

@@ -1,11 +1,10 @@
 ---
-
 controllers:
-    sp1:
-        host: 10.7.45.25
-        port: 4242
+  sp1:
+    host: 10.7.45.25
+    port: 4242
 
 actor:
-    name: archon
-    host: localhost
-    port: 5672
+  name: archon
+  host: localhost
+  port: 5672
