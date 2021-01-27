@@ -314,6 +314,9 @@ class ArchonController(Device):
 
         notifier("Reading configuration file")
 
+        if not os.path.exists(path):
+            raise ArchonError(f"File {path} does not exist.")
+
         c = configparser.ConfigParser()
         c.read(path)
         if not c.has_section("CONFIG"):

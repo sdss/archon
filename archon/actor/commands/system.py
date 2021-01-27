@@ -25,8 +25,7 @@ async def system(command: Command, controller: ArchonController):
     try:
         system = await controller.get_system()
     except ArchonError as ee:
-        error_controller(command, controller, str(ee))
-        return False
+        return error_controller(command, controller, str(ee))
 
     command.info(
         system={
