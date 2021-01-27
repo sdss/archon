@@ -9,16 +9,24 @@
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import functools
+from contextlib import contextmanager
+from os import PathLike
 
-from typing import Optional
+from typing import IO, Any, Generator, Optional
 
 import click
 from clu.command import BaseCommand, Command
 
 from archon.controller.controller import ArchonController
 
-__all__ = ["parallel_controllers", "error_controller", "check_controller"]
+__all__ = [
+    "parallel_controllers",
+    "error_controller",
+    "check_controller",
+    "open_with_lock",
+]
 
 
 controller_list = click.option(
@@ -122,3 +130,32 @@ def check_controller(command: Command, controller: ArchonController) -> bool:
         return False
 
     return True
+
+
+@contextmanager
+def open_with_lock(filename: PathLike, mode: str = "r") -> Generator[IO[Any]]:
+    """Opens a file and adds an advisory lock on it.
+
+    Parameters
+    ----------
+    filename
+        The path to the file to open.
+    mode
+        The mode in which the file will be open.
+
+    Raises
+    ------
+    BlockingIOError
+        If the file is already locked.
+    """
+    # Open the file in read-only mode first to see if it's already locked.
+    fd = open(filename, "r")
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    # This will cause a BlockingIOError unless not locked.
+    fcntl.flock(fd, fcntl.LOCK_UN)
+
+    # Now really open.
+    with open(filename, mode) as fd:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield fd
+        fcntl.flock(fd, fcntl.LOCK_UN)
