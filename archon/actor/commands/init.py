@@ -6,6 +6,7 @@
 # @Filename: init.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+import asyncio
 import os
 
 from clu.command import Command
@@ -50,6 +51,9 @@ async def init(command: Command, controller: ArchonController):
             f"Failed powering down ({acmd.status.name})",
         )
 
+    # Wait a couple seconds. Seems to help.
+    await asyncio.sleep(2)
+
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config")
     configurtion_file: str = command.actor.config["archon_config_file"]
@@ -78,6 +82,16 @@ async def init(command: Command, controller: ArchonController):
             await controller.set_param(param, value)
         except ArchonError as err:
             return error_controller(command, controller, str(err))
+
+    # Unlock all buffers
+    _output(command, controller, "Unlocking buffers")
+    acmd: ArchonCommand = await controller.send_command("LOCK0", timeout=5)
+    if not acmd.succeeded():
+        return error_controller(
+            command,
+            controller,
+            f"Failed while unlocking frame buffers ({acmd.status.name})",
+        )
 
     # Power on
     _output(command, controller, "Powering on")
