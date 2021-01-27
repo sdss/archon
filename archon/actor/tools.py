@@ -133,7 +133,9 @@ def check_controller(command: Command, controller: ArchonController) -> bool:
 
 
 @contextmanager
-def open_with_lock(filename: PathLike, mode: str = "r") -> Generator[IO[Any]]:
+def open_with_lock(
+    filename: PathLike, mode: str = "r"
+) -> Generator[IO[Any], None, None]:
     """Opens a file and adds an advisory lock on it.
 
     Parameters
