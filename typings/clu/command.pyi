@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from .base import BaseActor
 from .tools import CommandStatus, StatusMixIn
@@ -152,7 +152,9 @@ class Command(BaseCommand):
         actor: BaseActor | None = ...,
         transport: Any = ...,
         **kwargs,
-    ): ...
+    ):
+        self.actor: Optional[BaseActor]
+        ...
     def parse(self: T) -> T:
         """Parses the command."""
         ...

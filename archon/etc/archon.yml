@@ -4,6 +4,10 @@ controllers:
     host: 10.7.45.25
     port: 4242
 
+# This is the ACL configuration file to be loaded to the Archon including the timing script.
+# {archon_etc} gets completed with the path of the etc directory once installed
+archon_config_file: '{archon_etc}/lvm1.acf'
+
 actor:
   name: archon
   host: localhost

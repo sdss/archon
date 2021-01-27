@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# @Author: José Sánchez-Gallego (gallegoj@uw.edu)
+# @Date: 2021-01-26
+# @Filename: init.py
+# @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
+
+import os
+
+from clu.command import Command
+
+from archon.controller.command import ArchonCommand
+from archon.controller.controller import ArchonController
+from archon.exceptions import ArchonError
+
+from ..tools import check_controller, error_controller, parallel_controllers
+from . import parser
+
+
+def _output(
+    command: Command,
+    controller: ArchonController,
+    text: str,
+    message_code="d",
+):
+    command.write(
+        message_code=message_code,
+        controller_message=dict(
+            controller=controller.name,
+            text=text,
+        ),
+    )
+
+
+@parser.command()
+@parallel_controllers()
+async def init(command: Command, controller: ArchonController):
+    """Initialises a controller."""
+    if not check_controller(command, controller):
+        return
+
+    # Power off controller
+    _output(command, controller, "Powering down")
+    acmd: ArchonCommand = await controller.send_command("POWEROFF", timeout=5)
+    if not acmd.succeeded():
+        return error_controller(
+            command,
+            controller,
+            f"Failed powering down ({acmd.status.name})",
+        )
+
+    # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
+    _output(command, controller, "Loading and applying config")
+    configurtion_file: str = command.actor.config["archon_config_file"]
+    archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
+    configuration_file = configurtion_file.format(archon_etc=archon_etc)
+    try:
+        await controller.write_config(configuration_file, applyall=True, poweron=False)
+    except ArchonError as err:
+        return error_controller(command, controller, str(err))
+
+    # Hold timing
+    _output(command, controller, "Holding timing")
+    acmd: ArchonCommand = await controller.send_command("HOLDTIMING", timeout=5)
+    if not acmd.succeeded():
+        return error_controller(
+            command,
+            controller,
+            f"Failed while issuing HOLDTIMING ({acmd.status.name})",
+        )
+
+    # Set parameters
+    _output(command, controller, "Setting initial parameters")
+    initial_params = {"ContinuousExposures": 0, "Exposures": 0}
+    for (param, value) in initial_params.items():
+        try:
+            await controller.set_param(param, value)
+        except ArchonError as err:
+            return error_controller(command, controller, str(err))
+
+    # Power on
+    _output(command, controller, "Powering on")
+    acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
+    if not acmd.succeeded():
+        return error_controller(
+            command,
+            controller,
+            f"Failed while powering on ({acmd.status.name})",
+        )
+
+    return True

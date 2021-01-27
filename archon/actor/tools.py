@@ -108,6 +108,7 @@ def error_controller(command: Command, controller: ArchonController, message: st
             "text": message,
         }
     )
+    return False
 
 
 def check_controller(command: Command, controller: ArchonController) -> bool:
