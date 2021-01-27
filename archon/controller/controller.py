@@ -409,10 +409,7 @@ class ArchonController(Device):
             sorted_buffers = sorted(buffers, key=lambda x: x[1], reverse=True)
             buffer_no = sorted_buffers[0][0]
         else:
-            if (
-                buffer_no == frame_info["wbuf"]
-                or frame_info[f"buf{buffer_no}complete"] == 0
-            ):
+            if frame_info[f"buf{buffer_no}complete"] == 0:
                 raise ArchonError(f"Buffer frame {buffer_no} cannot be read.")
 
         # Lock for reading

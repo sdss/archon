@@ -6,8 +6,8 @@ controllers:
     port: 4242
     ccds:
       r: [0, 0, 4400, 4400]
-      b: [4400, 0, 4400, 4400]
-      n: [8800, 0, 4400, 4400]
+      b: [4400, 0, 8800, 4400]
+      n: [8800, 0, 13200, 4400]
 
 # This is the ACL configuration file to be loaded to the Archon including the timing script.
 # {archon_etc} gets completed with the path of the etc directory once installed
@@ -15,7 +15,7 @@ archon_config_file: '{archon_etc}/lvm1.acf'
 
 files:
   data_dir: '/data/spectra/lvm'
-  format: 'sdR-{ccd[0]}{controller_id}-{seq:08d}.fits.gz'
+  template: 'sdR-{ccd}{controller_id}-{exposure_no:08d}.fits.gz'
 
 actor:
   name: archon

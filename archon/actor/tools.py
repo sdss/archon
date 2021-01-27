@@ -34,7 +34,7 @@ controller_list = click.option(
     "--controller",
     "controller_list",
     type=str,
-    help="Controllers to which to talk.",
+    help="Controllers to which to talk. Defaults to all available.",
 )
 
 
