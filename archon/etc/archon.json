@@ -49,6 +49,16 @@
       },
       "additionalProperties": false,
       "required": ["controller", "log"]
+    },
+    "raw_reply": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "command": { "type": "string" },
+        "response": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "required": ["controller", "command", "response"]
     }
   },
   "additionalProperties": false
