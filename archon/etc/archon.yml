@@ -14,7 +14,7 @@ archon_config_file: '{archon_etc}/lvm1.acf'
 
 files:
   data_dir: '/data/spectra/lvm'
-  template: 'sdR-{controller}-{exposure_no:09d}.fits.gz'
+  template: 'sdR-{controller}-{exposure_no:08d}.fits.gz'
 
 actor:
   name: archon
