@@ -19,7 +19,6 @@ from typing import Any, Optional
 import astropy.time
 import click
 import fitsio
-import numpy
 from clu.command import Command
 
 from archon.controller.controller import ArchonController
