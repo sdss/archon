@@ -12,6 +12,7 @@ import asyncio
 import os
 import pathlib
 from contextlib import suppress
+from functools import partial
 
 from typing import Any, Optional
 
@@ -28,16 +29,6 @@ from ..tools import check_controller, controller_list, error_controller, open_wi
 from . import parser
 
 
-def _write_hdu(command: Command, data: numpy.ndarray, filename: str):
-    """Writes an HDU to disk."""
-    f = fitsio.FITS(filename, "rw")
-    if filename.endswith(".gz"):
-        f.write(data, compress="gzip_2")
-    else:
-        f.write(data)
-    command.info(text=f"File {os.path.basename(filename)} written to disk.")
-
-
 async def _do_one_controller(
     command: Command,
     controller: ArchonController,
@@ -51,8 +42,7 @@ async def _do_one_controller(
     path: pathlib.Path = mjd_dir / config["files"]["template"]
     file_path = str(path.absolute()).format(
         exposure_no=exp_no,
-        controller_id=config["controllers"][controller.name]["id"],
-        ccd="{ccd}",  # Don't fill out the ccd placeholder yet.
+        controller=controller.name,
     )
 
     exp_time = exposure_params["exposure_time"]
@@ -154,16 +144,15 @@ async def _do_one_controller(
 
     loop = asyncio.get_running_loop()
     ccd_info = config["controllers"][controller.name]["ccds"]
-    _write_jobs = []
+    fits = fitsio.FITS(file_path, "rw")
     for ccd_name in ccd_info:
         region = ccd_info[ccd_name]
         ccd_data = data[region[1] : region[3], region[0] : region[2]]
-        ccd_filename = file_path.format(ccd=ccd_name[0])
-        _write_jobs.append(
-            loop.run_in_executor(None, _write_hdu, command, ccd_data, ccd_filename)
-        )
+        fits_write = partial(fits.create_image_hdu, extname=ccd_name)
+        await loop.run_in_executor(None, fits_write, ccd_data)
+    await loop.run_in_executor(None, fits.close)
 
-    await asyncio.gather(*_write_jobs)
+    command.info(text=f"File {os.path.basename(file_path)} written to disk.")
 
     return True
 
