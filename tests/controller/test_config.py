@@ -189,13 +189,15 @@ async def test_write_config_applyall_fails(
     assert "Failed sending APPLYALL" in str(err)
 
 
-async def test_write_config_poweron_fails(
+@pytest.mark.parametrize("after_command", ["LOADTIMING", "LOADPARAMS", "POWERON"])
+async def test_write_config_after_command_fails(
     controller: ArchonController,
     mocker,
     config_file,
+    after_command,
 ):
     def parser(cmd: ArchonCommand):
-        if cmd.command_string == "POWERON":
+        if cmd.command_string == after_command:
             reply = f"?{cmd.command_id:02X}\n"
             cmd._mark_done(ArchonCommandStatus.FAILED)
         else:
@@ -212,4 +214,4 @@ async def test_write_config_poweron_fails(
 
     with pytest.raises(ArchonError) as err:
         await controller.write_config(config_file, applyall=True, poweron=True)
-    assert "Failed sending POWERON" in str(err)
+    assert f"Failed sending {after_command}" in str(err)
