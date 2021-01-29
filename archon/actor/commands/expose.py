@@ -219,6 +219,8 @@ async def _do_exposures(
                 return False
 
             # Increment nextExposureNumber
+            # TODO: Should we increase the sequence regardless of whether the exposure
+            # fails or not?
             fd.seek(0)
             fd.truncate()
             fd.seek(0)
