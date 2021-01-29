@@ -269,7 +269,7 @@ async def _do_exposures(
     help="Take an object frame",
 )
 async def expose(
-    command: Command,
+    command: Command[ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
     controller_list: Optional[tuple[str]],

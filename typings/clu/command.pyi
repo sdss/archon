@@ -10,12 +10,11 @@ from __future__ import annotations
 
 import asyncio
 
-from typing import Any, Callable, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 from .base import BaseActor
 from .tools import CommandStatus, StatusMixIn
 
-T = TypeVar("T")
 Message = str | dict[str, Any] | None
 
 class BaseCommand(asyncio.Future, StatusMixIn):
@@ -131,7 +130,10 @@ class BaseCommand(asyncio.Future, StatusMixIn):
         """
         ...
 
-class Command(BaseCommand):
+T = TypeVar("T")
+_ActorClass = TypeVar("_ActorClass")
+
+class Command(BaseCommand, Generic[_ActorClass]):
     """A command from a user.
 
     Parameters
@@ -149,11 +151,11 @@ class Command(BaseCommand):
     def __init__(
         self,
         command_string: str = ...,
-        actor: BaseActor | None = ...,
+        actor: Optional[_ActorClass] = ...,
         transport: Any = ...,
         **kwargs,
     ):
-        self.actor: Optional[BaseActor]
+        self.actor: Optional[_ActorClass]
         ...
     def parse(self: T) -> T:
         """Parses the command."""
