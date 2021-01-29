@@ -21,6 +21,7 @@ import click
 import fitsio
 from clu.command import Command
 
+from archon.actor.actor import ArchonActor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
@@ -289,6 +290,9 @@ async def expose(
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
 
+    if command.actor._exposing:
+        return command.fail("The actor is already exposing.")
+
     if flavour == "bias":
         exposure_time = 0.0
     else:
@@ -299,9 +303,13 @@ async def expose(
     exposure_params = {"exposure_time": exposure_time, "flavour": flavour}
 
     try:
+        command.actor._exposing = True
         result = await _do_exposures(command, selected_controllers, exposure_params)
     except ArchonError as err:
+        command.actor._exposing = False
         return command.fail(error=str(err))
+
+    command.actor._exposing = False
 
     if result:
         return command.finish()

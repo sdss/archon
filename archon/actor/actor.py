@@ -53,6 +53,8 @@ class ArchonActor(AMQPActor):
 
         self.version = __version__
 
+        self._exposing: bool = False
+
     async def start(self):
         """Start the actor and connect the controllers."""
         for controller in self.controllers.values():
@@ -80,6 +82,13 @@ class ArchonActor(AMQPActor):
             instance.controllers = controllers
             instance.parser_args = [controllers]  # Need to refresh this
         return instance
+
+    def can_expose(self) -> bool:
+        """Checks if the actor can take a new exposure."""
+        # TODO: Ideally this would be a programmatic check, but I'm not sure it's
+        # easy to do. One can know if the buffers are being written to, but not
+        # easily know if the timing script is running.
+        return self._exposing
 
     async def _fetch_log(self, controller: ArchonController):
         """Fetches the log and outputs new messages.
