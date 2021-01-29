@@ -118,7 +118,7 @@ def config_file(tmp_path):
         f.write(
             r"""[CONFIG]
 CONFIG\1=1
-CONFIG\2=2
+CONFIG\2="2,2"
 """
         )
 
@@ -156,7 +156,7 @@ async def test_write_config_clear_fails(controller: ArchonController, config_fil
     assert "Failed running CLEARCONFIG." in str(err)
 
 
-@pytest.mark.commands([["WCONFIG0000", ["?{cid}"]], ["CLEARCONFIG", ["<{cid}"]]])
+@pytest.mark.commands([["WCONFIG", ["?{cid}"]], ["CLEARCONFIG", ["<{cid}"]]])
 async def test_write_config_wconfig_fails(controller: ArchonController, config_file):
     with pytest.raises(ArchonError) as err:
         await controller.write_config(config_file)

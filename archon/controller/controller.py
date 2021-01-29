@@ -380,7 +380,7 @@ class ArchonController(Device):
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
-    ) -> numpy.ndarray:  # pragma: no cover
+    ) -> numpy.ndarray:
         """Fetches a frame buffer and returns a Numpy array.
 
         Parameters
@@ -402,7 +402,7 @@ class ArchonController(Device):
             buffers = [
                 (n, frame_info[f"buf{n}timestamp"])
                 for n in [1, 2, 3]
-                if n != frame_info["wbuf"] and frame_info[f"buf{n}complete"] == 1
+                if frame_info[f"buf{n}complete"] == 1
             ]
             if len(buffers) == 0:
                 raise ArchonError("There are no buffers ready to be read.")

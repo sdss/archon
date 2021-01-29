@@ -44,12 +44,17 @@ async def controller(request, unused_tcp_port: int):
             data = await reader.readuntil()
             data = data.decode()
 
-            matched = re.match("^>([0-9A-F]{2})(.+)\n$", data)
+            matched = re.match(
+                r"^>([0-9A-F]{2})(FRAME|SYSTEM|FASTLOADPARAM|PING|STATUS|FETCH|LOCK|"
+                r"CLEARCONFIG|RCONFIG|WCONFIG).*\n$",
+                data,
+            )
             if not matched:
                 continue
 
             cid, com = matched.groups()
 
+            found_command = False
             for (command, replies) in commands:
                 if command.upper() == com.upper():
                     if isinstance(replies, str):
@@ -63,7 +68,13 @@ async def controller(request, unused_tcp_port: int):
                             )
                         writer.write(reply)
                         await writer.drain()
+                        found_command = True
                     break
+
+            # Default reply
+            if not found_command:
+                writer.write(f"<{cid}\n".encode())
+                await writer.drain()
 
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
 

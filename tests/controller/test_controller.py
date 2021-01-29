@@ -70,13 +70,13 @@ async def test_controller_bad_command_id(
         controller.send_command("PING", command_id=command_id)
 
 
-@pytest.mark.commands([["FASTLOADPARAM A 1", ["<{cid}"]]])
+@pytest.mark.commands([["FASTLOADPARAM", ["<{cid}"]]])
 async def test_controller_set_param(controller: ArchonController):
     cmd = await controller.set_param("A", 1)
     assert cmd.succeeded()
 
 
-@pytest.mark.commands([["FASTLOADPARAM A 1", ["?{cid}"]]])
+@pytest.mark.commands([["FASTLOADPARAM", ["?{cid}"]]])
 async def test_controller_set_param_fails(controller: ArchonController):
     with pytest.raises(ArchonError):
         await controller.set_param("A", 1)
