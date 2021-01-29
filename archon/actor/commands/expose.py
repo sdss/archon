@@ -104,14 +104,14 @@ async def _do_one_controller(
     )
 
     # Wait a reasonable time and then start checking the buffer for completion.
-    # TODO: these timeout durations should be in the config or as global variables.
-    await asyncio.sleep(40)
-    ro_elapsed = 40.0
+    ro_exp = config["timeouts"]["readout_expected"]
+    await asyncio.sleep(ro_exp)
+    ro_elapsed = ro_exp
     while True:
         frame_info = await controller.get_frame()
         if frame_info[f"buf{wbuf}complete"] == 1:
             break
-        if ro_elapsed > 60.0:
+        if ro_elapsed > config["timeouts"]["readout_max"]:
             error_controller(
                 command,
                 controller,
