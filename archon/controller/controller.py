@@ -49,6 +49,8 @@ class ArchonController(Device):
         self.name = name
         super().__init__(host, port)
 
+        self._binary_reply: Optional[bytearray] = None
+
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
@@ -350,7 +352,7 @@ class ArchonController(Device):
 
         if applyall:
             notifier("Sending APPLYALL")
-            cmd = await self.send_command("APPLYALL", timeout=timeout)
+            cmd = await self.send_command("APPLYALL", timeout=5)
             if not cmd.succeeded():
                 raise ArchonError(f"Failed sending APPLYALL ({cmd.status.name})")
 
@@ -426,9 +428,12 @@ class ArchonController(Device):
         start_address = frame_info[f"buf{buffer_no}base"]
 
         notifier("Reading frame buffer ...")
-        cmd = await self.send_command(
+
+        # Set the expected length of binary buffer to read, including the prefixes.
+        self.set_binary_reply_size((1024 + 4) * n_blocks)
+
+        cmd: ArchonCommand = await self.send_command(
             f"FETCH{start_address:08X}{n_blocks:08X}",
-            expected_replies=n_blocks,
             timeout=None,
         )
 
@@ -436,26 +441,27 @@ class ArchonController(Device):
         notifier("Frame buffer readout complete. Unlocking all buffers.")
         await self.send_command("LOCK0")
 
-        # Convert to array. First, we collect all the replies and concatenate them.
-        replies: list[bytes] = [r.reply for r in cmd.replies]  # type: ignore
-        full = b"".join(replies)
-
         # The full read buffer probably contains some extra bytes to complete the 1024
         # reply. We get only the bytes we know are part of the buffer.
-        full = full[0:n_bytes]
+        frame = cmd.replies[0].reply[0:n_bytes]
 
         # Convert to uint16 array and reshape.
         dtype = f"<u{bytes_per_pixel}"  # Buffer is little-endian
-        arr = numpy.frombuffer(full, dtype=dtype)
+        arr = numpy.frombuffer(frame, dtype=dtype)
         arr = arr.reshape(height, width)
 
         return arr
+
+    def set_binary_reply_size(self, size: int):
+        """Sets the size of the binary buffers."""
+        self._binary_reply = bytearray(size)
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
         if not self._client:  # pragma: no cover
             raise RuntimeError("Connection is not open.")
 
+        n_binary = 0
         while True:
             # Max length of a reply is 1024 bytes for the message preceded by <xx:
             # We read the first four characters (the maximum length of a complete
@@ -469,6 +475,33 @@ class ArchonController(Device):
                 pass
             elif line[-1] == ord(b":"):
                 line += await self._client.reader.readexactly(1024)
+                # If we know the length of the binary reply to expect, we set that
+                # slice of the bytearray and continue. We wait until all the buffer
+                # has been read before sending the notification. This is significantly
+                # more efficient because we don't create an ArchonCommandReply for each
+                # chunk of the binary reply. It is, however, necessary to know the
+                # exact size of the reply because there is nothing that we can parse
+                # to know a reply is the last one. Also, we don't want to keep appending
+                # to a bytes string. We need to allocate all the memory first with
+                # a bytearray or it's very inefficient.
+                #
+                # NOTE: this assumes that once the binary reply begins, no no other
+                # reply is going to arrive in the middle of it. I think that's unlikely,
+                # and probably prevented by the controller, but it's worth keeping in
+                # mind.
+                #
+                if self._binary_reply:
+                    self._binary_reply[n_binary : n_binary + 1028] = line
+                    n_binary += 1028  # How many bytes of the binary reply have we read.
+                    if n_binary == len(self._binary_reply):
+                        # This was the last chunk. Set line to the full reply and
+                        # reset the binary reply and counter.
+                        line = self._binary_reply
+                        self._binary_reply = None
+                        n_binary = 0
+                    else:
+                        # Skip notifying because the binary reply is still incomplete.
+                        continue
             else:
                 line += await self._client.reader.readuntil(b"\n")
 
