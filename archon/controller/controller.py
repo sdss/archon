@@ -360,6 +360,14 @@ class ArchonController(Device):
                 if not cmd.succeeded():
                     raise ArchonError(f"Failed sending POWERON ({cmd.status.name})")
 
+    async def reset(self):
+        """Cancels exposures and resets timing."""
+        await self.set_param("ContinuousExposures", 0)
+        await self.set_param("Exposures", 0)
+        cmd = await self.send_command("RESETTIMING", timeout=1)
+        if not cmd.succeeded():
+            raise ArchonError(f"Failed sending RESETTIMING ({cmd.status.name})")
+
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
