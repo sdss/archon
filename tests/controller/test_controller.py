@@ -80,3 +80,14 @@ async def test_controller_set_param(controller: ArchonController):
 async def test_controller_set_param_fails(controller: ArchonController):
     with pytest.raises(ArchonError):
         await controller.set_param("A", 1)
+
+
+@pytest.mark.commands([["RESETTIMING", ["<{cid}"]]])
+async def test_controller_reset(controller: ArchonController):
+    await controller.reset()
+
+
+@pytest.mark.commands([["RESETTIMING", ["?{cid}"]]])
+async def test_controller_reset_fails(controller: ArchonController):
+    with pytest.raises(ArchonError):
+        await controller.reset()
