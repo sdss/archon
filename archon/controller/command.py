@@ -216,7 +216,9 @@ class ArchonCommandReply:
 
         self.reply: str | bytes
         if self.is_binary:
-            self.reply = rmessage
+            # If the reply is binary, remove the prefixes and save the full
+            # content as the reply.
+            self.reply = raw_reply.replace(b"<" + rcid + b":", b"")
         else:
             self.reply = rmessage.decode().strip()
 

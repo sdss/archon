@@ -21,7 +21,7 @@ import click
 import fitsio
 from clu.command import Command
 
-from archon.actor.actor import ArchonActor
+import archon.actor.actor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
@@ -60,23 +60,18 @@ async def _do_one_controller(
     # Get initial frame buffer info
     frame_info_bef = await controller.get_frame()
 
-    # Hold timing, just in case
-    await controller.send_command("HOLDTIMING", timeout=2)
-
-    # Set exposure params
-    await controller.set_param("Exposures", 1)
-    await controller.set_param("IntMS", int(exp_time * 1000))
-
     # Open shutter (placeholder)
 
-    # Release timing
+    # Set exposure params
     command.debug(
         controller_message=dict(
             controller=controller.name,
             text="Start exposing",
         )
     )
-    await controller.send_command("RELEASETIMING", timeout=1)
+
+    await controller.set_param("IntMS", int(exp_time * 1000))
+    await controller.set_param("Exposures", 1)
 
     # Wait until the exposure is complete
     await asyncio.sleep(exp_time)
@@ -84,7 +79,7 @@ async def _do_one_controller(
     # Close shutter (placeholder)
 
     # Wait a little bit and check that we are reading out to a new buffer
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.5)
 
     # Get new frame info
     frame_info_aft = await controller.get_frame()
@@ -93,7 +88,7 @@ async def _do_one_controller(
     wbuf = frame_info_aft["wbuf"]
     if wbuf == wbuf_bef or frame_info_aft[f"buf{wbuf}complete"] == 1:
         error_controller(command, controller, "Readout failed to start.")
-        await controller.send_command("HOLDTIMING", timeout=1)
+        await controller.reset()
         raise ArchonError("Failed reading out.")
 
     wbuf = frame_info_aft["wbuf"]
@@ -118,10 +113,13 @@ async def _do_one_controller(
                 controller,
                 "Timed out while waiting for readout to complete.",
             )
-            await controller.send_command("HOLDTIMING", timeout=1)
+            await controller.reset()
             raise ArchonError("Failed reading out.")
         await asyncio.sleep(1.0)  # Sleep for one second before asking again.
         ro_elapsed += 1
+
+    # Reset timing
+    await controller.reset()
 
     # Fetch buffer data
     command.debug(
@@ -130,7 +128,6 @@ async def _do_one_controller(
             text=f"Fetching buffer {wbuf}.",
         )
     )
-    await controller.send_command("HOLDTIMING", timeout=1)
     data = await controller.fetch(wbuf)
 
     # Divide array into CCDs and create FITS.
@@ -270,7 +267,7 @@ async def _do_exposures(
     help="Take an object frame",
 )
 async def expose(
-    command: Command[ArchonActor],
+    command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
     controller_list: Optional[tuple[str]],
