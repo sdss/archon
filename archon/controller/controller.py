@@ -90,7 +90,10 @@ class ArchonController(Device):
         return command
 
     async def send_many(
-        self, cmd_strs: Iterable[str], max_chunk=100, timeout: Optional[float] = None
+        self,
+        cmd_strs: Iterable[str],
+        max_chunk=100,
+        timeout: Optional[float] = None,
     ) -> tuple[list[ArchonCommand], list[ArchonCommand]]:
         """Sends many commands and waits until they are all done.
 
@@ -289,7 +292,7 @@ class ArchonController(Device):
         path: str | os.PathLike[str],
         applyall: bool = False,
         poweron: bool = False,
-        timeout: float = 0.5,
+        timeout: float = 1,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Writes a configuration file to the contoller.
@@ -347,25 +350,15 @@ class ArchonController(Device):
 
         if applyall:
             notifier("Sending APPLYALL")
-            cmd = await self.send_command("APPLYALL", timeout=20)
+            cmd = await self.send_command("APPLYALL", timeout=timeout)
             if not cmd.succeeded():
                 raise ArchonError(f"Failed sending APPLYALL ({cmd.status.name})")
 
-            notifier("Sending LOADPARAMS")
-            cmd = await self.send_command("LOADPARAMS", timeout=5)
-            if not cmd.succeeded():
-                raise ArchonError(f"Failed sending LOADPARAMS ({cmd.status.name})")
-
-            notifier("Sending LOADTIMING")
-            cmd = await self.send_command("LOADTIMING", timeout=5)
-            if not cmd.succeeded():
-                raise ArchonError(f"Failed sending LOADTIMING ({cmd.status.name})")
-
-        if applyall and poweron:
-            notifier("Sending POWERON")
-            cmd = await self.send_command("POWERON", timeout=timeout)
-            if not cmd.succeeded():
-                raise ArchonError(f"Failed sending POWERON ({cmd.status.name})")
+            if poweron:
+                notifier("Sending POWERON")
+                cmd = await self.send_command("POWERON", timeout=timeout)
+                if not cmd.succeeded():
+                    raise ArchonError(f"Failed sending POWERON ({cmd.status.name})")
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""

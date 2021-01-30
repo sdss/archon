@@ -163,33 +163,7 @@ async def test_write_config_wconfig_fails(controller: ArchonController, config_f
     assert "Failed sending line" in str(err)
 
 
-async def test_write_config_applyall_fails(
-    controller: ArchonController,
-    mocker,
-    config_file,
-):
-    def parser(cmd: ArchonCommand):
-        if cmd.command_string == "APPLYALL":
-            reply = f"?{cmd.command_id:02X}\n"
-            cmd._mark_done(ArchonCommandStatus.FAILED)
-        else:
-            reply = f"<{cmd.command_id:02X}\n"
-            cmd._mark_done()
-        cmd.replies = [ArchonCommandReply(reply.encode(), cmd)]
-        return cmd
-
-    mocker.patch.object(
-        ArchonController,
-        "send_command",
-        side_effect=send_command(parser),
-    )
-
-    with pytest.raises(ArchonError) as err:
-        await controller.write_config(config_file, applyall=True)
-    assert "Failed sending APPLYALL" in str(err)
-
-
-@pytest.mark.parametrize("after_command", ["LOADTIMING", "LOADPARAMS", "POWERON"])
+@pytest.mark.parametrize("after_command", ["APPLYALL", "POWERON"])
 async def test_write_config_after_command_fails(
     controller: ArchonController,
     mocker,
