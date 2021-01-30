@@ -21,7 +21,7 @@ import click
 import fitsio
 from clu.command import Command
 
-from archon.actor.actor import ArchonActor
+import archon.actor.actor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
@@ -79,7 +79,7 @@ async def _do_one_controller(
     # Close shutter (placeholder)
 
     # Wait a little bit and check that we are reading out to a new buffer
-    await asyncio.sleep(1)
+    await asyncio.sleep(0.5)
 
     # Get new frame info
     frame_info_aft = await controller.get_frame()
@@ -267,7 +267,7 @@ async def _do_exposures(
     help="Take an object frame",
 )
 async def expose(
-    command: Command[ArchonActor],
+    command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
     controller_list: Optional[tuple[str]],
