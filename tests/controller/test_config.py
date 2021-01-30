@@ -6,7 +6,9 @@
 # @Filename: test_config.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-from typing import Callable, Optional
+import unittest.mock
+
+from typing import Callable, Generator, Optional
 
 import pytest
 
@@ -30,13 +32,15 @@ def send_command(parser: Optional[Callable[[ArchonCommand], ArchonCommand]] = No
     def default_parser(cmd: ArchonCommand):
         if cmd.command_string == "SYSTEM":
             cmd._mark_done()
-            cmd.replies = [ArchonCommandReply(b"<00SYSTEM=0", cmd)]
+            cmd.replies = [ArchonCommandReply(b"<00SYSTEM=0 MOD1_TYPE=1", cmd)]
             return cmd
 
         r_n = int(cmd.command_string[7:11], 16)
         cmd._mark_done()
-        if r_n < 5:
+        if r_n < 3:
             reply = f"<{r_n:02X}LINE{r_n}={r_n}\n"
+        elif r_n < 5:
+            reply = f"<{r_n:02X}LINE{r_n}={r_n}={r_n}\n"
         else:
             reply = f"<{r_n:02X}\n"
         cmd.replies = [ArchonCommandReply(reply.encode(), cmd)]
@@ -125,20 +129,32 @@ CONFIG\2="2,2"
     yield config_
 
 
-async def test_write_config(controller: ArchonController, mocker, config_file):
-    def parser(cmd: ArchonCommand):
-        cmd._mark_done()
-        reply = f"<{cmd.command_id:02X}\n"
-        cmd.replies = [ArchonCommandReply(reply.encode(), cmd)]
-        return cmd
-
-    mocker.patch.object(
-        ArchonController,
-        "send_command",
-        side_effect=send_command(parser),
+@pytest.fixture()
+def send_command_mock(
+    controller, mocker
+) -> Generator[unittest.mock.MagicMock, None, None]:
+    yield mocker.patch.object(
+        ArchonController, "send_command", wraps=controller.send_command
     )
 
+
+async def test_write_config(
+    controller: ArchonController, send_command_mock, config_file
+):
+    await controller.write_config(config_file)
+    send_command_mock.assert_any_call(
+        "WCONFIG0000CONFIG/1=1", timeout=1, command_id=unittest.mock.ANY
+    )
+
+
+async def test_write_config_applyall_poweron(
+    controller: ArchonController,
+    send_command_mock,
+    config_file,
+):
     await controller.write_config(config_file, applyall=True, poweron=True)
+    send_command_mock.assert_any_call("APPLYALL", timeout=5)
+    send_command_mock.assert_any_call("POWERON", timeout=1)
 
 
 async def test_write_config_no_config(controller: ArchonController, tmp_path):

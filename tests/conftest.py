@@ -46,7 +46,8 @@ async def controller(request, unused_tcp_port: int):
 
             matched = re.match(
                 r"^>([0-9A-F]{2})(FRAME|SYSTEM|FASTLOADPARAM|PING|STATUS|FETCH|LOCK|"
-                r"CLEARCONFIG|RCONFIG|RESETTIMING|HOLDTIMING|WCONFIG).*\n$",
+                r"CLEARCONFIG|RCONFIG|RESETTIMING|HOLDTIMING|"
+                r"APPLYALL|POWERON|WCONFIG).*\n$",
                 data,
             )
             if not matched:
