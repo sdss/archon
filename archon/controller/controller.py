@@ -72,6 +72,7 @@ class ArchonController(Device):
 
     async def yield_status(self) -> AsyncIterator[ControllerStatus]:
         """Asynchronous generator yield the status of the controller."""
+        yield self.status  # Yield the status on subscription to the generator.
         while True:
             await self.__status_event.wait()
             yield self.status

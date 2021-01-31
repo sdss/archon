@@ -125,11 +125,6 @@ class ArchonActor(AMQPActor):
 
     async def _report_status(self, controller: ArchonController):
         """Reports the status of the controller."""
-        # Report status the first time
-        await self.write(
-            status=dict(controller=controller.name, status=controller.status.name)
-        )
-        # From now on use generator.
         async for status in controller.yield_status():
             await self.write(
                 status=dict(controller=controller.name, status=status.name)
