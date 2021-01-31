@@ -6,6 +6,7 @@
 # @Filename: status.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+import click
 from clu.command import Command
 
 from archon.controller.controller import ArchonController
@@ -17,10 +18,20 @@ from . import parser
 
 @parser.command()
 @parallel_controllers()
-async def status(command: Command, controller: ArchonController):
+@click.option("-g", "--geek", is_flag=True, help="Reports additional information.")
+async def status(command: Command, controller: ArchonController, geek: bool):
     """Reports the status of the controller."""
     if not check_controller(command, controller):
         return
+
+    if not geek:
+        command.info(
+            status={
+                "controller": controller.name,
+                "status": controller.status.name,
+            }
+        )
+        return True
 
     try:
         status = await controller.get_status()
@@ -30,6 +41,7 @@ async def status(command: Command, controller: ArchonController):
     command.info(
         status={
             "controller": controller.name,
+            "status": controller.status.name,
             **status,
         }
     )
