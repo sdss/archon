@@ -13,6 +13,7 @@ import configparser
 import os
 import re
 import warnings
+from collections.abc import AsyncIterator
 
 from typing import Any, Callable, Iterable, Optional
 
@@ -20,7 +21,7 @@ import numpy
 from clu.device import Device
 
 from archon.controller.command import ArchonCommand
-from archon.controller.maskbits import ModType
+from archon.controller.maskbits import ControllerStatus, ModType
 from archon.exceptions import ArchonError, ArchonUserWarning
 
 from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
@@ -49,11 +50,32 @@ class ArchonController(Device):
         self.name = name
         super().__init__(host, port)
 
+        self._status: ControllerStatus = ControllerStatus.UNKNOWN
+        self.__status_event = asyncio.Event()
+
         self._binary_reply: Optional[bytearray] = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
+
+    @property
+    def status(self) -> ControllerStatus:
+        """Returns the status of the controller."""
+        return self._status
+
+    @status.setter
+    def status(self, value: ControllerStatus):
+        """Sets the controller status."""
+        self._status = value
+        self.__status_event.set()
+
+    async def yield_status(self) -> AsyncIterator[ControllerStatus]:
+        """Asynchronous generator yield the status of the controller."""
+        while True:
+            await self.__status_event.wait()
+            yield self.status
+            self.__status_event.clear()
 
     def send_command(
         self,
@@ -338,6 +360,7 @@ class ArchonController(Device):
 
         notifier("Clearing previous configuration")
         if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
+            self.status = ControllerStatus.ERROR
             raise ArchonError("Failed running CLEARCONFIG.")
 
         notifier("Sending configuration lines")
@@ -346,6 +369,7 @@ class ArchonController(Device):
         done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=timeout)
         if len(failed) > 0:
             ff = failed[0]
+            self.status = ControllerStatus.ERROR
             raise ArchonError(f"Failed sending line {ff.raw!r} ({ff.status.name})")
 
         notifier("Sucessfully sent config lines")
@@ -354,13 +378,17 @@ class ArchonController(Device):
             notifier("Sending APPLYALL")
             cmd = await self.send_command("APPLYALL", timeout=5)
             if not cmd.succeeded():
+                self.status = ControllerStatus.ERROR
                 raise ArchonError(f"Failed sending APPLYALL ({cmd.status.name})")
 
             if poweron:
                 notifier("Sending POWERON")
                 cmd = await self.send_command("POWERON", timeout=timeout)
                 if not cmd.succeeded():
+                    self.status = ControllerStatus.ERROR
                     raise ArchonError(f"Failed sending POWERON ({cmd.status.name})")
+
+        self.status = ControllerStatus.IDLE
 
     async def reset(self):
         """Cancels exposures and resets timing."""
@@ -368,7 +396,9 @@ class ArchonController(Device):
         await self.set_param("Exposures", 0)
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
+            self.status = ControllerStatus.ERROR
             raise ArchonError(f"Failed sending RESETTIMING ({cmd.status.name})")
+        self.status = ControllerStatus.IDLE
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
@@ -415,6 +445,8 @@ class ArchonController(Device):
             if frame_info[f"buf{buffer_no}complete"] == 0:
                 raise ArchonError(f"Buffer frame {buffer_no} cannot be read.")
 
+        self.status = ControllerStatus.FETCHING
+
         # Lock for reading
         notifier(f"Locking buffer {buffer_no}")
         await self.send_command(f"LOCK{buffer_no}")
@@ -449,6 +481,8 @@ class ArchonController(Device):
         dtype = f"<u{bytes_per_pixel}"  # Buffer is little-endian
         arr = numpy.frombuffer(frame, dtype=dtype)
         arr = arr.reshape(height, width)
+
+        self.status = ControllerStatus.IDLE
 
         return arr
 
