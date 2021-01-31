@@ -11,6 +11,7 @@ import asyncio
 import pytest
 
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError, ArchonUserWarning
 
 pytestmark = [pytest.mark.asyncio]
@@ -88,3 +89,19 @@ async def test_controller_reset(controller: ArchonController):
 async def test_controller_reset_fails(controller: ArchonController):
     with pytest.raises(ArchonError):
         await controller.reset()
+
+
+async def test_yield_status(controller: ArchonController):
+    async def set_status():
+        controller.status = ControllerStatus.IDLE
+        await asyncio.sleep(0.01)
+        controller.status = ControllerStatus.EXPOSING
+
+    asyncio.create_task(set_status())
+
+    status = None
+    async for status in controller.yield_status():
+        if status.name == "EXPOSING":
+            break
+
+    assert status.name == "EXPOSING"

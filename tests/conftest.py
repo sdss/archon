@@ -16,6 +16,7 @@ from typing import Iterable, Tuple, Union
 import pytest
 
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 
 CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
@@ -82,6 +83,7 @@ async def controller(request, unused_tcp_port: int):
     async with server:
         archon = ArchonController("localhost", unused_tcp_port)
         await archon.start()
+        archon.status = ControllerStatus.IDLE
 
         yield archon
 
