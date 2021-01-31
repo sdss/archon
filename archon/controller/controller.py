@@ -399,6 +399,8 @@ class ArchonController(Device):
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
             raise ArchonError(f"Failed sending RESETTIMING ({cmd.status.name})")
+
+        # TODO: here we should do some more checks before we say it's IDLE.
         self.status = ControllerStatus.IDLE
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
