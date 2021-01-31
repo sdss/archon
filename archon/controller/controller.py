@@ -410,6 +410,19 @@ class ArchonController(Device):
             )
         return cmd
 
+    async def integrate(self, exposure_time=1):
+        """Integrates the CCD for ``exposure_time`` seconds.
+
+        Returns immediately once the exposure has begun.
+        """
+        if not self.status == ControllerStatus.IDLE:
+            raise ArchonError("Status must be IDLE to start integrating.")
+
+        await self.set_param("IntMS", int(exposure_time * 1000))
+        await self.set_param("Exposures", 1)
+
+        self.status = ControllerStatus.EXPOSING
+
     async def fetch(
         self,
         buffer_no: int = -1,

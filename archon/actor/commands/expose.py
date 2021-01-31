@@ -23,9 +23,10 @@ from clu.command import Command
 
 import archon.actor.actor
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, controller_list, error_controller, open_with_lock
+from ..tools import check_controller, controller_list, open_with_lock
 from . import parser
 
 
@@ -48,7 +49,7 @@ async def _do_one_controller(
     exp_time = exposure_params["exposure_time"]
 
     command.debug(
-        controller_message=dict(
+        text=dict(
             controller=controller.name,
             text="Starting exposure sequence "
             "(flavour={flavour!r}, exp_time={exposure_time}).".format(
@@ -57,73 +58,53 @@ async def _do_one_controller(
         )
     )
 
-    # Get initial frame buffer info
-    frame_info_bef = await controller.get_frame()
+    # Start integration.
+    await controller.integrate(exposure_time=exp_time)
 
     # Open shutter (placeholder)
 
-    # Set exposure params
-    command.debug(
-        controller_message=dict(
-            controller=controller.name,
-            text="Start exposing",
-        )
-    )
-
-    await controller.set_param("IntMS", int(exp_time * 1000))
-    await controller.set_param("Exposures", 1)
-
-    # Wait until the exposure is complete
+    # Wait until the exposure is complete.
+    # TODO: Here we should take into account the network and mechanical delay in
+    # opening the shutter.
     await asyncio.sleep(exp_time)
 
     # Close shutter (placeholder)
 
     # Wait a little bit and check that we are reading out to a new buffer
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.1)
 
     # Get new frame info
-    frame_info_aft = await controller.get_frame()
+    frame_info = await controller.get_frame()
+    wbuf = frame_info["wbuf"]
+    if frame_info[f"buf{wbuf}complete"] != 0:
+        controller.status = ControllerStatus.ERROR
+        raise ArchonError("Read-out failed to start.")
 
-    wbuf_bef = frame_info_bef["wbuf"]
-    wbuf = frame_info_aft["wbuf"]
-    if wbuf == wbuf_bef or frame_info_aft[f"buf{wbuf}complete"] == 1:
-        error_controller(command, controller, "Readout failed to start.")
-        await controller.reset()
-        raise ArchonError("Failed reading out.")
-
-    wbuf = frame_info_aft["wbuf"]
+    controller.status = ControllerStatus.READING
     command.debug(
-        controller_message=dict(
+        text=dict(
             controller=controller.name,
-            text=f"Readout started on buffer {wbuf}.",
+            text=f"Reading frame into buffer {wbuf}.",
         )
     )
-
-    # Wait a reasonable time and then start checking the buffer for completion.
-    ro_exp = config["timeouts"]["readout_expected"]
-    await asyncio.sleep(ro_exp)
-    ro_elapsed = ro_exp
+    # Wait until buffer is complete.
+    elapsed = 0
     while True:
         frame_info = await controller.get_frame()
         if frame_info[f"buf{wbuf}complete"] == 1:
             break
-        if ro_elapsed > config["timeouts"]["readout_max"]:
-            error_controller(
-                command,
-                controller,
-                "Timed out while waiting for readout to complete.",
-            )
-            await controller.reset()
-            raise ArchonError("Failed reading out.")
+        if elapsed > config["timeouts"]["readout_max"]:
+            controller.status = ControllerStatus.ERROR
+            raise ArchonError("Timed out waiting for read-out to finish.")
         await asyncio.sleep(1.0)  # Sleep for one second before asking again.
-        ro_elapsed += 1
+        elapsed += 1
 
     # Reset timing
     await controller.reset()
 
     # Fetch buffer data
     command.debug(
-        controller_message=dict(
+        text=dict(
             controller=controller.name,
             text=f"Fetching buffer {wbuf}.",
         )
@@ -133,7 +114,7 @@ async def _do_one_controller(
     # Divide array into CCDs and create FITS.
     # TODO: add at least a placeholder header with some basics.
     command.debug(
-        controller_message=dict(
+        text=dict(
             controller=controller.name,
             text="Saving data to disk.",
         )
