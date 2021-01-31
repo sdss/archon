@@ -62,10 +62,7 @@ async def test_controller_bad_reply(controller: ArchonController):
 
 @pytest.mark.commands([])
 @pytest.mark.parametrize("command_id", [-1, 256])
-async def test_controller_bad_command_id(
-    controller: ArchonController,
-    command_id: int,
-):
+async def test_controller_bad_command_id(controller: ArchonController, command_id: int):
     with pytest.raises(ArchonError):
         controller.send_command("PING", command_id=command_id)
 
