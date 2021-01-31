@@ -10,7 +10,13 @@
       "required": ["controller"]
     },
     "status": {
-      "$ref": "#/properties/system"
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": true,
+      "required": ["controller", "status"]
     },
     "frame": {
       "type": "object",
@@ -32,16 +38,23 @@
       "additionalProps": false,
       "required": ["controller", "config"]
     },
-    "controller_message": {
-      "type": "object",
-      "properties": {
-        "controller": { "type": "string" },
-        "text": { "type": "string" }
-      },
-      "additionalProperties": false,
-      "required": ["controller", "text"]
+    "text": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "controller": { "type": "string" },
+            "text": { "type": "string" }
+          },
+          "additionalProperties": false,
+          "required": ["controller", "text"]
+        },
+        {
+          "type": "string"
+        }
+      ]
     },
-    "controller_log": {
+    "log": {
       "type": "object",
       "properties": {
         "controller": { "type": "string" },

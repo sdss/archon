@@ -8,6 +8,7 @@
 
 import asyncio
 import os
+from contextlib import suppress
 
 from clu.actor import AMQPActor
 
@@ -66,6 +67,18 @@ class ArchonActor(AMQPActor):
             for controller in self.controllers.values()
         ]
 
+        self._status_jobs = [
+            asyncio.create_task(self._report_status(controller))
+            for controller in self.controllers.values()
+        ]
+
+    async def stop(self):
+        with suppress(asyncio.CancelledError):
+            for task in self._fetch_log_jobs:
+                task.cancel()
+                await task
+        return super().stop()
+
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
@@ -102,10 +115,22 @@ class ArchonActor(AMQPActor):
             if cmd.succeeded() and len(cmd.replies) == 1:
                 if str(cmd.replies[0].reply) != "(null)":
                     await self.write(
-                        controller_log=dict(
+                        log=dict(
                             controller=controller.name,
                             log=str(cmd.replies[0].reply),
                         )
                     )
                     continue  # There may be more messages, so don't wait.
             await asyncio.sleep(1)
+
+    async def _report_status(self, controller: ArchonController):
+        """Reports the status of the controller."""
+        # Report status the first time
+        await self.write(
+            status=dict(controller=controller.name, status=controller.status.name)
+        )
+        # From now on use generator.
+        async for status in controller.yield_status():
+            await self.write(
+                status=dict(controller=controller.name, status=status.name)
+            )

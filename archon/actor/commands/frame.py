@@ -45,7 +45,7 @@ async def status(
         frame = await controller.get_frame()
     except ArchonError as err:
         return command.fail(
-            controller_message={
+            text={
                 "controller": controller.name,
                 "text": err,
             }
@@ -116,7 +116,7 @@ async def fetch(
 
     def notifier(msg):
         command.info(
-            controller_message={
+            text={
                 "controller": controller.name,
                 "text": msg,
             }
@@ -126,7 +126,7 @@ async def fetch(
         array = await controller.fetch(buffer_no, notifier=notifier)
     except BaseException as err:
         return command.fail(
-            controller_message={
+            text={
                 "controller": controller.name,
                 "text": f"Failed fetching data: {str(err)}",
             }

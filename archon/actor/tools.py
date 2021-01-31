@@ -111,7 +111,7 @@ def parallel_controllers():
 def error_controller(command: Command, controller: ArchonController, message: str):
     """Issues a ``error_controller`` message."""
     command.error(
-        controller_message={
+        text={
             "controller": controller.name,
             "text": message,
         }

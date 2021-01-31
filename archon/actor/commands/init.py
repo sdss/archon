@@ -26,7 +26,7 @@ def _output(
 ):
     command.write(
         message_code=message_code,
-        controller_message=dict(
+        text=dict(
             controller=controller.name,
             text=text,
         ),
