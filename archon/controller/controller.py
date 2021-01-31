@@ -471,7 +471,7 @@ class ArchonController(Device):
         height = frame_info[f"buf{buffer_no}height"]
         bytes_per_pixel = 2 if frame_info[f"buf{buffer_no}sample"] == 0 else 4
         n_bytes = width * height * bytes_per_pixel
-        n_blocks: int = int(numpy.ceil(n_bytes / 1024.0))  # type: ignore
+        n_blocks: int = int(numpy.ceil(n_bytes / 1024.0))
 
         start_address = frame_info[f"buf{buffer_no}base"]
 
