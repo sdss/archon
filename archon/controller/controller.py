@@ -47,9 +47,9 @@ class ArchonController(Device):
     _id_pool = set(range(MAX_COMMAND_ID))
 
     def __init__(self, host: str, port: int = 4242, name: str = ""):
-        self.name = name
-        super().__init__(host, port)
+        Device.__init__(self, host, port)
 
+        self.name = name
         self._status: ControllerStatus = ControllerStatus.UNKNOWN
         self.__status_event = asyncio.Event()
 
