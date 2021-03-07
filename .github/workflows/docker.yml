@@ -39,6 +39,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/archon:${{ steps.get-ref.outputs.REF }}
+          tags: albireoxxx/archon:${{ steps.get-ref.outputs.REF }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
