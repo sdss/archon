@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import enum
 
-__all__ = ["ModType"]
+__all__ = ["ModType", "ControllerStatus"]
 
 
 class ModType(enum.Enum):

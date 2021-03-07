@@ -56,6 +56,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.mathjax",
     "sphinx.ext.intersphinx",
+    "sphinx_click",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -129,7 +130,7 @@ todo_include_todos = False
 
 # Intersphinx mappings
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.6", None),
+    "python": ("https://docs.python.org/", None),
     "numpy": ("http://docs.scipy.org/doc/numpy/", None),
     "clu": ("http://clu.readthedocs.io/en/latest/", None),
 }
@@ -149,7 +150,7 @@ rst_epilog = f"""
 
 # -- Options for HTML output ----------------------------------------------
 
-html_css_files = ["pygments.css"]
+html_css_files = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
@@ -235,14 +236,14 @@ elif sphinx_template == "alabaster":
         "page_width": "80%",
     }
 
-    html_sidebars = {
-        "**": [
-            "about.html",
-            "fulltoc.html",
-            "relations.html",
-            "searchbox.html",
-        ]
-    }
+    # html_sidebars = {
+    #     "**": [
+    #         "about.html",
+    #         "fulltoc.html",
+    #         "relations.html",
+    #         "searchbox.html",
+    #     ]
+    # }
 
     html_css_files += ["custom.css"]
 

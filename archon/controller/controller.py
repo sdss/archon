@@ -61,7 +61,7 @@ class ArchonController(Device):
 
     @property
     def status(self) -> ControllerStatus:
-        """Returns the status of the controller."""
+        """Returns the status of the controller as a `.ControllerStatus` enum type."""
         return self._status
 
     @status.setter

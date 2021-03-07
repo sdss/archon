@@ -12,6 +12,7 @@ __all__ = [
     "ArchonCommand",
     "ArchonCommandReply",
     "ModType",
+    "ControllerStatus",
 ]
 
 
@@ -20,4 +21,4 @@ MAX_CONFIG_LINES = 16384
 
 from .command import ArchonCommand, ArchonCommandReply, ArchonCommandStatus
 from .controller import ArchonController
-from .maskbits import ModType
+from .maskbits import ControllerStatus, ModType
