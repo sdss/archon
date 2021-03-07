@@ -28,7 +28,7 @@ jobs:
             echo ::set-output name=TAGS::$USER/$APP:${GITHUB_REF#refs/tags/},$USER/$APP:latest
           fi
       - name: Show tags
-        run: echo ${{ steps.get-ref.outputs.TAGS }}
+        run: echo ${{ steps.set-tags.outputs.TAGS }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -43,6 +43,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ steps.get-ref.outputs.TAGS }}
+          tags: ${{ steps.set-tags.outputs.TAGS }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
