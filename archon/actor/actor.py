@@ -122,7 +122,7 @@ class ArchonActor(AMQPActor):
             cmd: ArchonCommand = await controller.send_command("FETCHLOG")
             if cmd.succeeded() and len(cmd.replies) == 1:
                 if str(cmd.replies[0].reply) != "(null)":
-                    await self.write(
+                    self.write(
                         log=dict(
                             controller=controller.name,
                             log=str(cmd.replies[0].reply),
@@ -134,7 +134,7 @@ class ArchonActor(AMQPActor):
     async def _report_status(self, controller: ArchonController):
         """Reports the status of the controller."""
         async for status in controller.yield_status():
-            await self.write(
+            self.write(
                 status=dict(
                     controller=controller.name,
                     status=status.name,
