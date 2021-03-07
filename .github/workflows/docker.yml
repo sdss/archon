@@ -20,10 +20,10 @@ jobs:
             echo ::set-output name=REF::latest
           elif [[ $GITHUB_REF == refs/heads/* ]]
           then
-            echo ::set-output name=REF::${GITHUB_REF#refs/heads/}
-          else
-            BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's/[\/]/-/g')
+            BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's/[\/]/_/g')
             echo ::set-ouput name=ref::$BRANCH
+          else
+            echo ::set-output name=REF::${GITHUB_REF#refs/tags/}
           fi
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
