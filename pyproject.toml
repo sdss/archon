@@ -22,7 +22,7 @@ classifiers = [
 packages = [
     { include = "archon" }
 ]
-include = ["archon/etc/*", "LICENSE.md"]
+include = ["archon/etc/*"]
 
 [tool.poetry.scripts]
 archon = "archon.__main__:archon"
