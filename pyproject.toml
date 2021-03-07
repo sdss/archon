@@ -28,7 +28,7 @@ include = ["archon/etc/*"]
 archon = "archon.__main__:archon"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 sdsstools = ">=0.4.0"
 click = "^7.1.2"
 numpy = "^1.19.5"
