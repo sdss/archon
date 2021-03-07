@@ -12,28 +12,21 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - name: Set the value
-        id: step_one
+      - name: Get ref
+        id: get-ref
         run: |
-          echo "::set-output name=FOO::${GITHUB_REF#refs/heads/}"
+          if [[ $GITHUB_REF == refs/heads/main ]]
+          then
+            echo ::set-output name=REF::latest
+          elif [[ $GITHUB_REF == refs/heads/* ]]
+          then
+            echo ::set-output name=REF::${GITHUB_REF#refs/heads/}
+          else
+            echo ::set-output name=REF::${GITHUB_REF#refs/tags/}
+          fi
         shell: bash
-      - name: Use it
-        run: echo ${{ steps.step_one.outputs.FOO }}
-      # - name: Get ref
-      #   id: get-ref
-      #   run: |
-      #     if [[ $GITHUB_REF == refs/heads/main ]]
-      #     then
-      #       echo ::set-ouput name=REF::latest
-      #     elif [[ $GITHUB_REF == refs/heads/* ]]
-      #     then
-      #       echo ::set-ouput name=REF::${GITHUB_REF#refs/heads/}
-      #     else
-      #       echo ::set-ouput name=REF::${GITHUB_REF#refs/tags/}
-      #     fi
-      #   shell: bash
-      # - name: Print ref
-      #   run: echo ${{ steps.get-ref.outputs.REF }}
+      - name: Print ref
+        run: echo ${{ steps.get-ref.outputs.REF }}
 
       # - name: Set up QEMU
       #   uses: docker/setup-qemu-action@v1
