@@ -54,6 +54,7 @@ class ArchonActor(AMQPActor):
 
         super().__init__(*args, **kwargs)
 
+        self.observatory = os.environ.get("OBSERVATORY", "LCO")
         self.version = __version__
 
         self._exposing: bool = False

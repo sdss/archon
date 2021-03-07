@@ -1,20 +1,20 @@
 ---
 controllers:
-  sp0:
+  sp1:
     host: 10.7.45.25
     port: 4242
     ccds:
-      r0: [0, 0, 4400, 4400]
-      b0: [4400, 0, 8800, 4400]
-      n0: [8800, 0, 13200, 4400]
+      r1: [0, 0, 4400, 4400]
+      b1: [4400, 0, 8800, 4400]
+      z1: [8800, 0, 13200, 4400]
 
 # This is the ACL configuration file to be loaded to the Archon including the timing script.
 # {archon_etc} gets completed with the path of the etc directory once installed
 archon_config_file: '{archon_etc}/lvm1.acf'
 
 files:
-  data_dir: '/data/spectra/lvm'
-  template: 'sdR-{controller}-{exposure_no:08d}.fits.gz'
+  data_dir: '/data/spectro/lvm'
+  template: 'sdR-{hemisphere}-{controller}-{exposure_no:08d}.fits.gz'
 
 timeouts:
   readout_expected: 45

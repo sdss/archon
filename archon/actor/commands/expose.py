@@ -39,11 +39,16 @@ async def _do_one_controller(
 ) -> bool:
     """Does the heavy lifting of exposing and writing a single controller."""
 
+    observatory = command.actor.observatory.lower()
+    hemisphere = "n" if observatory == "apo" else "s"
+
     config = command.actor.config
     path: pathlib.Path = mjd_dir / config["files"]["template"]
     file_path = str(path.absolute()).format(
         exposure_no=exp_no,
         controller=controller.name,
+        observatory=observatory,
+        hemisphere=hemisphere,
     )
 
     exp_time = exposure_params["exposure_time"]
