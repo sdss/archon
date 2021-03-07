@@ -12,6 +12,8 @@ import asyncio
 import os
 from contextlib import suppress
 
+from typing import cast
+
 from clu.actor import AMQPActor
 
 from archon import __version__
@@ -85,7 +87,10 @@ class ArchonActor(AMQPActor):
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
-        instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
+        instance = cast(
+            ArchonActor,
+            super(ArchonActor, cls).from_config(config, *args, **kwargs),
+        )
         if "controllers" in instance.config:
             controllers = {
                 ctrname: ArchonController(
@@ -130,5 +135,8 @@ class ArchonActor(AMQPActor):
         """Reports the status of the controller."""
         async for status in controller.yield_status():
             await self.write(
-                status=dict(controller=controller.name, status=status.name)
+                status=dict(
+                    controller=controller.name,
+                    status=status.name,
+                )
             )

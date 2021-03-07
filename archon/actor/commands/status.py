@@ -20,20 +20,10 @@ from . import parser
 
 @parser.command()
 @parallel_controllers()
-@click.option("-g", "--geek", is_flag=True, help="Reports additional information.")
-async def status(command: Command, controller: ArchonController, geek: bool):
+async def status(command: Command, controller: ArchonController):
     """Reports the status of the controller."""
     if not check_controller(command, controller):
         return
-
-    if not geek:
-        command.info(
-            status={
-                "controller": controller.name,
-                "status": controller.status.name,
-            }
-        )
-        return True
 
     try:
         status = await controller.get_status()
