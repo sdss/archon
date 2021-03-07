@@ -17,12 +17,12 @@ jobs:
         run: |
           if [[ $GITHUB_REF == refs/heads/main ]]
           then
-            echo "::set-ouput name=ref::latest"
+            echo '::set-ouput name=ref::latest'
           elif [[ $GITHUB_REF == refs/heads/* ]]
           then
-            echo "::set-ouput name=ref::${GITHUB_REF#refs/heads/}"
+            echo '::set-ouput name=ref::${GITHUB_REF#refs/heads/}'
           else
-            echo "::set-ouput name=ref::${GITHUB_REF#refs/tags/}"
+            echo '::set-ouput name=ref::${GITHUB_REF#refs/tags/}'
           fi
         shell: bash
       - name: Print ref
