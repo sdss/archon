@@ -21,7 +21,7 @@ jobs:
           elif [[ $GITHUB_REF == refs/heads/* ]]
           then
             BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's/[\/]/_/g')
-            echo ::set-ouput name=ref::$BRANCH
+            echo ::set-output name=ref::$BRANCH
           else
             echo ::set-output name=REF::${GITHUB_REF#refs/tags/}
           fi
