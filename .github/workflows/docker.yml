@@ -26,7 +26,7 @@ jobs:
           fi
         shell: bash
       - name: Print ref
-        run: echo ${{ steps.get_ref.outputs.ref }}
+        run: echo "${{ steps.get_ref.outputs.ref }}"
 
       # - name: Set up QEMU
       #   uses: docker/setup-qemu-action@v1
