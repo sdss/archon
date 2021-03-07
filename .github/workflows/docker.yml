@@ -10,19 +10,22 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    env:
+      USER: lvmi
+      APP: archon
     steps:
-      - name: Get ref
-        id: get-ref
+      - name: Set docker tags
+        id: set-tags
         run: |
           if [[ $GITHUB_REF == refs/heads/main ]]
           then
-            echo ::set-output name=REF::latest
+            echo ::set-output name=TAGS::$USER/$APP:latest
           elif [[ $GITHUB_REF == refs/heads/* ]]
           then
             BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's/[\/]/_/g')
-            echo ::set-output name=ref::$BRANCH
+            echo ::set-output name=TAGS::$USER/$APP:$BRANCH
           else
-            echo ::set-output name=REF::${GITHUB_REF#refs/tags/}
+            echo ::set-output name=TAGS::$USER/$APP:${GITHUB_REF#refs/tags/},$USER/$APP:latest
           fi
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -38,6 +41,6 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: lvmi/archon:${{ steps.get-ref.outputs.REF }}
+          tags: ${{ steps.get-ref.outputs.TAGS }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
