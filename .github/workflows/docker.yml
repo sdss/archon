@@ -15,7 +15,7 @@ jobs:
       - name: Set the value
         id: step_one
         run: |
-          echo "::set-output name=FOO::BAR"
+          echo "::set-output name=FOO::${GITHUB_REF#refs/heads/}"
         shell: bash
       - name: Use it
         run: echo ${{ steps.step_one.outputs.FOO }}
