@@ -22,7 +22,8 @@ jobs:
           then
             echo ::set-output name=REF::${GITHUB_REF#refs/heads/}
           else
-            echo ::set-output name=REF::${GITHUB_REF#refs/tags/}
+            BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's/[\/]/-/g')
+            echo ::set-ouput name=ref::$BRANCH
           fi
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
