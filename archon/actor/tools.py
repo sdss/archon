@@ -38,7 +38,7 @@ controller_list = click.option(
 )
 
 
-def parallel_controllers():
+def parallel_controllers(check=True):
     """A decarator that executes the same command for multiple controllers.
 
     When decorated with `.parallel_controllers`, the command gets an additional option
@@ -84,10 +84,11 @@ def parallel_controllers():
 
             tasks: list[asyncio.Task] = []
             for k in controller_keys:
-                if k not in controllers:
-                    return command.fail(f"Invalid controller {k!r}.")
-                if not controllers[k].is_connected():
-                    return command.fail(f"Controller {k!r} is not connected.")
+                if check:
+                    if k not in controllers:
+                        return command.fail(f"Invalid controller {k!r}.")
+                    if not controllers[k].is_connected():
+                        return command.fail(f"Controller {k!r} is not connected.")
                 tasks.append(asyncio.create_task(f(command, controllers[k], **kwargs)))
 
             done, pending = await asyncio.wait(
@@ -99,8 +100,9 @@ def parallel_controllers():
                     p.cancel()
                 return command.fail("Some tasks raised exceptions.")
 
-            if False in done:
-                return command.fail("Some controllers failed.")
+            results = [task.result() for task in done]
+            if False in results:
+                return command.fail(error="Some controllers failed.")
             return command.finish()
 
         return functools.update_wrapper(wrapper, f)

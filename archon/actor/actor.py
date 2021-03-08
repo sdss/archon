@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import os
+import warnings
 from contextlib import suppress
-
-from typing import cast
 
 from clu.actor import AMQPActor
 
 from archon import __version__
 from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
+from archon.exceptions import ArchonUserWarning
 
 from .commands import parser as archon_command_parser
 
@@ -63,8 +63,18 @@ class ArchonActor(AMQPActor):
 
     async def start(self):
         """Start the actor and connect the controllers."""
+
+        connect_timeout = self.config["timeouts"]["controller_connect"]
+
         for controller in self.controllers.values():
-            await controller.start()
+            try:
+                await asyncio.wait_for(controller.start(), timeout=connect_timeout)
+            except asyncio.TimeoutError:
+                warnings.warn(
+                    f"Timeout out connecting to {controller.name!r}.",
+                    ArchonUserWarning,
+                )
+
         await super().start()
 
         self._fetch_log_jobs = [
@@ -87,10 +97,8 @@ class ArchonActor(AMQPActor):
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
-        instance = cast(
-            ArchonActor,
-            super(ArchonActor, cls).from_config(config, *args, **kwargs),
-        )
+        instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
+        assert isinstance(instance, ArchonActor)
         if "controllers" in instance.config:
             controllers = {
                 ctrname: ArchonController(
