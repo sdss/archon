@@ -34,7 +34,7 @@ class ArchonActor(AMQPActor):
     Parameters
     ----------
     controllers
-        A mapping of controller name to `.ArchonController`.
+        The list of `.ArchonController` instances to manage.
     """
 
     parser = archon_command_parser
@@ -42,11 +42,13 @@ class ArchonActor(AMQPActor):
     def __init__(
         self,
         *args,
-        controllers: dict[str, ArchonController] = {},
+        controllers: tuple[ArchonController, ...] = (),
         **kwargs,
     ):
-        self.controllers = controllers
-        self.parser_args = [controllers]
+        #: dict[str, ArchonController]: A mapping of controller name to controller.
+        self.controllers = {c.name: c for c in controllers}
+
+        self.parser_args = [self.controllers]
 
         if "schema" not in kwargs:
             kwargs["schema"] = os.path.join(
@@ -100,16 +102,16 @@ class ArchonActor(AMQPActor):
         instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
         assert isinstance(instance, ArchonActor)
         if "controllers" in instance.config:
-            controllers = {
-                ctrname: ArchonController(
+            controllers = (
+                ArchonController(
                     ctr["host"],
                     ctr["port"],
                     name=ctrname,
                 )
                 for (ctrname, ctr) in instance.config["controllers"].items()
-            }
-            instance.controllers = controllers
-            instance.parser_args = [controllers]  # Need to refresh this
+            )
+            instance.controllers = {c.name: c for c in controllers}
+            instance.parser_args = [instance.controllers]  # Need to refresh this
         return instance
 
     def can_expose(self) -> bool:

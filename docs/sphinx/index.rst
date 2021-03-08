@@ -42,7 +42,7 @@ Actor
 
 The actor functionality is a relatively straightforward implementation of the `~clu.actor.AMQPActor` `CLU <https://clu.readthedocs.io/en/latest/>`__ actor and we refer you to the documentation therein.
 
-`.ArchonActor` is instantiated as an `~clu.actor.AMQPActor` but a dictionary of `.ArchonController` instances must be passed, indicating the Archon devices with which that actor will interface. Normally this information is encoded in a configuration file that is passed to `~.ArchonActor.from_config`, which returns a new instance of `.ArchonActor` with the controllers already loaded. For an example of a configuration file see `this file <https://github.com/sdss/archon/blob/main/archon/etc/archon.yml>`__.
+`.ArchonActor` is instantiated as any `~clu.actor.AMQPActor` but a list of `.ArchonController` instances must also be passed, indicating the Archon devices with which the actor will interface. Normally this information is encoded in a configuration file that is passed to `~.ArchonActor.from_config`, which returns a new instance of `.ArchonActor` with the controllers already loaded. For an example of a configuration file see `this file <https://github.com/sdss/archon/blob/main/archon/etc/archon.yml>`__.
 
 A list of available actor commands is described :ref:`here <actor-commands>` and can also be output using the actor command ``help``. The JSONSchema of the actor replies can be consulted :ref:`here <actor-schema>`.
 
