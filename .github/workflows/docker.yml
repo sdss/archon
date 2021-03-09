@@ -39,7 +39,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: albireox
           password: ${{ secrets.PAC_TOKEN }} # from Secrets
       - name: Build and push
         id: docker_build
