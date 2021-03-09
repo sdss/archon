@@ -36,12 +36,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Authorise Package Registry
-        run: echo ${{ secrets.PAC_TOKEN }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.PAC_TOKEN }} # from Secrets
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/${{ steps.set-tags.outputs.TAGS }}
+          tags: ${{ steps.set-tags.outputs.TAGS }}
+          secrets: |
+            GIT_AUTH_TOKEN=${{ github.token }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
