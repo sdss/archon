@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ steps.set-tags.outputs.TAGS }}
+          tags: ghcr.io/${{ steps.set-tags.outputs.TAGS }}
           secrets: |
             GIT_AUTH_TOKEN=${{ github.token }}
       - name: Image digest
