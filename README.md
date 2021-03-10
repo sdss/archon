@@ -27,6 +27,24 @@ cd archon
 pip install .
 ```
 
+
+## Docker
+
+The actor can run as a Docker container; new images for ``main`` (pointing to tag ``latest``) and tags are created via a GitHub Action. The images are stored in the GitHub Container Registry. To pull the latest image run
+
+```console
+docker pull ghcr.io/sdss/archon:latest
+```
+
+To run a container
+
+```console
+docker run --name archon --rm --detach --network host ghcr.io/sdss/archon:latest
+```
+
+This assumes that RabbitMQ is running on the default port in the host computer and that the Archon controller are accessible over the host network.
+
+
 ## Development
 
 `archon` uses [poetry](http://poetry.eustace.io/) for dependency management and packaging. To work with an editable install it's recommended that you setup `poetry` and install `archon` in a virtual environment by doing
