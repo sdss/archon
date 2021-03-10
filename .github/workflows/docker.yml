@@ -39,7 +39,7 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: albireox
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.PAC_TOKEN }} # from Secrets
       - name: Build and push
         id: docker_build
@@ -47,7 +47,5 @@ jobs:
         with:
           push: true
           tags: ghcr.io/${{ steps.set-tags.outputs.TAGS }}
-          secrets: |
-            GIT_AUTH_TOKEN=${{ github.token }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
