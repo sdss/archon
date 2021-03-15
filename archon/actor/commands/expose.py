@@ -21,7 +21,7 @@ import click
 import fitsio
 from clu.command import Command
 
-import archon.actor.actor
+import archon.actor
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
@@ -31,7 +31,7 @@ from . import parser
 
 
 async def _do_one_controller(
-    command: Command,
+    command: Command[archon.actor.ArchonActor],
     controller: ArchonController,
     exposure_params: dict[str, Any],
     exp_no: int,
@@ -261,10 +261,12 @@ async def expose(
 ):
     """Exposes the cameras."""
 
+    selected_controllers: list[ArchonController]
+
     if controller_list is None:
         selected_controllers = list(controllers.values())
     else:
-        selected_controllers: list[ArchonController] = []
+        selected_controllers = []
         for cname in controller_list:
             if cname not in controllers:
                 return command.fail(error=f"Controller {cname!r} not found.")
