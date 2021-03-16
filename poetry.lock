@@ -306,7 +306,7 @@ python-versions = "*"
 
 [[package]]
 name = "ipdb"
-version = "0.13.6"
+version = "0.13.7"
 description = "IPython-enabled pdb"
 category = "dev"
 optional = false
@@ -777,7 +777,7 @@ docutils = ">=0.7"
 
 [[package]]
 name = "sdss-clu"
-version = "0.7.1"
+version = "0.7.2"
 description = "A new protocol for SDSS actors."
 category = "main"
 optional = false
@@ -786,7 +786,7 @@ python-versions = ">=3.7,<4.0"
 [package.dependencies]
 aio_pika = ">=6.4.1,<7.0.0"
 aiormq = ">=3.2.0,<4.0.0"
-Click = ">=7.0,<8.0"
+click = ">=7.0,<8.0"
 jsonschema = ">=3.0.1,<4.0.0"
 prompt_toolkit = ">=3.0.6,<4.0.0"
 sdsstools = ">=0.2.0"
@@ -1229,7 +1229,7 @@ invoke = [
     {file = "invoke-1.5.0.tar.gz", hash = "sha256:f0c560075b5fb29ba14dad44a7185514e94970d1b9d57dcd3723bec5fed92650"},
 ]
 ipdb = [
-    {file = "ipdb-0.13.6.tar.gz", hash = "sha256:1aa37e19e5b3b96c930fe7fe97193a54202c23a8d1b1c7763f76553f5b275731"},
+    {file = "ipdb-0.13.7.tar.gz", hash = "sha256:178c367a61c1039e44e17c56fcc4a6e7dc11b33561261382d419b6ddb4401810"},
 ]
 ipython = [
     {file = "ipython-7.21.0-py3-none-any.whl", hash = "sha256:34207ffb2f653bced2bc8e3756c1db86e7d93e44ed049daae9814fed66d408ec"},
@@ -1591,8 +1591,8 @@ rstcheck = [
     {file = "rstcheck-3.3.1.tar.gz", hash = "sha256:92c4f79256a54270e0402ba16a2f92d0b3c15c8f4410cb9c57127067c215741f"},
 ]
 sdss-clu = [
-    {file = "sdss-clu-0.7.1.tar.gz", hash = "sha256:6354d50937a33a58a4bde112db1a90a04024afe7a67c763ed1d895d55193a597"},
-    {file = "sdss_clu-0.7.1-py3-none-any.whl", hash = "sha256:2857ade48e5e86e33ff0be29f662254f911f181ab9b34858ab72daf4c54bd8d5"},
+    {file = "sdss-clu-0.7.2.tar.gz", hash = "sha256:8fd0b1c7fe03f72e38c35cd9d5eb2bfeb24b64e8f06588c211e15b735776c5e6"},
+    {file = "sdss_clu-0.7.2-py3-none-any.whl", hash = "sha256:baabc419f296e135458e9c334532789079a09e3dbdc600a253bc62d233127d80"},
 ]
 sdsstools = [
     {file = "sdsstools-0.4.9-py3-none-any.whl", hash = "sha256:27bc17f28207fb27b6cc99cd9e252d3c574a5aec34650a9a50cc42e2003c8795"},
