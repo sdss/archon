@@ -22,12 +22,59 @@ import fitsio
 from clu.command import Command
 
 import archon.actor
+from archon import config
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
 from ..tools import check_controller, controller_list, open_with_lock
 from . import parser
+
+__all__ = ["expose"]
+
+
+async def get_header(
+    command: Command[archon.actor.ArchonActor],
+    controller: ArchonController,
+    exposure_params: dict[str, Any],
+):
+    """Returns the header of the FITS file."""
+
+    header = {}
+
+    header["SPEC"] = controller.name
+    header["OBSTIME"] = astropy.time.Time.now().isot
+    header["EXPTIME"] = exposure_params["exposure_time"]
+    header["IMAGETYP"] = exposure_params["flavour"]
+
+    # Connects to the H5179 device and gets the lab temperature and humidity.
+    try:
+        h5179 = config["sensors"]["H5179"]
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(h5179["host"], h5179["port"]),
+            timeout=2,
+        )
+        writer.write(b"status\n")
+        data = await asyncio.wait_for(reader.readline(), timeout=1)
+        temp, hum, __, last = data.decode().strip().split()
+
+        temp = float(temp)
+        hum = float(hum)
+
+        last_seen = astropy.time.Time(last, format="isot")
+        delta = astropy.time.Time.now() - last_seen
+        if delta.datetime.seconds / 60 > 10:
+            raise RuntimeError("Lab metrology is over 10 minutes old.")
+
+    except BaseException as err:
+        command.warning(text=f"Failed retriving H5179 data: {err}")
+        temp = -999.0
+        hum = -999.0
+
+    header["LABTEMP"] = temp
+    header["LABHUMID"] = temp
+
+    return header
 
 
 async def _do_one_controller(
@@ -131,7 +178,8 @@ async def _do_one_controller(
     for ccd_name in ccd_info:
         region = ccd_info[ccd_name]
         ccd_data = data[region[1] : region[3], region[0] : region[2]]
-        fits_write = partial(fits.create_image_hdu, extname=ccd_name)
+        header = await get_header(command, controller, exposure_params)
+        fits_write = partial(fits.create_image_hdu, extname=ccd_name, header=header)
         await loop.run_in_executor(None, fits_write, ccd_data)
     await loop.run_in_executor(None, fits.close)
 
