@@ -278,7 +278,7 @@ async def _do_exposures(
     "--bias",
     "flavour",
     flag_value="bias",
-    default=True,
+    default=False,
     show_default=True,
     help="Take a bias",
 )
@@ -286,14 +286,14 @@ async def _do_exposures(
     "--dark",
     "flavour",
     flag_value="dark",
-    default=True,
+    default=False,
     help="Take a dark",
 )
 @click.option(
     "--flat",
     "flavour",
     flag_value="flat",
-    default=True,
+    default=False,
     help="Take a flat",
 )
 @click.option(
