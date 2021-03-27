@@ -72,7 +72,7 @@ async def get_header(
         hum = -999.0
 
     header["LABTEMP"] = temp
-    header["LABHUMID"] = temp
+    header["LABHUMID"] = hum
 
     return header
 
@@ -175,12 +175,15 @@ async def _do_one_controller(
     loop = asyncio.get_running_loop()
     ccd_info = config["controllers"][controller.name]["ccds"]
     fits = fitsio.FITS(file_path, "rw")
+    header = await get_header(command, controller, exposure_params)
     for ccd_name in ccd_info:
         region = ccd_info[ccd_name]
         ccd_data = data[region[1] : region[3], region[0] : region[2]]
-        header = await get_header(command, controller, exposure_params)
-        fits_write = partial(fits.create_image_hdu, extname=ccd_name, header=header)
+        header_ccd = header.copy()
+        header_ccd["CCD"] = ccd_name
+        fits_write = partial(fits.create_image_hdu, extname=ccd_name, header=header_ccd)
         await loop.run_in_executor(None, fits_write, ccd_data)
+        fits[-1].write_keys(header_ccd)
     await loop.run_in_executor(None, fits.close)
 
     command.info(text=f"File {os.path.basename(file_path)} written to disk.")
