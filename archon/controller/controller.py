@@ -535,7 +535,7 @@ class ArchonController(Device):
                 # to a bytes string. We need to allocate all the memory first with
                 # a bytearray or it's very inefficient.
                 #
-                # NOTE: this assumes that once the binary reply begins, no no other
+                # NOTE: this assumes that once the binary reply begins, no other
                 # reply is going to arrive in the middle of it. I think that's unlikely,
                 # and probably prevented by the controller, but it's worth keeping in
                 # mind.
