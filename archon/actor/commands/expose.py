@@ -142,7 +142,7 @@ async def finish(
     if command.actor.expose_data is None:
         return command.fail(error="No exposure found.")
 
-    scontr = command.actor.exposure_data.controllers
+    scontr = command.actor.expose_data.controllers
 
     command.actor.expose_data.end_time = astropy.time.Time.now()
     command.actor.expose_data.header = header
@@ -181,7 +181,7 @@ async def abort(
     if all_ or not command.actor.expose_data:
         scontr = list(controllers.values())
     else:
-        scontr = command.actor.exposure_data.controllers
+        scontr = command.actor.expose_data.controllers
 
     command.debug(text="Aborting exposures")
     await asyncio.gather(
