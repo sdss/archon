@@ -19,7 +19,7 @@ from archon.controller.command import (
     ArchonCommandStatus,
 )
 from archon.controller.controller import ArchonController
-from archon.exceptions import ArchonError
+from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -78,7 +78,7 @@ async def test_read_config_fails(controller: ArchonController, mocker):
         side_effect=send_command(parser),
     )
 
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.read_config()
 
 
@@ -94,7 +94,7 @@ async def test_read_config_no_reply(controller: ArchonController, mocker):
         side_effect=send_command(parser),
     )
 
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.read_config()
 
 
@@ -161,20 +161,20 @@ async def test_write_config_no_config(controller: ArchonController, tmp_path):
     empty_file = tmp_path / "empty.acf"
     empty_file.touch()
 
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.write_config(empty_file)
 
 
 @pytest.mark.commands([["CLEARCONFIG", ["?{cid}"]]])
 async def test_write_config_clear_fails(controller: ArchonController, config_file):
-    with pytest.raises(ArchonError) as err:
+    with pytest.raises(ArchonControllerError) as err:
         await controller.write_config(config_file)
     assert "Failed running CLEARCONFIG." in str(err)
 
 
 @pytest.mark.commands([["WCONFIG", ["?{cid}"]], ["CLEARCONFIG", ["<{cid}"]]])
 async def test_write_config_wconfig_fails(controller: ArchonController, config_file):
-    with pytest.raises(ArchonError) as err:
+    with pytest.raises(ArchonControllerError) as err:
         await controller.write_config(config_file)
     assert "Failed sending line" in str(err)
 
@@ -202,6 +202,6 @@ async def test_write_config_after_command_fails(
         side_effect=send_command(parser),
     )
 
-    with pytest.raises(ArchonError) as err:
+    with pytest.raises(ArchonControllerError) as err:
         await controller.write_config(config_file, applyall=True, poweron=True)
     assert f"Failed sending {after_command}" in str(err)

@@ -81,7 +81,7 @@ async def controller(request, unused_tcp_port: int):
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
 
     async with server:
-        archon = ArchonController("localhost", unused_tcp_port)
+        archon = ArchonController("localhost", unused_tcp_port, name="test_controller")
         await archon.start()
         archon.status = ControllerStatus.IDLE
 

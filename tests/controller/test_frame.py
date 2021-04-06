@@ -9,7 +9,7 @@
 import pytest
 
 from archon.controller.controller import ArchonController
-from archon.exceptions import ArchonError
+from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -26,5 +26,5 @@ async def test_get_frame(controller: ArchonController):
 
 @pytest.mark.commands([["FRAME", ["?{cid}"]]])
 async def test_get_frame_fails(controller: ArchonController):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.get_frame()

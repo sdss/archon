@@ -10,7 +10,7 @@ import pytest
 
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ModType
-from archon.exceptions import ArchonError
+from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -34,5 +34,5 @@ async def test_get_system_modtype(controller: ArchonController):
 
 @pytest.mark.commands([["SYSTEM", ["?{cid}"]]])
 async def test_get_system_error(controller: ArchonController):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.get_system()
