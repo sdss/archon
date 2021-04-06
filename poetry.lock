@@ -249,17 +249,6 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
-name = "fitsio"
-version = "1.1.4"
-description = "A full featured python library to read from and write to FITS files."
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-numpy = "*"
-
-[[package]]
 name = "flake8"
 version = "3.9.0"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -1054,7 +1043,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "6949779989ad765a685d98db7b0a882638184b2f7392746625063e542793b3f8"
+content-hash = "812f3afbc12729ccd5960d79a2546e0e2c0e0cb4a47fef22c46605a331c3d5b4"
 
 [metadata.files]
 aio-pika = [
@@ -1203,9 +1192,6 @@ doc8 = [
 docutils = [
     {file = "docutils-0.16-py2.py3-none-any.whl", hash = "sha256:0c5b78adfbf7762415433f5515cd5c9e762339e23369dbe8000d84a4bf4ab3af"},
     {file = "docutils-0.16.tar.gz", hash = "sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc"},
-]
-fitsio = [
-    {file = "fitsio-1.1.4.tar.gz", hash = "sha256:59c281648ea8fe50ed557857b201eacb21671b83ae60956a7e22c2a7e2a82b9d"},
 ]
 flake8 = [
     {file = "flake8-3.9.0-py2.py3-none-any.whl", hash = "sha256:12d05ab02614b6aee8df7c36b97d1a3b2372761222b19b58621355e82acddcff"},
