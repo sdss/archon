@@ -25,7 +25,7 @@ async def status(command: Command, controller: ArchonController):
         return
 
     try:
-        status = await controller.get_status()
+        status = await controller.get_device_status()
     except ArchonError as ee:
         return error_controller(command, controller, str(ee))
 
