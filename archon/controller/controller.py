@@ -565,6 +565,9 @@ class ArchonController(Device):
             A callback that receives a message with the current operation. Useful when
             `.fetch` is called by the actor to report progress to the users.
         """
+        if self.status & ControllerStatus.FETCHING:
+            raise ArchonControllerError("Controller is already fetching.")
+
         notifier = notifier or (lambda x: None)
         frame_info = await self.get_frame()
 
@@ -585,7 +588,7 @@ class ArchonController(Device):
             if frame_info[f"buf{buffer_no}complete"] == 0:
                 raise ArchonControllerError(f"Buffer frame {buffer_no} cannot be read.")
 
-        self.status = ControllerStatus.FETCHING
+        self.status |= ControllerStatus.FETCHING
 
         # Lock for reading
         notifier(f"Locking buffer {buffer_no}")
@@ -622,7 +625,8 @@ class ArchonController(Device):
         arr = numpy.frombuffer(frame, dtype=dtype)
         arr = arr.reshape(height, width)
 
-        self.status = ControllerStatus.IDLE
+        # Turn off FETCHING bit
+        self.status &= ~ControllerStatus.FETCHING
 
         return arr
 
