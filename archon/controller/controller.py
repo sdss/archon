@@ -20,6 +20,7 @@ from typing import Any, Callable, Iterable, Optional
 import numpy
 from clu.device import Device
 
+from archon import config
 from archon.controller.command import ArchonCommand
 from archon.controller.maskbits import ControllerStatus, ModType
 from archon.exceptions import ArchonControllerError, ArchonControllerWarning
@@ -414,9 +415,12 @@ class ArchonController(Device):
         self.status = ControllerStatus.IDLE
 
     async def reset(self):
-        """Cancels exposures and resets timing."""
+        """Resets timing."""
         await self.set_param("ContinuousExposures", 0)
         await self.set_param("Exposures", 0)
+        await self.set_param("ReadOut", 1)
+        await self.set_param("AbortExposure", 0)
+        await self.set_param("Flush", 0)
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
@@ -424,8 +428,12 @@ class ArchonController(Device):
                 f"Failed sending RESETTIMING ({cmd.status.name})"
             )
 
-        # TODO: here we should do some more checks before we say it's IDLE.
-        self.status = ControllerStatus.IDLE
+        # This should reset everything except in the case in which the controller was
+        # exposing. In that case there will be change that we need to readout.
+        if self.status & ControllerStatus.READOUT_PENDING:
+            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+        else:
+            self.status = ControllerStatus.IDLE
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
@@ -436,18 +444,110 @@ class ArchonController(Device):
             )
         return cmd
 
-    async def integrate(self, exposure_time=1):
+    async def expose(self, exposure_time=1, readout=True):
         """Integrates the CCD for ``exposure_time`` seconds.
 
-        Returns immediately once the exposure has begun.
+        Returns immediately once the exposure has begun. If ``readout=False``, does
+        not trigger a readout immediately after the integration finishes.
         """
-        if not self.status == ControllerStatus.IDLE:
-            raise ArchonError("Status must be IDLE to start integrating.")
+        await self.reset()
+
+        if ControllerStatus.READOUT_PENDING & self.status:
+            raise ArchonControllerError(
+                "Controller has a readout pending. Read the device or flush."
+            )
+
+        if readout is False:
+            await self.set_param("ReadOut", 0)
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
 
-        self.status = ControllerStatus.EXPOSING
+        self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
+
+        async def update_state():
+            if not self.status & ControllerStatus.EXPOSING:  # Must have been aborted.
+                return
+            if readout is False:
+                self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+            else:
+                frame = await self.get_frame()
+                wbuf = frame["WBUF"]
+                if frame[f"BUF{wbuf}COMPLETE"] == 0:
+                    self.status = ControllerStatus.READING
+                else:
+                    raise ArchonControllerError(
+                        "Controller should be reading but it is not."
+                    )
+
+        loop = asyncio.get_running_loop()
+        loop.call_later(exposure_time + 0.5, update_state)
+
+    async def abort(self, readout=True):
+        """Aborts the current exposure.
+
+        If ``readout=False``, does not trigger a readout immediately after aborting.
+        """
+        if self.status != ControllerStatus.EXPOSING:
+            raise ArchonControllerError("Controller is not exposing.")
+
+        await self.set_param("ReadOut", int(readout))
+        await self.set_param("AbortExposure", 1)
+
+        if readout:
+            self.status = ControllerStatus.READING
+        else:
+            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+
+        return
+
+    async def flush(self, force=False, wait_for=None):
+        """Flushes the detector. Blocks until flushing completes."""
+        if not force and not (self.status & ControllerStatus.READOUT_PENDING):
+            raise ArchonControllerError("No readout pending.")
+
+        await self.set_param("Flush", 1)
+
+        wait_for = wait_for or config["timeouts"]["flushing"]
+        await asyncio.sleep(wait_for)
+
+        await self.reset()
+
+    async def readout(self, force=False, block=True, wait_for=None):
+        """Reads the detector into a buffer.
+
+        If ``force``, triggers the readout routine regardless of the detector expected
+        state. If ``block``, blocks until the buffer has been fully written. Otherwise
+        returns immediately.
+        """
+        expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
+        if not force and self.status != expected_state:
+            raise ArchonControllerError(
+                "Controller is not in a correct state for reading."
+            )
+
+        await self.set_param("ReadOut", 1)
+
+        if not block:
+            return
+
+        wait_for = wait_for or config["timeouts"]["readout_expected"]
+        max_wait = config["timeouts"]["readout_max"]
+
+        await asyncio.sleep(wait_for)
+
+        waited = wait_for
+        while True:
+            if waited > max_wait:
+                raise ArchonControllerError(
+                    "Timed out waiting for controller to finish reading."
+                )
+            frame = await self.get_frame()
+            wbuf = frame["WBUF"]
+            if frame[f"BUF{wbuf}COMPLETE"] == 1:
+                self.status = ControllerStatus.IDLE
+                return
+            await asyncio.sleep(1.0)
 
     async def fetch(
         self,
