@@ -219,7 +219,7 @@ class ArchonController(Device):
 
         return system
 
-    async def get_status(self) -> dict[str, Any]:
+    async def get_device_status(self) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``STATUS`` command."""
 
         def check_int(s):
