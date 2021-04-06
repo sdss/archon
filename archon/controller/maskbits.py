@@ -34,12 +34,13 @@ class ModType(enum.Enum):
     UNKNOWN = 16
 
 
-class ControllerStatus(enum.Enum):
+class ControllerStatus(enum.Flag):
     """Status of the Archon controller."""
 
     UNKNOWN = enum.auto()
     IDLE = enum.auto()
     EXPOSING = enum.auto()
+    READOUT_PENDING = enum.auto()
     READING = enum.auto()
     FETCHING = enum.auto()
     ERROR = enum.auto()
