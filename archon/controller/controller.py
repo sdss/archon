@@ -420,7 +420,7 @@ class ArchonController(Device):
         await self.set_param("Exposures", 0)
         await self.set_param("ReadOut", 1)
         await self.set_param("AbortExposure", 0)
-        await self.set_param("Flush", 0)
+        await self.set_param("DoFlush", 0)
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
@@ -506,7 +506,7 @@ class ArchonController(Device):
         if not force and not (self.status & ControllerStatus.READOUT_PENDING):
             raise ArchonControllerError("No readout pending.")
 
-        await self.set_param("Flush", 1)
+        await self.set_param("DoFlush", 1)
 
         wait_for = wait_for or config["timeouts"]["flushing"]
         await asyncio.sleep(wait_for)

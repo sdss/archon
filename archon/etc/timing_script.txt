@@ -1,7 +1,7 @@
 Main:
 RESET; IF Exposures GOTO Exposure
 X; IF ReadOut GOTO EndInt
-X; IF Flush GOTO Flush
+X; IF DoFlush CALL Flush(FlushCount)
 X; CALL Line
 X; GOTO Main
 
@@ -25,16 +25,9 @@ X; CALL Line(OverscanLines)
 X; GOTO Main
 
 Flush:
-NOINT; Flush--
-NOINT; CALL NoIntUnit(NoIntMS)
-NOCLAMP
-RGHIGH; CALL HorizontalSWShift(Lines)
-RGLOW; CLAMP(10000)
-S1HIGH; X(ST)
-S3LOW; X(ST)
-S2HIGH; X(ST)
-NOCLAMP; CALL SkipLine(Lines)
-X; GOTO Main
+X; DoFlush--
+X; CALL SkipLine(Lines)
+X; RETURN Flush
 
 IntUnit:
 INT; IF AbortExposure GOTO Abort
