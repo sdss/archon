@@ -22,12 +22,11 @@ from astropy.io import fits
 from clu.command import Command
 
 import archon.actor
-from archon import config
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, controller_list, open_with_lock
+from ..tools import check_controller, controller_list, open_with_lock, read_govee
 from . import parser
 
 __all__ = ["expose"]
@@ -302,33 +301,8 @@ async def get_header(
     header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
     header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
 
-    # Connects to the H5179 device and gets the lab temperature and humidity.
     try:
-        h5179 = config["sensors"]["H5179"]
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(h5179["host"], h5179["port"]),
-            timeout=2,
-        )
-        writer.write(b"status\n")
-        data = await asyncio.wait_for(reader.readline(), timeout=1)
-        lines = data.decode().strip().splitlines()
-        temp = hum = last = None
-        for line in lines:
-            name, temp, hum, __, last = line.split()
-            if name == "H5179":
-                break
-
-        if temp is None or hum is None or last is None:
-            raise ValueError("Did not get a measurement for H5179.")
-
-        temp = float(temp)
-        hum = float(hum)
-
-        last_seen = astropy.time.Time(last, format="isot")
-        delta = astropy.time.Time.now() - last_seen
-        if delta.datetime.seconds / 60 > 10:
-            raise RuntimeError("Lab metrology is over 10 minutes old.")
-
+        temp, hum = await read_govee()
     except BaseException as err:
         command.warning(text=f"Failed retriving H5179 data: {err}")
         temp = -999.0
