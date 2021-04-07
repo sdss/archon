@@ -10,6 +10,7 @@ import numpy
 import pytest
 
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
@@ -66,3 +67,10 @@ async def test_fetch_buffer_not_complete(controller: ArchonController):
     with pytest.raises(ArchonControllerError) as err:
         await controller.fetch(1)
     assert "Buffer frame 1 cannot be read." in str(err.value)
+
+
+async def test_fetch_already_fetching(controller: ArchonController):
+    controller.status = ControllerStatus.FETCHING
+
+    with pytest.raises(ArchonControllerError):
+        await controller.fetch()
