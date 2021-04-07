@@ -51,7 +51,7 @@ class ArchonController(Device):
         Device.__init__(self, host, port)
 
         self.name = name
-        self._status: ControllerStatus = ControllerStatus.UNKNOWN
+        self._status: ControllerStatus = ControllerStatus.IDLE
         self.__status_event = asyncio.Event()
 
         self._binary_reply: Optional[bytearray] = None
@@ -481,14 +481,14 @@ class ArchonController(Device):
                     )
 
         loop = asyncio.get_running_loop()
-        loop.call_later(exposure_time + 0.5, update_state)
+        loop.call_later(exposure_time + 0.5, asyncio.create_task, update_state())
 
     async def abort(self, readout=True):
         """Aborts the current exposure.
 
         If ``readout=False``, does not trigger a readout immediately after aborting.
         """
-        if self.status != ControllerStatus.EXPOSING:
+        if not self.status & ControllerStatus.EXPOSING:
             raise ArchonControllerError("Controller is not exposing.")
 
         await self.set_param("ReadOut", int(readout))
