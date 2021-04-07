@@ -445,11 +445,13 @@ class ArchonController(Device):
             )
         return cmd
 
-    async def expose(self, exposure_time=1, readout=True):
+    async def expose(self, exposure_time=1, readout=True) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
 
         Returns immediately once the exposure has begun. If ``readout=False``, does
-        not trigger a readout immediately after the integration finishes.
+        not trigger a readout immediately after the integration finishes. The returned
+        `~asyncio.Task` waits until the integration is done and, if ``readout``, checks
+        that the readout has started.
         """
         await self.reset()
 
@@ -467,22 +469,22 @@ class ArchonController(Device):
         self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
 
         async def update_state():
+            await asyncio.sleep(exposure_time + 0.5)
             if not self.status & ControllerStatus.EXPOSING:  # Must have been aborted.
                 return
             if readout is False:
                 self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
             else:
                 frame = await self.get_frame()
-                wbuf = frame["WBUF"]
-                if frame[f"BUF{wbuf}COMPLETE"] == 0:
+                wbuf = frame["wbuf"]
+                if frame[f"buf{wbuf}complete"] == 0:
                     self.status = ControllerStatus.READING
                 else:
                     raise ArchonControllerError(
                         "Controller should be reading but it is not."
                     )
 
-        loop = asyncio.get_running_loop()
-        loop.call_later(exposure_time + 0.5, asyncio.create_task, update_state())
+        return asyncio.create_task(update_state())
 
     async def abort(self, readout=True):
         """Aborts the current exposure.
