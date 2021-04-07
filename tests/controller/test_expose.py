@@ -43,7 +43,6 @@ async def test_expose_not_idle(controller: ArchonController):
 
 @pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=1"]]])
 async def test_expose_fails_reading(controller: ArchonController, mocker):
-    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
     task = await controller.expose(0.01)
 
     with pytest.raises(ArchonControllerError):
@@ -51,7 +50,6 @@ async def test_expose_fails_reading(controller: ArchonController, mocker):
 
 
 async def test_expose_no_readout(controller: ArchonController, mocker):
-    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
     task = await controller.expose(0.01, readout=False)
 
     await task
@@ -59,7 +57,6 @@ async def test_expose_no_readout(controller: ArchonController, mocker):
 
 
 async def test_abort(controller: ArchonController, mocker):
-    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
     task = await controller.expose(0.01)
 
     await controller.abort(readout=True)
@@ -69,7 +66,6 @@ async def test_abort(controller: ArchonController, mocker):
 
 
 async def test_abort_no_readout(controller: ArchonController, mocker):
-    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
     task = await controller.expose(0.01)
 
     await controller.abort(readout=False)
