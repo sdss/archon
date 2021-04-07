@@ -75,11 +75,13 @@ def parallel_controllers(check=True):
             **kwargs,
         ):
             if controller_list:
-                controller_keys = map(lambda x: x.strip(), controller_list.split(","))
+                controller_keys = list(
+                    map(lambda x: x.strip(), controller_list.split(","))
+                )
             else:
-                controller_keys = controllers.keys()
+                controller_keys = list(controllers.keys())
 
-            if len(list(controller_keys)) == 0:
+            if len(controller_keys) == 0:
                 return command.fail("No controllers are available.")
 
             tasks: list[asyncio.Task] = []
