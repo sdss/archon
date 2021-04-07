@@ -766,7 +766,7 @@ docutils = ">=0.7"
 
 [[package]]
 name = "sdss-clu"
-version = "0.7.6"
+version = "0.7.7"
 description = "A new protocol for SDSS actors."
 category = "main"
 optional = false
@@ -1577,8 +1577,8 @@ rstcheck = [
     {file = "rstcheck-3.3.1.tar.gz", hash = "sha256:92c4f79256a54270e0402ba16a2f92d0b3c15c8f4410cb9c57127067c215741f"},
 ]
 sdss-clu = [
-    {file = "sdss-clu-0.7.6.tar.gz", hash = "sha256:8fc0a802ab447af0122f337164b9d2092786b5a059fccb858f58b60af8fec090"},
-    {file = "sdss_clu-0.7.6-py3-none-any.whl", hash = "sha256:312b412212eb39bfc61adc395b3abc17b601077262510b374c914e00bc50d3cc"},
+    {file = "sdss-clu-0.7.7.tar.gz", hash = "sha256:2dfadf88820fd247f0b892c4807e9d9faf3a0ea6860ca8c1e32ae28e3652ca8f"},
+    {file = "sdss_clu-0.7.7-py3-none-any.whl", hash = "sha256:21bdc84adf1ec1e9b693c34aaf6b3439da01be9af1b7663ebc0e798cf549affe"},
 ]
 sdsstools = [
     {file = "sdsstools-0.4.10-py3-none-any.whl", hash = "sha256:cb2c78d63fe0418f9a27b534f39f283da027ce3801a9053b221446de00d6adf6"},
