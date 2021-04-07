@@ -178,11 +178,10 @@ async def abort(
         force = True
 
     if command.actor.expose_data is None:
-        err = "No exposure found."
         if force:
-            command.warning(error=err)
+            command.warning(error="No exposure found.")
         else:
-            return command.fail(error=err)
+            return command.fail(error="No exposure found.")
 
     scontr: list[ArchonController]
     if all_ or not command.actor.expose_data:
@@ -191,17 +190,17 @@ async def abort(
         scontr = command.actor.expose_data.controllers
 
     command.debug(text="Aborting exposures")
-    await asyncio.gather(
-        *[contr.abort(readout=False) for contr in scontr],
-        return_exceptions=True,
-    )
+    try:
+        await asyncio.gather(*[contr.abort(readout=False) for contr in scontr])
+    except ArchonError as err:
+        return command.fail(error=f"Failed aborting exposures: {err}")
 
     if flush:
         command.debug(text="Flushing devices")
-        await asyncio.gather(
-            *[contr.flush() for contr in scontr],
-            return_exceptions=True,
-        )
+        try:
+            await asyncio.gather(*[contr.flush() for contr in scontr])
+        except ArchonError as err:
+            return command.fail(error=f"Failed flushing devices: {err}")
 
     return command.finish()
 
