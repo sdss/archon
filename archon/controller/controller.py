@@ -444,7 +444,11 @@ class ArchonController(Device):
             )
         return cmd
 
-    async def expose(self, exposure_time=1, readout=True) -> asyncio.Task:
+    async def expose(
+        self,
+        exposure_time: float = 1,
+        readout: bool = True,
+    ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
 
         Returns immediately once the exposure has begun. If ``readout=False``, does
@@ -475,22 +479,21 @@ class ArchonController(Device):
                 return
             if readout is False:
                 self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+                return
+            frame = await self.get_frame()
+            wbuf = frame["wbuf"]
+            if frame[f"buf{wbuf}complete"] == 0:
+                self.status = ControllerStatus.READING
             else:
-                frame = await self.get_frame()
-                wbuf = frame["wbuf"]
-                if frame[f"buf{wbuf}complete"] == 0:
-                    self.status = ControllerStatus.READING
-                else:
-                    raise ArchonControllerError(
-                        "Controller should be reading but it is not."
-                    )
+                raise ArchonControllerError("Controller is not reading.")
 
         return asyncio.create_task(update_state())
 
-    async def abort(self, readout=True):
+    async def abort(self, readout: bool = False):
         """Aborts the current exposure.
 
         If ``readout=False``, does not trigger a readout immediately after aborting.
+        Aborting does not flush the charge.
         """
         if not self.status & ControllerStatus.EXPOSING:
             raise ArchonControllerError("Controller is not exposing.")
@@ -505,7 +508,7 @@ class ArchonController(Device):
 
         return
 
-    async def flush(self, force=False, wait_for=None):
+    async def flush(self, force: bool = False, wait_for: Optional[float] = None):
         """Flushes the detector. Blocks until flushing completes."""
         if not force and not (self.status & ControllerStatus.READOUT_PENDING):
             raise ArchonControllerError("No readout pending.")
@@ -513,11 +516,18 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 1)
 
         wait_for = wait_for or config["timeouts"]["flushing"]
+        assert wait_for
+
         await asyncio.sleep(wait_for)
 
         await self.reset()
 
-    async def readout(self, force=False, block=True, wait_for=None):
+    async def readout(
+        self,
+        force: bool = False,
+        block: bool = True,
+        wait_for: Optional[float] = None,
+    ):
         """Reads the detector into a buffer.
 
         If ``force``, triggers the readout routine regardless of the detector expected
@@ -526,11 +536,11 @@ class ArchonController(Device):
         """
         expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
         if not force and self.status != expected_state:
-            raise ArchonControllerError(
-                "Controller is not in a correct state for reading."
-            )
+            raise ArchonControllerError("Controller is not in a readable state.")
 
         await self.set_param("ReadOut", 1)
+
+        self.status = ControllerStatus.READING
 
         if not block:
             return
@@ -538,16 +548,20 @@ class ArchonController(Device):
         wait_for = wait_for or config["timeouts"]["readout_expected"]
         max_wait = config["timeouts"]["readout_max"]
 
+        assert wait_for
         await asyncio.sleep(wait_for)
 
-        waited = wait_for
+        frame = await self.get_frame()
+        wbuf = frame["wbuf"]
+
+        waited = 0.0
         while True:
             if waited > max_wait:
+                self.status = ControllerStatus.ERROR
                 raise ArchonControllerError(
                     "Timed out waiting for controller to finish reading."
                 )
             frame = await self.get_frame()
-            wbuf = frame["wbuf"]
             if frame[f"buf{wbuf}complete"] == 1:
                 self.status = ControllerStatus.IDLE
                 return

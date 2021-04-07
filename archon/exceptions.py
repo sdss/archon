@@ -18,7 +18,7 @@ class ArchonError(Exception):
     """A custom core Archon exception"""
 
 
-class ArchonControllerError(Exception):
+class ArchonControllerError(ArchonError):
     """An exception raised by an `.ArchonController`."""
 
     def __init__(self, message):

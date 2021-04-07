@@ -45,9 +45,10 @@ async def test_readout_no_block(controller: ArchonController):
 
     await controller.readout(block=False)
 
-    assert controller.status == ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    assert controller.status == ControllerStatus.READING
 
 
+@pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=0"]]])
 async def test_readout_max_wait(controller: ArchonController):
     controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
 

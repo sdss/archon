@@ -149,7 +149,7 @@ async def finish(
     try:
         await asyncio.gather(
             *[
-                contr.abort(readout=True)
+                contr.abort(readout=False)
                 for contr in scontr
                 if contr.status & ControllerStatus.EXPOSING
             ]
@@ -340,44 +340,11 @@ async def _write_image(
         hemisphere=hemisphere,
     )
 
-    # Wait a little bit and check that we are reading out to a new buffer
-    await asyncio.sleep(0.1)
+    # Read device
+    await controller.readout()
 
-    # Get new frame info
-    frame_info = await controller.get_frame()
-    wbuf = frame_info["wbuf"]
-    if frame_info[f"buf{wbuf}complete"] != 0:
-        controller.status = ControllerStatus.ERROR
-        raise ArchonError("Read-out failed to start.")
-
-    controller.status = ControllerStatus.READING
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text=f"Reading frame into buffer {wbuf}.",
-        )
-    )
-
-    # Wait until buffer is complete.
-    elapsed = 0
-    while True:
-        frame_info = await controller.get_frame()
-        if frame_info[f"buf{wbuf}complete"] == 1:
-            break
-        if elapsed > config["timeouts"]["readout_max"]:
-            controller.status = ControllerStatus.ERROR
-            raise ArchonError("Timed out waiting for read-out to finish.")
-        await asyncio.sleep(1.0)  # Sleep for one second before asking again.
-        elapsed += 1
-
-    # Fetch buffer data
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text=f"Fetching buffer {wbuf}.",
-        )
-    )
-    data = await controller.fetch(wbuf)
+    # Fetch buffer
+    data = await controller.fetch()
 
     # Divide array into CCDs and create FITS.
     # TODO: add at least a placeholder header with some basics.
