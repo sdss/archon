@@ -546,10 +546,11 @@ class ArchonController(Device):
                     "Timed out waiting for controller to finish reading."
                 )
             frame = await self.get_frame()
-            wbuf = frame["WBUF"]
-            if frame[f"BUF{wbuf}COMPLETE"] == 1:
+            wbuf = frame["wbuf"]
+            if frame[f"buf{wbuf}complete"] == 1:
                 self.status = ControllerStatus.IDLE
                 return
+            waited += 1.0
             await asyncio.sleep(1.0)
 
     async def fetch(

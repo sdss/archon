@@ -51,7 +51,7 @@ async def test_archon_controller_warning_unnamed(controller):
     with pytest.warns(ArchonControllerWarning) as warn:
         await controller.process_message(b"TEST")
 
-    assert "unnamed - " in str(warn[0].message)
+    assert "unnamed - " in str(warn[-1].message)
 
 
 async def test_archon_controller_warning_no_controller():
@@ -62,7 +62,7 @@ async def test_archon_controller_warning_no_controller():
     with pytest.warns(ArchonControllerWarning) as warn:
         Test()
 
-    assert "unnamed - test warning" in str(warn[0].message)
+    assert "unnamed - test warning" in str(warn[-1].message)
 
 
 async def test_archon_controller_warning_no_class():
@@ -70,4 +70,4 @@ async def test_archon_controller_warning_no_class():
     with pytest.warns(ArchonControllerWarning) as warn:
         warnings.warn("test warning", ArchonControllerWarning)
 
-    assert str(warn[0].message) == "test warning"
+    assert str(warn[-1].message) == "test warning"
