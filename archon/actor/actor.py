@@ -12,8 +12,9 @@ import asyncio
 import os
 import warnings
 from contextlib import suppress
+from dataclasses import dataclass, field
 
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict
 
 import astropy.time
 from clu.actor import AMQPActor
@@ -144,12 +145,14 @@ class ArchonActor(AMQPActor):
             self.write(
                 status=dict(
                     controller=controller.name,
-                    status=status.name,
+                    status=status.value,
+                    status_names=[flag.name for flag in status.get_flags()],
                 )
             )
 
 
-class ExposeData(NamedTuple):
+@dataclass
+class ExposeData:
     """Data about the ongoing exposure."""
 
     exposure_time: float
@@ -159,4 +162,4 @@ class ExposeData(NamedTuple):
     end_time: astropy.time.Time | None = None
     mjd: int = 0
     exposure_no: int = 0
-    header: Dict[str, Any] = {}
+    header: Dict[str, Any] = field(default_factory=dict)
