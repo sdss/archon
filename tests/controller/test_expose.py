@@ -56,3 +56,31 @@ async def test_expose_no_readout(controller: ArchonController, mocker):
 
     await task
     assert controller.status & ControllerStatus.READOUT_PENDING
+
+
+async def test_abort(controller: ArchonController, mocker):
+    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
+    task = await controller.expose(0.01)
+
+    await controller.abort(readout=True)
+    await task
+
+    assert controller.status & ControllerStatus.READING
+
+
+async def test_abort_no_readout(controller: ArchonController, mocker):
+    mocker.patch.object(ArchonController, "set_param", wraps=controller.set_param)
+    task = await controller.expose(0.01)
+
+    await controller.abort(readout=False)
+    await task
+
+    assert controller.status & ControllerStatus.IDLE
+    assert controller.status & ControllerStatus.READOUT_PENDING
+
+
+async def test_abort_no_exposing(controller: ArchonController):
+    controller.status = ControllerStatus.IDLE
+
+    with pytest.raises(ArchonControllerError):
+        await controller.abort()
