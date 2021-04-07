@@ -8,7 +8,7 @@
 
 import pytest
 
-from archon.controller.controller import ArchonController
+from archon.controller.controller import ArchonController, ControllerStatus
 from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
@@ -27,3 +27,14 @@ async def test_get_device_status(controller: ArchonController):
 async def test_get_device_status_error(controller: ArchonController):
     with pytest.raises(ArchonControllerError):
         await controller.get_device_status()
+
+
+def test_controller_status_flags():
+
+    flags = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
+
+    assert ControllerStatus.EXPOSING & flags
+    assert ControllerStatus.READOUT_PENDING & flags
+
+    assert ControllerStatus.EXPOSING in flags.get_flags()
+    assert ControllerStatus.READOUT_PENDING in flags.get_flags()
