@@ -417,9 +417,8 @@ class ArchonController(Device):
 
     async def reset(self):
         """Resets timing."""
-        await self.set_param("ContinuousExposures", 0)
         await self.set_param("Exposures", 0)
-        await self.set_param("ReadOut", 1)
+        await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
         await self.set_param("DoFlush", 0)
         cmd = await self.send_command("RESETTIMING", timeout=1)
@@ -462,6 +461,8 @@ class ArchonController(Device):
 
         if readout is False:
             await self.set_param("ReadOut", 0)
+        else:
+            await self.set_param("ReadOut", 1)
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)

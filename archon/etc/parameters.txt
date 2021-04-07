@@ -1,5 +1,4 @@
 # Parameters
-ContinuousExposures=1
 Exposures=0
 AbortExposure=0
 ReadOut=1
