@@ -4,6 +4,7 @@
 Change Log
 ==========
 
+* :release:`0.2.1 <2021-04-06>`
 * :bug:`-` Fix Docker creation for tags.
 *
 * :release:`0.2.0 <2021-04-06>`
