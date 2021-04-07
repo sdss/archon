@@ -9,11 +9,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import pathlib
 from contextlib import suppress
 
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 import astropy.time
 import click
@@ -131,8 +132,8 @@ async def start(
 @click.option("--header", type=str, default="{}", help="JSON string with ")
 async def finish(
     command: Command[archon.actor.actor.ArchonActor],
-    controllers: dict[str, ArchonController],
-    header: Dict[str, Any],
+    controllers: Dict[str, ArchonController],
+    header: str,
 ):
     """Finishes the ongoing exposure."""
 
@@ -144,19 +145,27 @@ async def finish(
     scontr = command.actor.expose_data.controllers
 
     command.actor.expose_data.end_time = astropy.time.Time.now()
-    command.actor.expose_data.header = header
+    command.actor.expose_data.header = json.loads(header)
 
     try:
-        await asyncio.gather(*[contr.abort(readout=True) for contr in scontr])
+        await asyncio.gather(
+            *[
+                contr.abort(readout=True)
+                for contr in scontr
+                if contr.status & ControllerStatus.EXPOSING
+            ]
+        )
         await asyncio.gather(*[_write_image(command, contr) for contr in scontr])
     except ArchonError as err:
         return command.fail(error=f"Failed reading out: {err}")
 
+    return command.finish()
+
 
 @expose.command()
-@click.option("--flush", is_bool=True, help="Flush the device after aborting.")
-@click.option("--force", is_bool=True, help="Forces abort.")
-@click.option("--all", "all_", is_bool=True, help="Aborts all the controllers.")
+@click.option("--flush", is_flag=True, help="Flush the device after aborting.")
+@click.option("--force", is_flag=True, help="Forces abort.")
+@click.option("--all", "all_", is_flag=True, help="Aborts all the controllers.")
 async def abort(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
@@ -247,7 +256,7 @@ async def _start_controllers(
                 )
 
             try:
-                results = await asyncio.gather(*_jobs, return_exceptions=False)
+                await asyncio.gather(*_jobs, return_exceptions=False)
             except BaseException as err:
                 command.error(error=str(err))
                 command.error("One controller failed. Cancelling remaining tasks.")
@@ -256,9 +265,6 @@ async def _start_controllers(
                         with suppress(asyncio.CancelledError):
                             job.cancel()
                             await job
-                return False
-
-            if not all(results):
                 return False
 
             # Increment nextExposureNumber
@@ -305,7 +311,15 @@ async def get_header(
         )
         writer.write(b"status\n")
         data = await asyncio.wait_for(reader.readline(), timeout=1)
-        temp, hum, __, last = data.decode().strip().split()
+        lines = data.decode().strip().splitlines()
+        temp = hum = last = None
+        for line in lines:
+            name, temp, hum, __, last = line.split()
+            if name == "H5179":
+                break
+
+        if temp is None or hum is None or last is None:
+            raise ValueError("Did not get a measurement for H5179.")
 
         temp = float(temp)
         hum = float(hum)
