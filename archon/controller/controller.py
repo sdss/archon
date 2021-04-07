@@ -185,6 +185,7 @@ class ArchonController(Device):
                 f"Received invalid reply {line.decode()}",
                 ArchonControllerWarning,
             )
+            return
 
         command_id = int(match[1], 16)
         if command_id not in self.__running_commands:
