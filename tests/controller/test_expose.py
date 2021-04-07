@@ -6,7 +6,6 @@
 # @Filename: test_expose.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
