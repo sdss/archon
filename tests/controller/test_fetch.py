@@ -10,7 +10,8 @@ import numpy
 import pytest
 
 from archon.controller.controller import ArchonController
-from archon.exceptions import ArchonError
+from archon.controller.maskbits import ControllerStatus
+from archon.exceptions import ArchonControllerError
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -38,7 +39,7 @@ async def test_fetch(controller: ArchonController, buffer):
 
 
 async def test_fetch_bad_buffer(controller: ArchonController):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.fetch(5)
 
 
@@ -54,7 +55,7 @@ async def test_fetch_bad_buffer(controller: ArchonController):
     ]
 )
 async def test_fetch_buffer_not_ready(controller: ArchonController):
-    with pytest.raises(ArchonError) as err:
+    with pytest.raises(ArchonControllerError) as err:
         await controller.fetch(-1)
     assert "There are no buffers ready to be read." in str(err.value)
 
@@ -63,6 +64,13 @@ async def test_fetch_buffer_not_ready(controller: ArchonController):
     [["FRAME", ["<{cid}WBUF=3 BUF1COMPLETE=0 BUF2COMPLETE=1 BUF3COMPLETE=0 "]]]
 )
 async def test_fetch_buffer_not_complete(controller: ArchonController):
-    with pytest.raises(ArchonError) as err:
+    with pytest.raises(ArchonControllerError) as err:
         await controller.fetch(1)
     assert "Buffer frame 1 cannot be read." in str(err.value)
+
+
+async def test_fetch_already_fetching(controller: ArchonController):
+    controller.status = ControllerStatus.FETCHING
+
+    with pytest.raises(ArchonControllerError):
+        await controller.fetch()

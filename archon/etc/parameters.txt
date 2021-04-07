@@ -1,0 +1,42 @@
+# Parameters
+Exposures=0
+AbortExposure=0
+ReadOut=1
+DoFlush=0
+IntMS=1000
+NoIntMS=100
+PreSkipPixels=0
+Pixels=2200
+PostSkipPixels=0
+OverscanPixels=0
+PreSkipLines=0
+Lines=2200
+PostSkipLines=0
+OverScanLines=0
+HorizontalBinning=1
+VerticalBinning=1
+ST=12
+STM1=11
+AT=2000
+FlushCount=2
+
+# Constants
+# Clock levels
+RG_HIGH=10
+RG_LOW=-3
+SW_HIGH=5
+SW_LOW=-5
+S_HIGH=5
+S_LOW=-5
+DG_HIGH=3
+DG_LOW=1
+A_HIGH=3
+A_LOW=-6
+A_INT=-9
+# Slew rates
+RG_SLEW=400
+SW_SLEW=200
+S_SLEW=200
+DG_SLEW=200
+A_SLEW=10
+AD_CLAMP=-0.6

@@ -12,7 +12,11 @@ import pytest
 
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
-from archon.exceptions import ArchonError, ArchonUserWarning
+from archon.exceptions import (
+    ArchonControllerError,
+    ArchonControllerWarning,
+    ArchonError,
+)
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -49,14 +53,14 @@ async def test_controller_error(controller: ArchonController):
 
 @pytest.mark.commands([["PING", ["<?!PONG"]]])
 async def test_controller_command_not_running(controller: ArchonController):
-    with pytest.warns(ArchonUserWarning):
+    with pytest.warns(ArchonControllerWarning):
         controller.send_command("ping")
         await asyncio.sleep(0.01)
 
 
 @pytest.mark.commands([["PING", ["<02PONG"]]])
 async def test_controller_bad_reply(controller: ArchonController):
-    with pytest.warns(ArchonUserWarning):
+    with pytest.warns(ArchonControllerWarning):
         controller.send_command("ping", command_id=1)
         await asyncio.sleep(0.01)
 
@@ -64,7 +68,7 @@ async def test_controller_bad_reply(controller: ArchonController):
 @pytest.mark.commands([])
 @pytest.mark.parametrize("command_id", [-1, 256])
 async def test_controller_bad_command_id(controller: ArchonController, command_id: int):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         controller.send_command("PING", command_id=command_id)
 
 
@@ -76,7 +80,7 @@ async def test_controller_set_param(controller: ArchonController):
 
 @pytest.mark.commands([["FASTLOADPARAM", ["?{cid}"]]])
 async def test_controller_set_param_fails(controller: ArchonController):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.set_param("A", 1)
 
 
@@ -87,7 +91,7 @@ async def test_controller_reset(controller: ArchonController):
 
 @pytest.mark.commands([["RESETTIMING", ["?{cid}"]]])
 async def test_controller_reset_fails(controller: ArchonController):
-    with pytest.raises(ArchonError):
+    with pytest.raises(ArchonControllerError):
         await controller.reset()
 
 

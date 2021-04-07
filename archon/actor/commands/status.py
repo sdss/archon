@@ -25,14 +25,15 @@ async def status(command: Command, controller: ArchonController):
         return
 
     try:
-        status = await controller.get_status()
+        status = await controller.get_device_status()
     except ArchonError as ee:
         return error_controller(command, controller, str(ee))
 
     command.info(
         status={
             "controller": controller.name,
-            "status": controller.status.name,
+            "status": controller.status.value,
+            "status_names": [flag.name for flag in controller.status.get_flags()],
             **status,
         }
     )

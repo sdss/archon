@@ -3,18 +3,18 @@
 # ccd key determines the names and regions of each CCD in the buffer in the format
 # [x0, y0, x1, y1]
 controllers:
-    sp1:
-        host: 10.7.45.25
-        port: 4242
-        ccds:
-            r1: [0, 0, 4400, 4400]
-            b1: [4400, 0, 8800, 4400]
-            z1: [8800, 0, 13200, 4400]
+  sp1:
+    host: 10.7.45.25
+    port: 4242
+    ccds:
+      r1: [0, 0, 4400, 4400]
+      b1: [4400, 0, 8800, 4400]
+      z1: [8800, 0, 13200, 4400]
 
 # This is the ACF configuration file to be loaded to the Archon including the
 # timing script. {archon_etc} gets completed with the path of the etc directory once
 # installed
-archon_config_file: '{archon_etc}/lvm1.acf'
+archon_config_file: '{archon_etc}/lvm2.acf'
 
 # The base directory where the data will be saved (and MJD subdirectory is always added)
 # and the format of the saved filename. Available placeholders are {observatory} which
@@ -24,24 +24,26 @@ archon_config_file: '{archon_etc}/lvm1.acf'
 # identifier. The CCD frames from each controller are saved as different HDU extensions
 # inside the FITS file.
 files:
-    data_dir: '/data/spectro/lvm'
-    template: 'sdR-{hemisphere}-{controller}-{exposure_no:08d}.fits.gz'
+  data_dir: '/data/spectro/lvm'
+  template: 'sdR-{hemisphere}-{controller}-{exposure_no:08d}.fits.gz'
 
 timeouts:
-    controller_connect: 1
-    readout_expected: 45
-    readout_max: 60
-    fetching_expected: 5
-    fetching_max: 10
+  controller_connect: 1
+  expose_timeout: 5
+  readout_expected: 45
+  readout_max: 60
+  fetching_expected: 5
+  fetching_max: 10
+  flushing: 10
 
 # Sensor configuration. Mainly for lab testing.
 sensors:
-    H5179:
-        host: 10.7.45.27
-        port: 1111
+  H5179:
+    host: 10.7.45.27
+    port: 1111
 
 # Actor congiguration for the AMQPActor class
 actor:
-    name: archon
-    host: localhost
-    port: 5672
+  name: archon
+  host: localhost
+  port: 5672

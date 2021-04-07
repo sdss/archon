@@ -9,8 +9,34 @@
 # @Last Modified time: 2017-12-05 12:19:32
 
 
+import inspect
+
+import archon.controller
+
+
 class ArchonError(Exception):
     """A custom core Archon exception"""
+
+
+class ArchonControllerError(ArchonError):
+    """An exception raised by an `.ArchonController`."""
+
+    def __init__(self, message):
+
+        stack = inspect.stack()
+        f_locals = stack[1][0].f_locals
+
+        if "self" in f_locals:
+            class_ = f_locals["self"]
+            if isinstance(class_, archon.controller.ArchonController):
+                controller_name = f_locals["self"].name
+                if controller_name is None or controller_name == "":
+                    controller_name = "unnamed"
+            else:
+                controller_name = "unnamed"
+            super().__init__(f"{controller_name} - {message}")
+        else:
+            super().__init__(f"{message}")
 
 
 class ArchonWarning(Warning):
@@ -21,3 +47,24 @@ class ArchonUserWarning(UserWarning, ArchonWarning):
     """The primary warning class."""
 
     pass
+
+
+class ArchonControllerWarning(ArchonUserWarning):
+    """A warning issued by an `.ArchonController`."""
+
+    def __init__(self, message):
+
+        stack = inspect.stack()
+        f_locals = stack[1][0].f_locals
+
+        if "self" in f_locals:
+            class_ = f_locals["self"]
+            if isinstance(class_, archon.controller.ArchonController):
+                controller_name = f_locals["self"].name
+                if controller_name is None or controller_name == "":
+                    controller_name = "unnamed"
+            else:
+                controller_name = "unnamed"
+            super().__init__(f"{controller_name} - {message}")
+        else:
+            super().__init__(f"{message}")

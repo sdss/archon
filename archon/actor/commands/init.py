@@ -54,7 +54,7 @@ async def init(command: Command, controller: ArchonController):
 
     # Set parameters
     _output(command, controller, "Setting initial parameters")
-    initial_params = {"ContinuousExposures": 0, "Exposures": 0}
+    initial_params = {"Exposures": 0, "ReadOut": 0, "DoFlush": 0}
     for (param, value) in initial_params.items():
         try:
             await controller.set_param(param, value)

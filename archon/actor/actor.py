@@ -12,7 +12,11 @@ import asyncio
 import os
 import warnings
 from contextlib import suppress
+from dataclasses import dataclass, field
 
+from typing import Any, Dict
+
+import astropy.time
 from clu.actor import AMQPActor
 
 from archon import __version__
@@ -61,7 +65,7 @@ class ArchonActor(AMQPActor):
         self.observatory = os.environ.get("OBSERVATORY", "LCO")
         self.version = __version__
 
-        self._exposing: bool = False
+        self.expose_data: ExposeData | None = None
 
     async def start(self):
         """Start the actor and connect the controllers."""
@@ -101,6 +105,7 @@ class ArchonActor(AMQPActor):
         """Creates an actor from a configuration file."""
         instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
         assert isinstance(instance, ArchonActor)
+        assert isinstance(instance.config, dict)
         if "controllers" in instance.config:
             controllers = (
                 ArchonController(
@@ -113,13 +118,6 @@ class ArchonActor(AMQPActor):
             instance.controllers = {c.name: c for c in controllers}
             instance.parser_args = [instance.controllers]  # Need to refresh this
         return instance
-
-    def can_expose(self) -> bool:
-        """Checks if the actor can take a new exposure."""
-        # TODO: Ideally this would be a programmatic check, but I'm not sure it's
-        # easy to do. One can know if the buffers are being written to, but not
-        # easily know if the timing script is running.
-        return self._exposing
 
     async def _fetch_log(self, controller: ArchonController):
         """Fetches the log and outputs new messages.
@@ -147,6 +145,21 @@ class ArchonActor(AMQPActor):
             self.write(
                 status=dict(
                     controller=controller.name,
-                    status=status.name,
+                    status=status.value,
+                    status_names=[flag.name for flag in status.get_flags()],
                 )
             )
+
+
+@dataclass
+class ExposeData:
+    """Data about the ongoing exposure."""
+
+    exposure_time: float
+    flavour: str
+    controllers: list[ArchonController]
+    start_time: astropy.time.Time = astropy.time.Time.now()
+    end_time: astropy.time.Time | None = None
+    mjd: int = 0
+    exposure_no: int = 0
+    header: Dict[str, Any] = field(default_factory=dict)

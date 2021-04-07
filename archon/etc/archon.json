@@ -13,10 +13,11 @@
       "type": "object",
       "properties": {
         "controller": { "type": "string" },
-        "status": { "type": "string" }
+        "status": { "type": "integer" },
+        "status_names": { "type": "array", "items": { "type": "string" } }
       },
       "additionalProperties": true,
-      "required": ["controller", "status"]
+      "required": ["controller", "status", "status_names"]
     },
     "frame": {
       "type": "object",
@@ -72,7 +73,8 @@
       },
       "additionalProperties": false,
       "required": ["controller", "command", "response"]
-    }
+    },
+    "filename": { "type": "string" }
   },
   "additionalProperties": false
 }

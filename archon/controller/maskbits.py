@@ -34,12 +34,18 @@ class ModType(enum.Enum):
     UNKNOWN = 16
 
 
-class ControllerStatus(enum.Enum):
+class ControllerStatus(enum.Flag):
     """Status of the Archon controller."""
 
-    UNKNOWN = enum.auto()
-    IDLE = enum.auto()
-    EXPOSING = enum.auto()
-    READING = enum.auto()
-    FETCHING = enum.auto()
-    ERROR = enum.auto()
+    UNKNOWN = 0x1
+    IDLE = 0x2
+    EXPOSING = 0x4
+    READOUT_PENDING = 0x8
+    READING = 0x10
+    FETCHING = 0x20
+    ERROR = 0x40
+
+    def get_flags(self):
+        """Returns the the flags that compose the bit."""
+
+        return [bit for bit in ControllerStatus if bit & self]

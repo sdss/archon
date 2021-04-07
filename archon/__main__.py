@@ -14,6 +14,7 @@ from clu.tools import cli_coro
 
 from sdsstools.daemonizer import DaemonGroup
 
+import archon as archonmod
 from archon.actor.actor import ArchonActor
 
 
@@ -34,6 +35,10 @@ from archon.actor.actor import ArchonActor
 @click.pass_context
 def archon(ctx, config_file, verbose):
     """Archon controller"""
+
+    # Update internal config
+    if config_file:
+        archonmod.config.load(config_file)
 
     ctx.obj = {"verbose": verbose, "config_file": config_file}
 

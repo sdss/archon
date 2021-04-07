@@ -20,9 +20,10 @@ from typing import Any, Callable, Iterable, Optional
 import numpy
 from clu.device import Device
 
+from archon import config
 from archon.controller.command import ArchonCommand
 from archon.controller.maskbits import ControllerStatus, ModType
-from archon.exceptions import ArchonError, ArchonUserWarning
+from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
 from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
 
@@ -98,7 +99,7 @@ class ArchonController(Device):
         """
         command_id = command_id or self._get_id()
         if command_id > MAX_COMMAND_ID or command_id < 0:
-            raise ArchonError(
+            raise ArchonControllerError(
                 f"Command ID must be in the range [0, {MAX_COMMAND_ID:d}]."
             )
 
@@ -180,11 +181,18 @@ class ArchonController(Device):
         """Processes a message from the Archon and associates it with its command."""
         match = re.match(b"^[<|?]([0-9A-F]{2})", line)
         if match is None:
-            warnings.warn(f"Received invalid reply {line.decode()}", ArchonUserWarning)
+            warnings.warn(
+                f"Received invalid reply {line.decode()}",
+                ArchonControllerWarning,
+            )
+            return
 
         command_id = int(match[1], 16)
         if command_id not in self.__running_commands:
-            warnings.warn(f"Cannot find running command for {line}", ArchonUserWarning)
+            warnings.warn(
+                f"Cannot find running command for {line}",
+                ArchonControllerWarning,
+            )
             return
 
         self.__running_commands[command_id].process_reply(line)
@@ -198,7 +206,9 @@ class ArchonController(Device):
         """Returns a dictionary with the output of the ``SYSTEM`` command."""
         cmd = await self.send_command("SYSTEM", timeout=1)
         if not cmd.succeeded():
-            raise ArchonError(f"Command finished with status {cmd.status.name!r}")
+            raise ArchonControllerError(
+                f"Command finished with status {cmd.status.name!r}"
+            )
 
         keywords = str(cmd.replies[0].reply).split()
         system = {}
@@ -210,7 +220,7 @@ class ArchonController(Device):
 
         return system
 
-    async def get_status(self) -> dict[str, Any]:
+    async def get_device_status(self) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``STATUS`` command."""
 
         def check_int(s):
@@ -220,7 +230,9 @@ class ArchonController(Device):
 
         cmd = await self.send_command("STATUS", timeout=1)
         if not cmd.succeeded():
-            raise ArchonError(f"Command finished with status {cmd.status.name!r}")
+            raise ArchonControllerError(
+                f"Command finished with status {cmd.status.name!r}"
+            )
 
         keywords = str(cmd.replies[0].reply).split()
         status = {
@@ -238,7 +250,9 @@ class ArchonController(Device):
         """
         cmd = await self.send_command("FRAME", timeout=1)
         if not cmd.succeeded():
-            raise ArchonError(f"Command FRAME failed with status {cmd.status.name!r}")
+            raise ArchonControllerError(
+                f"Command FRAME failed with status {cmd.status.name!r}"
+            )
 
         keywords = str(cmd.replies[0].reply).split()
         frame = {
@@ -274,10 +288,12 @@ class ArchonController(Device):
         if len(failed) > 0:
             ff = failed[0]
             status = ff.status.name
-            raise ArchonError(f"An RCONFIG command returned with code {status!r}")
+            raise ArchonControllerError(
+                f"An RCONFIG command returned with code {status!r}"
+            )
 
         if any([len(cmd.replies) != 1 for cmd in done]):
-            raise ArchonError("Some commands did not get any reply.")
+            raise ArchonControllerError("Some commands did not get any reply.")
 
         lines = [str(cmd.replies[0]) for cmd in done]
 
@@ -343,12 +359,14 @@ class ArchonController(Device):
         notifier("Reading configuration file")
 
         if not os.path.exists(path):
-            raise ArchonError(f"File {path} does not exist.")
+            raise ArchonControllerError(f"File {path} does not exist.")
 
         c = configparser.ConfigParser()
         c.read(path)
         if not c.has_section("CONFIG"):
-            raise ArchonError("The config file does not have a CONFIG section.")
+            raise ArchonControllerError(
+                "The config file does not have a CONFIG section."
+            )
 
         # Undo the INI format: revert \ to / and remove quotes around values.
         config = c["CONFIG"]
@@ -362,7 +380,7 @@ class ArchonController(Device):
         notifier("Clearing previous configuration")
         if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
             self.status = ControllerStatus.ERROR
-            raise ArchonError("Failed running CLEARCONFIG.")
+            raise ArchonControllerError("Failed running CLEARCONFIG.")
 
         notifier("Sending configuration lines")
 
@@ -371,7 +389,9 @@ class ArchonController(Device):
         if len(failed) > 0:
             ff = failed[0]
             self.status = ControllerStatus.ERROR
-            raise ArchonError(f"Failed sending line {ff.raw!r} ({ff.status.name})")
+            raise ArchonControllerError(
+                f"Failed sending line {ff.raw!r} ({ff.status.name})"
+            )
 
         notifier("Sucessfully sent config lines")
 
@@ -380,50 +400,173 @@ class ArchonController(Device):
             cmd = await self.send_command("APPLYALL", timeout=5)
             if not cmd.succeeded():
                 self.status = ControllerStatus.ERROR
-                raise ArchonError(f"Failed sending APPLYALL ({cmd.status.name})")
+                raise ArchonControllerError(
+                    f"Failed sending APPLYALL ({cmd.status.name})"
+                )
 
             if poweron:
                 notifier("Sending POWERON")
                 cmd = await self.send_command("POWERON", timeout=timeout)
                 if not cmd.succeeded():
                     self.status = ControllerStatus.ERROR
-                    raise ArchonError(f"Failed sending POWERON ({cmd.status.name})")
+                    raise ArchonControllerError(
+                        f"Failed sending POWERON ({cmd.status.name})"
+                    )
 
         self.status = ControllerStatus.IDLE
 
     async def reset(self):
-        """Cancels exposures and resets timing."""
-        await self.set_param("ContinuousExposures", 0)
+        """Resets timing."""
         await self.set_param("Exposures", 0)
+        await self.set_param("ReadOut", 0)
+        await self.set_param("AbortExposure", 0)
+        await self.set_param("DoFlush", 0)
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
-            raise ArchonError(f"Failed sending RESETTIMING ({cmd.status.name})")
+            raise ArchonControllerError(
+                f"Failed sending RESETTIMING ({cmd.status.name})"
+            )
 
-        # TODO: here we should do some more checks before we say it's IDLE.
-        self.status = ControllerStatus.IDLE
+        # This should reset everything except in the case in which the controller was
+        # exposing. In that case there will be change that we need to readout.
+        if self.status & ControllerStatus.READOUT_PENDING:
+            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+        else:
+            self.status = ControllerStatus.IDLE
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
         if not cmd.succeeded():
-            raise ArchonError(
+            raise ArchonControllerError(
                 f"Failed setting parameter {param!r} ({cmd.status.name})."
             )
         return cmd
 
-    async def integrate(self, exposure_time=1):
+    async def expose(
+        self,
+        exposure_time: float = 1,
+        readout: bool = True,
+    ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
 
-        Returns immediately once the exposure has begun.
+        Returns immediately once the exposure has begun. If ``readout=False``, does
+        not trigger a readout immediately after the integration finishes. The returned
+        `~asyncio.Task` waits until the integration is done and, if ``readout``, checks
+        that the readout has started.
         """
-        if not self.status == ControllerStatus.IDLE:
-            raise ArchonError("Status must be IDLE to start integrating.")
+        await self.reset()
+
+        if ControllerStatus.READOUT_PENDING & self.status:
+            raise ArchonControllerError(
+                "Controller has a readout pending. Read the device or flush."
+            )
+
+        if readout is False:
+            await self.set_param("ReadOut", 0)
+        else:
+            await self.set_param("ReadOut", 1)
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
 
-        self.status = ControllerStatus.EXPOSING
+        self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
+
+        async def update_state():
+            await asyncio.sleep(exposure_time + 0.5)
+            if not self.status & ControllerStatus.EXPOSING:  # Must have been aborted.
+                return
+            if readout is False:
+                self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+                return
+            frame = await self.get_frame()
+            wbuf = frame["wbuf"]
+            if frame[f"buf{wbuf}complete"] == 0:
+                self.status = ControllerStatus.READING
+            else:
+                raise ArchonControllerError("Controller is not reading.")
+
+        return asyncio.create_task(update_state())
+
+    async def abort(self, readout: bool = False):
+        """Aborts the current exposure.
+
+        If ``readout=False``, does not trigger a readout immediately after aborting.
+        Aborting does not flush the charge.
+        """
+        if not self.status & ControllerStatus.EXPOSING:
+            raise ArchonControllerError("Controller is not exposing.")
+
+        await self.set_param("ReadOut", int(readout))
+        await self.set_param("AbortExposure", 1)
+
+        if readout:
+            self.status = ControllerStatus.READING
+        else:
+            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+
+        return
+
+    async def flush(self, force: bool = False, wait_for: Optional[float] = None):
+        """Flushes the detector. Blocks until flushing completes."""
+        if not force and not (self.status & ControllerStatus.READOUT_PENDING):
+            raise ArchonControllerError("No readout pending.")
+
+        await self.set_param("DoFlush", 1)
+
+        wait_for = wait_for or config["timeouts"]["flushing"]
+        assert wait_for
+
+        await asyncio.sleep(wait_for)
+
+        await self.reset()
+
+    async def readout(
+        self,
+        force: bool = False,
+        block: bool = True,
+        wait_for: Optional[float] = None,
+    ):
+        """Reads the detector into a buffer.
+
+        If ``force``, triggers the readout routine regardless of the detector expected
+        state. If ``block``, blocks until the buffer has been fully written. Otherwise
+        returns immediately.
+        """
+        expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
+        if not force and self.status != expected_state:
+            raise ArchonControllerError("Controller is not in a readable state.")
+
+        await self.set_param("ReadOut", 1)
+
+        self.status = ControllerStatus.READING
+
+        if not block:
+            return
+
+        wait_for = wait_for or config["timeouts"]["readout_expected"]
+        max_wait = config["timeouts"]["readout_max"]
+
+        assert wait_for
+        await asyncio.sleep(wait_for)
+
+        frame = await self.get_frame()
+        wbuf = frame["wbuf"]
+
+        waited = 0.0
+        while True:
+            if waited > max_wait:
+                self.status = ControllerStatus.ERROR
+                raise ArchonControllerError(
+                    "Timed out waiting for controller to finish reading."
+                )
+            frame = await self.get_frame()
+            if frame[f"buf{wbuf}complete"] == 1:
+                self.status = ControllerStatus.IDLE
+                return
+            waited += 1.0
+            await asyncio.sleep(1.0)
 
     async def fetch(
         self,
@@ -441,11 +584,14 @@ class ArchonController(Device):
             A callback that receives a message with the current operation. Useful when
             `.fetch` is called by the actor to report progress to the users.
         """
+        if self.status & ControllerStatus.FETCHING:
+            raise ArchonControllerError("Controller is already fetching.")
+
         notifier = notifier or (lambda x: None)
         frame_info = await self.get_frame()
 
         if buffer_no not in [1, 2, 3, -1]:
-            raise ArchonError(f"Invalid frame buffer {buffer_no}.")
+            raise ArchonControllerError(f"Invalid frame buffer {buffer_no}.")
 
         if buffer_no == -1:
             buffers = [
@@ -454,14 +600,14 @@ class ArchonController(Device):
                 if frame_info[f"buf{n}complete"] == 1
             ]
             if len(buffers) == 0:
-                raise ArchonError("There are no buffers ready to be read.")
+                raise ArchonControllerError("There are no buffers ready to be read.")
             sorted_buffers = sorted(buffers, key=lambda x: x[1], reverse=True)
             buffer_no = sorted_buffers[0][0]
         else:
             if frame_info[f"buf{buffer_no}complete"] == 0:
-                raise ArchonError(f"Buffer frame {buffer_no} cannot be read.")
+                raise ArchonControllerError(f"Buffer frame {buffer_no} cannot be read.")
 
-        self.status = ControllerStatus.FETCHING
+        self.status |= ControllerStatus.FETCHING
 
         # Lock for reading
         notifier(f"Locking buffer {buffer_no}")
@@ -498,7 +644,8 @@ class ArchonController(Device):
         arr = numpy.frombuffer(frame, dtype=dtype)
         arr = arr.reshape(height, width)
 
-        self.status = ControllerStatus.IDLE
+        # Turn off FETCHING bit
+        self.status &= ~ControllerStatus.FETCHING
 
         return arr
 
@@ -560,7 +707,7 @@ class ArchonController(Device):
     def _get_id(self) -> int:
         """Returns an identifier from the pool."""
         if len(self._id_pool) == 0:
-            raise ArchonError("No ids reamining in the pool!")
+            raise ArchonControllerError("No ids reamining in the pool!")
         return self._id_pool.pop()
 
     async def __track_commands(self):

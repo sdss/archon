@@ -9,269 +9,36 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import pathlib
 from contextlib import suppress
-from functools import partial
 
-from typing import Any, Optional
+from typing import Dict, Optional
 
 import astropy.time
 import click
-import fitsio
+from astropy.io import fits
 from clu.command import Command
 
 import archon.actor
-from archon import config
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, controller_list, open_with_lock
+from ..tools import check_controller, controller_list, open_with_lock, read_govee
 from . import parser
 
 __all__ = ["expose"]
 
 
-async def get_header(
-    command: Command[archon.actor.ArchonActor],
-    controller: ArchonController,
-    exposure_params: dict[str, Any],
-):
-    """Returns the header of the FITS file."""
-
-    header = {}
-
-    header["SPEC"] = controller.name
-    header["OBSTIME"] = astropy.time.Time.now().isot
-    header["EXPTIME"] = exposure_params["exposure_time"]
-    header["IMAGETYP"] = exposure_params["flavour"]
-
-    # Connects to the H5179 device and gets the lab temperature and humidity.
-    try:
-        h5179 = config["sensors"]["H5179"]
-        reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(h5179["host"], h5179["port"]),
-            timeout=2,
-        )
-        writer.write(b"status\n")
-        data = await asyncio.wait_for(reader.readline(), timeout=1)
-        temp, hum, __, last = data.decode().strip().split()
-
-        temp = float(temp)
-        hum = float(hum)
-
-        last_seen = astropy.time.Time(last, format="isot")
-        delta = astropy.time.Time.now() - last_seen
-        if delta.datetime.seconds / 60 > 10:
-            raise RuntimeError("Lab metrology is over 10 minutes old.")
-
-    except BaseException as err:
-        command.warning(text=f"Failed retriving H5179 data: {err}")
-        temp = -999.0
-        hum = -999.0
-
-    header["LABTEMP"] = temp
-    header["LABHUMID"] = hum
-
-    return header
+@parser.group()
+def expose(*args):
+    """Exposes the cameras."""
+    pass
 
 
-async def _do_one_controller(
-    command: Command[archon.actor.ArchonActor],
-    controller: ArchonController,
-    exposure_params: dict[str, Any],
-    exp_no: int,
-    mjd_dir: pathlib.Path,
-) -> bool:
-    """Does the heavy lifting of exposing and writing a single controller."""
-
-    observatory = command.actor.observatory.lower()
-    hemisphere = "n" if observatory == "apo" else "s"
-
-    config = command.actor.config
-    path: pathlib.Path = mjd_dir / config["files"]["template"]
-    file_path = str(path.absolute()).format(
-        exposure_no=exp_no,
-        controller=controller.name,
-        observatory=observatory,
-        hemisphere=hemisphere,
-    )
-
-    exp_time = exposure_params["exposure_time"]
-
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text="Starting exposure sequence "
-            "(flavour={flavour!r}, exp_time={exposure_time}).".format(
-                **exposure_params
-            ),
-        )
-    )
-
-    # Start integration.
-    await controller.integrate(exposure_time=exp_time)
-
-    # Open shutter (placeholder)
-
-    # Wait until the exposure is complete.
-    # TODO: Here we should take into account the network and mechanical delay in
-    # opening the shutter.
-    await asyncio.sleep(exp_time)
-
-    # Close shutter (placeholder)
-
-    # Wait a little bit and check that we are reading out to a new buffer
-    await asyncio.sleep(0.1)
-
-    # Get new frame info
-    frame_info = await controller.get_frame()
-    wbuf = frame_info["wbuf"]
-    if frame_info[f"buf{wbuf}complete"] != 0:
-        controller.status = ControllerStatus.ERROR
-        raise ArchonError("Read-out failed to start.")
-
-    controller.status = ControllerStatus.READING
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text=f"Reading frame into buffer {wbuf}.",
-        )
-    )
-    # Wait until buffer is complete.
-    elapsed = 0
-    while True:
-        frame_info = await controller.get_frame()
-        if frame_info[f"buf{wbuf}complete"] == 1:
-            break
-        if elapsed > config["timeouts"]["readout_max"]:
-            controller.status = ControllerStatus.ERROR
-            raise ArchonError("Timed out waiting for read-out to finish.")
-        await asyncio.sleep(1.0)  # Sleep for one second before asking again.
-        elapsed += 1
-
-    # Reset timing
-    await controller.reset()
-
-    # Fetch buffer data
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text=f"Fetching buffer {wbuf}.",
-        )
-    )
-    data = await controller.fetch(wbuf)
-
-    # Divide array into CCDs and create FITS.
-    # TODO: add at least a placeholder header with some basics.
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text="Saving data to disk.",
-        )
-    )
-
-    loop = asyncio.get_running_loop()
-    ccd_info = config["controllers"][controller.name]["ccds"]
-    fits = fitsio.FITS(file_path, "rw")
-    header = await get_header(command, controller, exposure_params)
-    for ccd_name in ccd_info:
-        region = ccd_info[ccd_name]
-        ccd_data = data[region[1] : region[3], region[0] : region[2]]
-        header_ccd = header.copy()
-        header_ccd["CCD"] = ccd_name
-        fits_write = partial(fits.create_image_hdu, extname=ccd_name, header=header_ccd)
-        await loop.run_in_executor(None, fits_write, ccd_data)
-        fits[-1].write_keys(header_ccd)
-    await loop.run_in_executor(None, fits.close)
-
-    command.info(text=f"File {os.path.basename(file_path)} written to disk.")
-
-    return True
-
-
-async def _do_exposures(
-    command: Command,
-    controllers: list[ArchonController],
-    exposure_params: dict[str, Any],
-) -> bool:
-    """Manages exposing several controllers."""
-
-    config = command.actor.config
-
-    now = astropy.time.Time.now()
-    mjd = int(now.mjd)
-
-    # Get data directory or create it if it doesn't exist.
-    data_dir = pathlib.Path(config["files"]["data_dir"])
-    if not data_dir.exists():
-        data_dir.mkdir(parents=True)
-
-    # We store the next exposure number in a file at the root of the data directory.
-    next_exp_file = data_dir / "nextExposureNumber"
-    if not next_exp_file.exists():
-        next_exp_file.touch()
-
-    # Get the directory for this MJD or create it.
-    mjd_dir = data_dir / str(mjd)
-    if not mjd_dir.exists():
-        mjd_dir.mkdir(parents=True)
-
-    try:
-        with open_with_lock(next_exp_file, "r+") as fd:
-            fd.seek(0)
-            data = fd.read().strip()
-            next_exp_no: int = int(data) if data != "" else 1
-
-            _jobs: list[asyncio.Task] = []
-            for controller in controllers:
-                _jobs.append(
-                    asyncio.create_task(
-                        _do_one_controller(
-                            command,
-                            controller,
-                            exposure_params,
-                            next_exp_no,
-                            mjd_dir,
-                        )
-                    )
-                )
-
-            try:
-                results = await asyncio.gather(*_jobs, return_exceptions=False)
-            except BaseException as err:
-                command.error(error=str(err))
-                command.error("One controller failed. Cancelling remaining tasks.")
-                for job in _jobs:
-                    if not job.done():
-                        with suppress(asyncio.CancelledError):
-                            job.cancel()
-                            await job
-                return False
-
-            if not all(results):
-                return False
-
-            # Increment nextExposureNumber
-            # TODO: Should we increase the sequence regardless of whether the exposure
-            # fails or not?
-            fd.seek(0)
-            fd.truncate()
-            fd.seek(0)
-            fd.write(str(next_exp_no + 1))
-
-    except BlockingIOError:
-        command.error(
-            error="The nextExposureNumber file is locked. This probably "
-            "indicates that another spectrograph process is running."
-        )
-        return False
-
-    return True
-
-
-@parser.command()
+@expose.command()
 @click.argument("EXPOSURE-TIME", type=float, required=False)
 @controller_list
 @click.option(
@@ -303,12 +70,12 @@ async def _do_exposures(
     default=True,
     help="Take an object frame",
 )
-async def expose(
+async def start(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
     controller_list: Optional[tuple[str]],
-    flavour: Optional[str],
+    flavour: str,
 ):
     """Exposes the cameras."""
 
@@ -326,8 +93,17 @@ async def expose(
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
 
-    if command.actor._exposing:
-        return command.fail("The actor is already exposing.")
+    for controller in selected_controllers:
+        cname = controller.name
+        if controller.status & ControllerStatus.EXPOSING:
+            return command.fail(error=f"Controller {cname} is exposing.")
+        elif controller.status & ControllerStatus.READOUT_PENDING:
+            return command.fail(
+                error=f"Controller {cname} has a read out pending. "
+                "Read or flush the device."
+            )
+        elif controller.status & ControllerStatus.ERROR:
+            return command.fail(error=f"Controller {cname} has status ERROR.")
 
     if flavour == "bias":
         exposure_time = 0.0
@@ -336,18 +112,278 @@ async def expose(
             return command.fail(
                 error=f"Exposure time required for exposure of flavour {flavour!r}."
             )
-    exposure_params = {"exposure_time": exposure_time, "flavour": flavour}
+
+    command.actor.expose_data = archon.actor.ExposeData(
+        exposure_time=exposure_time, flavour=flavour, controllers=selected_controllers
+    )
 
     try:
-        command.actor._exposing = True
-        result = await _do_exposures(command, selected_controllers, exposure_params)
+        if await _start_controllers(command, selected_controllers):
+            return command.finish()
+        else:
+            return command.fail()
     except ArchonError as err:
-        command.actor._exposing = False
+        command.actor.expose_data = None
         return command.fail(error=str(err))
 
-    command.actor._exposing = False
 
-    if result:
-        return command.finish()
+@expose.command()
+@click.option("--header", type=str, default="{}", help="JSON string with ")
+async def finish(
+    command: Command[archon.actor.actor.ArchonActor],
+    controllers: Dict[str, ArchonController],
+    header: str,
+):
+    """Finishes the ongoing exposure."""
+
+    scontr: list[ArchonController]
+
+    if command.actor.expose_data is None:
+        return command.fail(error="No exposure found.")
+
+    scontr = command.actor.expose_data.controllers
+
+    command.actor.expose_data.end_time = astropy.time.Time.now()
+    command.actor.expose_data.header = json.loads(header)
+
+    try:
+        await asyncio.gather(
+            *[
+                contr.abort(readout=False)
+                for contr in scontr
+                if contr.status & ControllerStatus.EXPOSING
+            ]
+        )
+        await asyncio.gather(*[_write_image(command, contr) for contr in scontr])
+    except ArchonError as err:
+        return command.fail(error=f"Failed reading out: {err}")
+
+    return command.finish()
+
+
+@expose.command()
+@click.option("--flush", is_flag=True, help="Flush the device after aborting.")
+@click.option("--force", is_flag=True, help="Forces abort.")
+@click.option("--all", "all_", is_flag=True, help="Aborts all the controllers.")
+async def abort(
+    command: Command[archon.actor.actor.ArchonActor],
+    controllers: dict[str, ArchonController],
+    flush: bool,
+    force: bool,
+    all_: bool,
+):
+    """Aborts the exposure."""
+
+    if all_:
+        force = True
+
+    if command.actor.expose_data is None:
+        err = "No exposure found."
+        if force:
+            command.warning(error=err)
+        else:
+            return command.fail(error=err)
+
+    scontr: list[ArchonController]
+    if all_ or not command.actor.expose_data:
+        scontr = list(controllers.values())
     else:
-        return command.fail()
+        scontr = command.actor.expose_data.controllers
+
+    command.debug(text="Aborting exposures")
+    await asyncio.gather(
+        *[contr.abort(readout=False) for contr in scontr],
+        return_exceptions=True,
+    )
+
+    if flush:
+        command.debug(text="Flushing devices")
+        await asyncio.gather(
+            *[contr.flush() for contr in scontr],
+            return_exceptions=True,
+        )
+
+    return command.finish()
+
+
+async def _start_controllers(
+    command: Command,
+    controllers: list[ArchonController],
+) -> bool:
+    """Starts exposing several controllers."""
+
+    config = command.actor.config
+
+    now = astropy.time.Time.now()
+    mjd = int(now.mjd)
+
+    # Get data directory or create it if it doesn't exist.
+    data_dir = pathlib.Path(config["files"]["data_dir"])
+    if not data_dir.exists():
+        data_dir.mkdir(parents=True)
+
+    # We store the next exposure number in a file at the root of the data directory.
+    next_exp_file = data_dir / "nextExposureNumber"
+    if not next_exp_file.exists():
+        next_exp_file.touch()
+
+    # Get the directory for this MJD or create it.
+    mjd_dir = data_dir / str(mjd)
+    if not mjd_dir.exists():
+        mjd_dir.mkdir(parents=True)
+
+    exposure_time = command.actor.expose_data.exposure_time
+
+    try:
+        with open_with_lock(next_exp_file, "r+") as fd:
+            fd.seek(0)
+            data = fd.read().strip()
+            next_exp_no: int = int(data) if data != "" else 1
+
+            command.actor.expose_data.mjd = mjd
+            command.actor.expose_data.exposure_no = next_exp_no
+
+            _jobs: list[asyncio.Task] = []
+            for controller in controllers:
+                _jobs.append(
+                    asyncio.create_task(
+                        controller.expose(
+                            exposure_time + config["timeouts"]["expose_timeout"],
+                            readout=False,
+                        )
+                    )
+                )
+
+            try:
+                await asyncio.gather(*_jobs, return_exceptions=False)
+            except BaseException as err:
+                command.error(error=str(err))
+                command.error("One controller failed. Cancelling remaining tasks.")
+                for job in _jobs:
+                    if not job.done():
+                        with suppress(asyncio.CancelledError):
+                            job.cancel()
+                            await job
+                return False
+
+            # Increment nextExposureNumber
+            # TODO: Should we increase the sequence regardless of whether the exposure
+            # fails or not?
+            fd.seek(0)
+            fd.truncate()
+            fd.seek(0)
+            fd.write(str(next_exp_no + 1))
+
+    except BlockingIOError:
+        command.error(
+            error="The nextExposureNumber file is locked. This probably "
+            "indicates that another spectrograph process is running."
+        )
+        return False
+
+    return True
+
+
+async def get_header(
+    command: Command[archon.actor.ArchonActor],
+    controller: ArchonController,
+):
+    """Returns the header of the FITS file."""
+
+    expose_data = command.actor.expose_data
+
+    header = fits.Header()
+
+    header["SPEC"] = controller.name
+    header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
+    header["EXPTIME"] = expose_data.exposure_time
+    header["IMAGETYP"] = expose_data.flavour
+    header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
+    header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
+
+    try:
+        temp, hum = await read_govee()
+    except BaseException as err:
+        command.warning(text=f"Failed retriving H5179 data: {err}")
+        temp = -999.0
+        hum = -999.0
+
+    header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
+    header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
+
+    header.update(expose_data.header)
+
+    return header
+
+
+async def _write_image(
+    command: Command[archon.actor.ArchonActor],
+    controller: ArchonController,
+) -> bool:
+    """Waits for readout to complete, fetches the buffer, and writes the image."""
+
+    # Prepare file path
+    observatory = command.actor.observatory.lower()
+    hemisphere = "n" if observatory == "apo" else "s"
+
+    config = command.actor.config
+    expose_data = command.actor.expose_data
+
+    data_dir = pathlib.Path(config["files"]["data_dir"])
+    mjd_dir = data_dir / str(expose_data.mjd)
+
+    path: pathlib.Path = mjd_dir / config["files"]["template"]
+    file_path = str(path.absolute()).format(
+        exposure_no=expose_data.exposure_no,
+        controller=controller.name,
+        observatory=observatory,
+        hemisphere=hemisphere,
+    )
+
+    # Read device
+    await controller.readout()
+
+    # Fetch buffer
+    data = await controller.fetch()
+
+    # Divide array into CCDs and create FITS.
+    # TODO: add at least a placeholder header with some basics.
+    command.debug(
+        text=dict(
+            controller=controller.name,
+            text="Saving data to disk.",
+        )
+    )
+
+    loop = asyncio.get_running_loop()
+    ccd_info = config["controllers"][controller.name]["ccds"]
+    hdu = fits.HDUList([fits.PrimaryHDU()])
+    header = await get_header(command, controller)
+    for ccd_name in ccd_info:
+        region = ccd_info[ccd_name]
+        ccd_data = data[region[1] : region[3], region[0] : region[2]]
+        ccd_header = header.copy()
+        ccd_header["CCD"] = ccd_name
+        hdu.append(fits.ImageHDU(data=ccd_data, header=ccd_header))
+
+    if file_path.endswith(".gz"):
+        # Astropy compresses with gzip -9 which takes forever. Instead we compress
+        # manually with -1, which is still pretty good.
+        await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
+        cmd = await asyncio.create_subprocess_exec(
+            "gzip",
+            "-1",
+            file_path[:-3],
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        await cmd.communicate()
+        if cmd.returncode != 0:
+            raise ArchonError(f"Failed compressing image {path}")
+    else:
+        await loop.run_in_executor(None, hdu.writeto, file_path)
+
+    command.info(text=f"File {os.path.basename(file_path)} written to disk.")
+    command.debug(filename=file_path)
+
+    return True
