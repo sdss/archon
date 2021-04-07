@@ -22,7 +22,6 @@ from clu.command import Command
 
 import archon.actor
 from archon import config
-from archon.actor.actor import ExposeData
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
@@ -114,7 +113,7 @@ async def start(
                 error=f"Exposure time required for exposure of flavour {flavour!r}."
             )
 
-    command.actor.expose_data = ExposeData(
+    command.actor.expose_data = archon.actor.ExposeData(
         exposure_time=exposure_time, flavour=flavour, controllers=selected_controllers
     )
 
