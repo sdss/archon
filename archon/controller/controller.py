@@ -51,7 +51,7 @@ class ArchonController(Device):
         Device.__init__(self, host, port)
 
         self.name = name
-        self._status: ControllerStatus = ControllerStatus.IDLE
+        self._status: ControllerStatus = ControllerStatus.UNKNOWN
         self.__status_event = asyncio.Event()
 
         self._binary_reply: Optional[bytearray] = None
