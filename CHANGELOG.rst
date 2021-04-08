@@ -6,7 +6,7 @@ Change Log
 
 * :release:`0.2.1 <2021-04-06>`
 * :bug:`-` Fix Docker creation for tags.
-*
+
 * :release:`0.2.0 <2021-04-06>`
 * :support:`-` Basic documentation.
 * :feature:`10` Add actor command ``reconnect`` that allows to recreate the TCP/IP connection to one or multiple controllers. If the controller cannot be connected when the actor starts, a warning is issued but the actor will be created.
