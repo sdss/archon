@@ -32,12 +32,12 @@ __all__ = [
 ]
 
 
-controller_list = click.option(
-    "-c",
-    "--controller",
+controller_list = click.argument(
     "controller_list",
+    metavar="CONTROLLERS",
     type=str,
-    help="Controllers to which to talk. Defaults to all available.",
+    nargs=-1,
+    required=False,
 )
 
 
@@ -74,21 +74,17 @@ def parallel_controllers(check=True):
         async def wrapper(
             command: BaseCommand,
             controllers: dict[str, ArchonController],
-            controller_list: Optional[str] = None,
+            controller_list: Tuple[str, ...],
             **kwargs,
         ):
-            if controller_list:
-                controller_keys = list(
-                    map(lambda x: x.strip(), controller_list.split(","))
-                )
-            else:
-                controller_keys = list(controllers.keys())
+            if not controller_list:
+                controller_list = tuple(controllers.keys())
 
-            if len(controller_keys) == 0:
+            if len(controller_list) == 0:
                 return command.fail("No controllers are available.")
 
             tasks: list[asyncio.Task] = []
-            for k in controller_keys:
+            for k in controller_list:
                 if check:
                     if k not in controllers:
                         return command.fail(f"Invalid controller {k!r}.")

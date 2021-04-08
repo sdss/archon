@@ -39,8 +39,8 @@ def expose(*args):
 
 
 @expose.command()
-@click.argument("EXPOSURE-TIME", type=float, required=False)
 @controller_list
+@click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
 @click.option(
     "--bias",
     "flavour",
@@ -74,14 +74,14 @@ async def start(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
-    controller_list: Optional[tuple[str]],
+    controller_list: tuple[str, ...],
     flavour: str,
 ):
     """Exposes the cameras."""
 
     selected_controllers: list[ArchonController]
 
-    if controller_list is None:
+    if len(controller_list) == 0:
         selected_controllers = list(controllers.values())
     else:
         selected_controllers = []
