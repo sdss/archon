@@ -14,7 +14,7 @@ import functools
 from contextlib import contextmanager
 from os import PathLike
 
-from typing import IO, Any, Generator, Optional, Tuple
+from typing import IO, Any, Generator, Tuple
 
 import astropy.time
 import click
