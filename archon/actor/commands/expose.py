@@ -128,7 +128,12 @@ async def start(
 
 
 @expose.command()
-@click.option("--header", type=str, default="{}", help="JSON string with ")
+@click.option(
+    "--header",
+    type=str,
+    default="{}",
+    help="JSON string with additional header keyword-value pairs. Avoid using spaces.",
+)
 async def finish(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: Dict[str, ArchonController],
