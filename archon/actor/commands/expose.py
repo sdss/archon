@@ -14,7 +14,7 @@ import os
 import pathlib
 from contextlib import suppress
 
-from typing import Dict, Optional
+from typing import Dict
 
 import astropy.time
 import click
