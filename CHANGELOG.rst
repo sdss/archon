@@ -4,6 +4,8 @@
 Change Log
 ==========
 
+* :bug:`-` Require ``sdss-clu>=0.7.8`` to allow ``archon expose finish --header`` to work with strings that have spaces. It should now be possible to pass commands like ``archon expose finish --header '{"KEYWORD1": [1, "A comment"]}'``. For header keyword values that are a list of value and comment, the list is converted into a tuple internally so that ``astropy`` can parse it correctly.
+
 * :release:`0.2.1 <2021-04-06>`
 * :bug:`-` Fix Docker creation for tags.
 

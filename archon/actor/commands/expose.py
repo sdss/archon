@@ -315,6 +315,11 @@ async def get_header(
     header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
     header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
 
+    # Convert JSON lists to tuples or astropy fails.
+    for key in expose_data.header:
+        if isinstance(expose_data.header[key], list):
+            expose_data.header[key] = tuple(expose_data.header[key])
+
     header.update(expose_data.header)
 
     return header
