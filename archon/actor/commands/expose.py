@@ -404,7 +404,7 @@ async def _write_image(
         area = ccd_info[ccd_name]["area"]
         header = await get_header(command, controller, ccd_name)
         ccd_data = data[area[1] : area[3], area[0] : area[2]]
-        hdu.append(fits.ImageHDU(data=ccd_data, header=header))
+        hdu.append(fits.ImageHDU(data=ccd_data, header=header, name=ccd_name.upper()))
 
     if file_path.endswith(".gz"):
         # Astropy compresses with gzip -9 which takes forever. Instead we compress
