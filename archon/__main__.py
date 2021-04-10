@@ -48,6 +48,7 @@ def archon(ctx, config_file, verbose):
 @cli_coro
 async def actor(ctx):
     """Runs the actor."""
+
     default_config_file = os.path.join(os.path.dirname(__file__), "etc/archon.yml")
     config_file = ctx.obj["config_file"] or default_config_file
 

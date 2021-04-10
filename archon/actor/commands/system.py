@@ -21,6 +21,7 @@ from . import parser
 @parallel_controllers()
 async def system(command: Command, controller: ArchonController):
     """Reports the status of the controller backplane."""
+
     if not check_controller(command, controller):
         return
 

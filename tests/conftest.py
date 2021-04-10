@@ -34,6 +34,7 @@ async def controller(request, unused_tcp_port: int):
     will be replaced with the actual command id. If the reply is an instance of
     bytes, it will be returned as a binary response.
     """
+
     try:
         commands: CommandsType = request.node.get_closest_marker("commands").args[0]
     except AttributeError:

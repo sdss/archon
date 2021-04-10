@@ -38,6 +38,7 @@ __all__ = ["expose"]
 @parser.group()
 def expose(*args):
     """Exposes the cameras."""
+
     pass
 
 

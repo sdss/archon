@@ -88,6 +88,7 @@ class ArchonCommand(asyncio.Future):
     @property
     def raw(self):
         """Returns the raw command sent to the Archon (without the newline)."""
+
         return f">{self.command_id:02X}{self.command_string}"
 
     def process_reply(self, reply: bytes) -> ArchonCommandReply | None:
@@ -105,6 +106,7 @@ class ArchonCommand(asyncio.Future):
         reply
             The received reply, as bytes.
         """
+
         try:
             archon_reply = ArchonCommandReply(reply, self)
         except ArchonError as err:
@@ -137,7 +139,9 @@ class ArchonCommand(asyncio.Future):
 
     async def get_replies(self) -> AsyncGenerator[ArchonCommandReply, None]:
         """Yields an asynchronous generator of replies as they are produced."""
+
         n_output = 0
+
         while True:
             await self.__event.wait()
             if len(self.replies) > n_output:
@@ -154,10 +158,12 @@ class ArchonCommand(asyncio.Future):
         Returns `True` if the command succeeded, or `False` if it failed, timed out, or
         if the command is not yet done.
         """
+
         return self.status == self.status.DONE
 
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
+
         # Release the event one last time to let the loop to finish and cancel timer.
         self.__event.set()
         if self.timer:
@@ -173,6 +179,7 @@ class ArchonCommand(asyncio.Future):
 
     def _timeout(self):
         """Marks the command timed out."""
+
         self._mark_done(self.status.TIMEDOUT)
 
     def __repr__(self):

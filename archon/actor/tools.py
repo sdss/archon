@@ -114,12 +114,14 @@ def parallel_controllers(check=True):
 
 def error_controller(command: Command, controller: ArchonController, message: str):
     """Issues a ``error_controller`` message."""
+
     command.error(
         text={
             "controller": controller.name,
             "text": message,
         }
     )
+
     return False
 
 
@@ -129,6 +131,7 @@ def check_controller(command: Command, controller: ArchonController) -> bool:
     Outputs error messages if a problem is found. Return `False` if the controller
     is not in a valid state.
     """
+
     if not controller.is_connected():
         error_controller(command, controller, "Controller not connected.")
         return False
@@ -154,6 +157,7 @@ def open_with_lock(
     BlockingIOError
         If the file is already locked.
     """
+
     # Open the file in read-only mode first to see if it's already locked.
     fd = open(filename, "r")
     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)

@@ -26,6 +26,7 @@ async def talk(
     archon_command: str,
 ):
     """Sends a command to the controller."""
+
     if not check_controller(command, controller):
         return
 

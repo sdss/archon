@@ -39,6 +39,7 @@ def _output(
 @parallel_controllers()
 async def init(command: Command, controller: ArchonController):
     """Initialises a controller."""
+
     if not check_controller(command, controller):
         return
 

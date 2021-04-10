@@ -25,6 +25,7 @@ from archon.exceptions import ArchonError
 @parser.group()
 def frame(*args):
     """Interacts with the controller buffer frame."""
+
     pass
 
 
@@ -36,6 +37,7 @@ async def status(
     controller_name: str,
 ):
     """Reads the frame status."""
+
     if controller_name not in controllers:
         return command.fail(f"Controller {controller_name!r} does not exist.")
 
@@ -86,6 +88,7 @@ async def fetch(
     file,
 ):
     """Low-level command to fetch a buffer and write it to disk."""
+
     if controller_name not in controllers:
         return command.fail(f"Controller {controller_name!r} does not exist.")
 

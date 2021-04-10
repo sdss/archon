@@ -23,6 +23,7 @@ from . import parser
 @parser.group()
 def config(*args):
     """Manages the configuration of the device."""
+
     pass
 
 
@@ -42,6 +43,7 @@ async def read(
     save: bool,
 ):
     """Reads the configuration from the controller."""
+
     if controller_name not in controllers:
         return command.fail(f"Controller {controller_name!r} does not exist.")
 
@@ -103,6 +105,7 @@ async def write(
     poweron: bool,
 ):
     """Writes a configuration file to the controller."""
+
     if controller_name not in controllers:
         return command.fail(f"Controller {controller_name!r} does not exist.")
 

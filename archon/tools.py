@@ -38,11 +38,13 @@ class Timer:
 
     def cancel(self):
         """Cancel the timer."""
+
         if self._task:
             self._task.cancel()
 
     def reset(self):
         """Reset the count."""
+
         self.cancel()
         self._task = self._loop.create_task(self._job())
 

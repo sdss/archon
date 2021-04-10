@@ -64,16 +64,19 @@ class ArchonController(Device):
     @property
     def status(self) -> ControllerStatus:
         """Returns the status of the controller as a `.ControllerStatus` enum type."""
+
         return self._status
 
     @status.setter
     def status(self, value: ControllerStatus):
         """Sets the controller status."""
+
         self._status = value
         self.__status_event.set()
 
     async def yield_status(self) -> AsyncIterator[ControllerStatus]:
         """Asynchronous generator yield the status of the controller."""
+
         yield self.status  # Yield the status on subscription to the generator.
         while True:
             await self.__status_event.wait()
@@ -98,7 +101,9 @@ class ArchonController(Device):
         kwargs
             Other keyword arguments to pass to `.ArchonCommand`.
         """
+
         command_id = command_id or self._get_id()
+
         if command_id > MAX_COMMAND_ID or command_id < 0:
             raise ArchonControllerError(
                 f"Command ID must be in the range [0, {MAX_COMMAND_ID:d}]."
@@ -145,6 +150,7 @@ class ArchonController(Device):
         timeout
             Timeout for each single command.
         """
+
         # Copy the strings so that we can pop them. Also reverse it because
         # we'll be popping items and we want to conserve the order.
         cmd_strs = list(cmd_strs)[::-1]
@@ -180,6 +186,7 @@ class ArchonController(Device):
 
     async def process_message(self, line: bytes) -> None:
         """Processes a message from the Archon and associates it with its command."""
+
         match = re.match(b"^[<|?]([0-9A-F]{2})", line)
         if match is None:
             warnings.warn(
@@ -200,11 +207,13 @@ class ArchonController(Device):
 
     async def stop(self):
         """Stops the client and cancels the command tracker."""
+
         self._job.cancel()
         await super().stop()
 
     async def get_system(self) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``SYSTEM`` command."""
+
         cmd = await self.send_command("SYSTEM", timeout=1)
         if not cmd.succeeded():
             raise ArchonControllerError(
@@ -249,6 +258,7 @@ class ArchonController(Device):
         All the returned values in the dictionary are integers in decimal
         representation.
         """
+
         cmd = await self.send_command("FRAME", timeout=1)
         if not cmd.succeeded():
             raise ArchonControllerError(
@@ -273,6 +283,7 @@ class ArchonController(Device):
             be saved to ``~/archon_<controller_name>.acf``, or set ``save`` to the path
             of the file to save.
         """
+
         key_value_re = re.compile("^(.+?)=(.*)$")
 
         def parse_line(line):
@@ -357,6 +368,7 @@ class ArchonController(Device):
             performed. Useful when `.write_config` is called by the actor to report
             progress to the users.
         """
+
         notifier = notifier or (lambda x: None)
 
         notifier("Reading configuration file")
@@ -422,10 +434,12 @@ class ArchonController(Device):
 
     async def reset(self):
         """Resets timing."""
+
         await self.set_param("Exposures", 0)
         await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
         await self.set_param("DoFlush", 0)
+
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
@@ -442,6 +456,7 @@ class ArchonController(Device):
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
+
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
         if not cmd.succeeded():
             raise ArchonControllerError(
@@ -461,6 +476,7 @@ class ArchonController(Device):
         `~asyncio.Task` waits until the integration is done and, if ``readout``, checks
         that the readout has started.
         """
+
         await self.reset()
 
         if ControllerStatus.READOUT_PENDING & self.status:
@@ -500,6 +516,7 @@ class ArchonController(Device):
         If ``readout=False``, does not trigger a readout immediately after aborting.
         Aborting does not flush the charge.
         """
+
         if not self.status & ControllerStatus.EXPOSING:
             raise ArchonControllerError("Controller is not exposing.")
 
@@ -515,6 +532,7 @@ class ArchonController(Device):
 
     async def flush(self, force: bool = False, wait_for: Optional[float] = None):
         """Flushes the detector. Blocks until flushing completes."""
+
         if not force and not (self.status & ControllerStatus.READOUT_PENDING):
             raise ArchonControllerError("No readout pending.")
 
@@ -539,6 +557,7 @@ class ArchonController(Device):
         state. If ``block``, blocks until the buffer has been fully written. Otherwise
         returns immediately.
         """
+
         expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
         if not force and self.status != expected_state:
             raise ArchonControllerError("Controller is not in a readable state.")
@@ -589,6 +608,7 @@ class ArchonController(Device):
             A callback that receives a message with the current operation. Useful when
             `.fetch` is called by the actor to report progress to the users.
         """
+
         if self.status & ControllerStatus.FETCHING:
             raise ArchonControllerError("Controller is already fetching.")
 
@@ -656,10 +676,12 @@ class ArchonController(Device):
 
     def set_binary_reply_size(self, size: int):
         """Sets the size of the binary buffers."""
+
         self._binary_reply = bytearray(size)
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
+
         if not self._client:  # pragma: no cover
             raise RuntimeError("Connection is not open.")
 
@@ -711,12 +733,15 @@ class ArchonController(Device):
 
     def _get_id(self) -> int:
         """Returns an identifier from the pool."""
+
         if len(self._id_pool) == 0:
             raise ArchonControllerError("No ids reamining in the pool!")
+
         return self._id_pool.pop()
 
     async def __track_commands(self):
         """Removes complete commands from the list of running commands."""
+
         while True:
             done_cids = []
             for cid in self.__running_commands.keys():

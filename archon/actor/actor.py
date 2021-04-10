@@ -108,9 +108,12 @@ class ArchonActor(AMQPActor):
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
+
         instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
+
         assert isinstance(instance, ArchonActor)
         assert isinstance(instance.config, dict)
+
         if "controllers" in instance.config:
             controllers = (
                 ArchonController(
@@ -122,6 +125,7 @@ class ArchonActor(AMQPActor):
             )
             instance.controllers = {c.name: c for c in controllers}
             instance.parser_args = [instance.controllers]  # Need to refresh this
+
         return instance
 
     async def _fetch_log(self, controller: ArchonController):
@@ -131,6 +135,7 @@ class ArchonActor(AMQPActor):
         popping up and running every second. We write to all users only when there's
         a new log.
         """
+
         while True:
             cmd: ArchonCommand = await controller.send_command("FETCHLOG")
             if cmd.succeeded() and len(cmd.replies) == 1:
@@ -146,6 +151,7 @@ class ArchonActor(AMQPActor):
 
     async def _report_status(self, controller: ArchonController):
         """Reports the status of the controller."""
+
         async for status in controller.yield_status():
             self.write(
                 status=dict(
