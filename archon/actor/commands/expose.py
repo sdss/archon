@@ -324,10 +324,7 @@ async def get_header(
             for kname in hconfig[hcommand]:
                 kpath, comment = hconfig[hcommand][kname]
                 kpath = kpath.format(sensor=sensor).lower()
-                print(kname)
                 value = dict_get(model, kpath)
-                print("a", value)
-                print("xx", model["status"].value)
                 if not value:
                     command.warning(
                         text=f"Cannot find header value {kpath} for {kname}. "
@@ -336,11 +333,9 @@ async def get_header(
                     cmd = await actor.send_command(actor.name, hcommand)
                     await cmd
                     value = dict_get(model, kpath)
-                    print("b", value)
                     if not value:
                         command.warning(text=f"Cannot retrieve {kpath}.")
                         value = "N/A"
-                    print("c", value)
                 header[kname.upper()] = (value, comment)
 
     try:
@@ -409,7 +404,6 @@ async def _write_image(
         area = ccd_info[ccd_name]["area"]
         header = await get_header(command, controller, ccd_name)
         ccd_data = data[area[1] : area[3], area[0] : area[2]]
-        print(header)
         hdu.append(fits.ImageHDU(data=ccd_data, header=header))
 
     if file_path.endswith(".gz"):
