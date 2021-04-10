@@ -25,6 +25,7 @@ import archon.actor
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
+from archon.tools import gzip_async
 
 from ..tools import check_controller, controller_list, open_with_lock, read_govee
 from . import parser
@@ -160,7 +161,7 @@ async def finish(
             ]
         )
         await asyncio.gather(*[_write_image(command, contr) for contr in scontr])
-    except ArchonError as err:
+    except Exception as err:
         return command.fail(error=f"Failed reading out: {err}")
 
     return command.finish()
@@ -379,16 +380,7 @@ async def _write_image(
         # Astropy compresses with gzip -9 which takes forever. Instead we compress
         # manually with -1, which is still pretty good.
         await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
-        cmd = await asyncio.create_subprocess_exec(
-            "gzip",
-            "-1",
-            file_path[:-3],
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        await cmd.communicate()
-        if cmd.returncode != 0:
-            raise ArchonError(f"Failed compressing image {path}")
+        await gzip_async(file_path[:-3])
     else:
         await loop.run_in_executor(None, hdu.writeto, file_path)
 
