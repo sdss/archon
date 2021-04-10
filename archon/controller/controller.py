@@ -333,7 +333,7 @@ class ArchonController(Device):
         path: str | os.PathLike[str],
         applyall: bool = False,
         poweron: bool = False,
-        timeout: float = 1,
+        timeout: float = None,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Writes a configuration file to the contoller.
@@ -349,14 +349,18 @@ class ArchonController(Device):
             Whether to run ``POWERON`` after successfully sending the configuration.
             Requires ``applyall=True``.
         timeout
-            The amount of time to wait for each command to succeed.
+            The amount of time to wait for each command to succeed.  If `None`, reads
+            the value from the configuration entry for ``timeouts.wconfig`.
         notifier
-            A callback that receives a message with the current operation. Useful when
-            `.write_config` is called by the actor to report progress to the users.
+            A callback that receives a message with the current operation being
+            performed. Useful when `.write_config` is called by the actor to report
+            progress to the users.
         """
         notifier = notifier or (lambda x: None)
 
         notifier("Reading configuration file")
+
+        timeout = timeout or config["timeouts"]["wconfig"]
 
         if not os.path.exists(path):
             raise ArchonControllerError(f"File {path} does not exist.")
@@ -369,11 +373,11 @@ class ArchonController(Device):
             )
 
         # Undo the INI format: revert \ to / and remove quotes around values.
-        config = c["CONFIG"]
+        aconfig = c["CONFIG"]
         lines = list(
             map(
-                lambda k: k.upper().replace("\\", "/") + "=" + config[k].strip('"'),
-                config,
+                lambda k: k.upper().replace("\\", "/") + "=" + aconfig[k].strip('"'),
+                aconfig,
             )
         )
 
