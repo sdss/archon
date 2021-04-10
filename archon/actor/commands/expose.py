@@ -384,6 +384,8 @@ async def _write_image(
     else:
         await loop.run_in_executor(None, hdu.writeto, file_path)
 
+    assert os.path.exists(file_path), "Failed writing image to disk."
+
     command.info(text=f"File {os.path.basename(file_path)} written to disk.")
     command.debug(filename=file_path)
 
