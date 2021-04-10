@@ -12,7 +12,7 @@ import os
 import warnings
 
 import click
-from clu.parser import CluGroup, help_, ping, version
+from clu.parsers.click import CluGroup, get_schema, help_, keyword, ping, version
 
 from archon.exceptions import ArchonUserWarning
 
@@ -25,6 +25,8 @@ def parser(*args):
 parser.add_command(ping)
 parser.add_command(version)
 parser.add_command(help_)
+parser.add_command(get_schema)
+parser.add_command(keyword)
 
 
 # Autoimport all modules in this directory so that they are added to the parser.
