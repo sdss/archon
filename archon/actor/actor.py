@@ -65,6 +65,10 @@ class ArchonActor(AMQPActor):
         self.observatory = os.environ.get("OBSERVATORY", "LCO")
         self.version = __version__
 
+        # Issue status and system on a loop.
+        self.timed_commands.add_command("status", delay=60)
+        self.timed_commands.add_command("system", delay=60)
+
         self.expose_data: ExposeData | None = None
 
     async def start(self):
