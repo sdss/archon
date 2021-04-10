@@ -3,4 +3,4 @@
 Archon actor schema
 ===================
 
-.. jsonschema:: ../../archon/etc/archon.json
+.. jsonschema:: ../../archon/etc/schema.json

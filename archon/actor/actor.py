@@ -57,7 +57,7 @@ class ArchonActor(AMQPActor):
         if "schema" not in kwargs:
             kwargs["schema"] = os.path.join(
                 os.path.dirname(__file__),
-                "../etc/archon.json",
+                "../etc/schema.json",
             )
 
         super().__init__(*args, **kwargs)
