@@ -18,6 +18,7 @@ from archon.exceptions import (
     ArchonError,
 )
 
+
 pytestmark = [pytest.mark.asyncio]
 
 

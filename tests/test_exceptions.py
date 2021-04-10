@@ -12,6 +12,7 @@ import pytest
 
 from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
+
 pytestmark = [pytest.mark.asyncio]
 
 

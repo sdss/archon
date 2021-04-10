@@ -18,6 +18,7 @@ import pytest
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 
+
 CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 

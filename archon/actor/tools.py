@@ -23,6 +23,7 @@ from clu.command import BaseCommand, Command
 from archon import config
 from archon.controller.controller import ArchonController
 
+
 __all__ = [
     "parallel_controllers",
     "error_controller",

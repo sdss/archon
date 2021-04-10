@@ -27,6 +27,7 @@ from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
 from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
 
+
 __all__ = ["ArchonController"]
 
 

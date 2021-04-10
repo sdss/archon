@@ -71,6 +71,7 @@ default_section = "THIRDPARTY"
 known_first_party = "archon"
 known_typing = ["typing"]
 known_sdss = ["sdsstools"]
+lines_after_imports = 2
 
 [tool.pytest.ini_options]
 addopts = "--cov archon --cov-report xml --cov-report html --cov-report term"

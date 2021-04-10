@@ -13,6 +13,7 @@ import os
 import pathlib
 from subprocess import CalledProcessError
 
+
 __all__ = ["Timer", "gzip_async", "subprocess_run_async"]
 
 

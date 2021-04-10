@@ -14,6 +14,7 @@ from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonControllerError
 
+
 pytestmark = [pytest.mark.asyncio]
 
 

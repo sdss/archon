@@ -12,6 +12,7 @@ from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ModType
 from archon.exceptions import ArchonControllerError
 
+
 pytestmark = [pytest.mark.asyncio]
 
 

@@ -20,6 +20,7 @@ from archon.tools import Timer
 
 from . import MAX_COMMAND_ID
 
+
 __all__ = ["ArchonCommand", "ArchonCommandStatus", "ArchonCommandReply"]
 
 REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?$")
