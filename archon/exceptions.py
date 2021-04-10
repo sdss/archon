@@ -11,8 +11,6 @@
 
 import inspect
 
-import archon.controller
-
 
 class ArchonError(Exception):
     """A custom core Archon exception"""
@@ -22,6 +20,8 @@ class ArchonControllerError(ArchonError):
     """An exception raised by an `.ArchonController`."""
 
     def __init__(self, message):
+
+        import archon.controller
 
         stack = inspect.stack()
         f_locals = stack[1][0].f_locals
@@ -53,6 +53,8 @@ class ArchonControllerWarning(ArchonUserWarning):
     """A warning issued by an `.ArchonController`."""
 
     def __init__(self, message):
+
+        import archon.controller
 
         stack = inspect.stack()
         f_locals = stack[1][0].f_locals
