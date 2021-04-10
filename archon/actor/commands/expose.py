@@ -13,6 +13,7 @@ import json
 import os
 import pathlib
 from contextlib import suppress
+from functools import reduce
 
 from typing import Dict
 
@@ -292,6 +293,7 @@ async def _start_controllers(
 async def get_header(
     command: Command[archon.actor.ArchonActor],
     controller: ArchonController,
+    ccd_name: str,
 ):
     """Returns the header of the FITS file."""
 
@@ -299,12 +301,45 @@ async def get_header(
 
     header = fits.Header()
 
+    # Basic header
     header["SPEC"] = controller.name
     header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
     header["EXPTIME"] = expose_data.exposure_time
     header["IMAGETYP"] = expose_data.flavour
     header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
     header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
+
+    header["CCD"] = ccd_name
+
+    actor = command.actor
+    model = actor.model
+    config = actor.config
+
+    # Add keywords specified in the configuration file.
+    if hconfig := config.get("header"):
+        sensor = config["controllers"][controller.name]["detectors"][ccd_name]["sensor"]
+        for hcommand in hconfig:
+            for kname in hconfig[hcommand]:
+                kpath, comment = hconfig[hcommand][kname]
+                kpath = kpath.format(sensor=sensor).lower()
+                print(kname)
+                value = dict_get(model, kpath)
+                print("a", value)
+                print("xx", model["status"].value)
+                if not value:
+                    command.warning(
+                        text=f"Cannot find header value {kpath} for {kname}. "
+                        f"Issuing command {hcommand!r}"
+                    )
+                    cmd = await actor.send_command(actor.name, hcommand)
+                    await cmd
+                    value = dict_get(model, kpath)
+                    print("b", value)
+                    if not value:
+                        command.warning(text=f"Cannot retrieve {kpath}.")
+                        value = "N/A"
+                    print("c", value)
+                header[kname.upper()] = (value, comment)
 
     try:
         temp, hum = await read_govee()
@@ -366,21 +401,20 @@ async def _write_image(
     )
 
     loop = asyncio.get_running_loop()
-    ccd_info = config["controllers"][controller.name]["ccds"]
+    ccd_info = config["controllers"][controller.name]["detectors"]
     hdu = fits.HDUList([fits.PrimaryHDU()])
-    header = await get_header(command, controller)
     for ccd_name in ccd_info:
-        region = ccd_info[ccd_name]
-        ccd_data = data[region[1] : region[3], region[0] : region[2]]
-        ccd_header = header.copy()
-        ccd_header["CCD"] = ccd_name
-        hdu.append(fits.ImageHDU(data=ccd_data, header=ccd_header))
+        area = ccd_info[ccd_name]["area"]
+        header = await get_header(command, controller, ccd_name)
+        ccd_data = data[area[1] : area[3], area[0] : area[2]]
+        print(header)
+        hdu.append(fits.ImageHDU(data=ccd_data, header=header))
 
     if file_path.endswith(".gz"):
         # Astropy compresses with gzip -9 which takes forever. Instead we compress
         # manually with -1, which is still pretty good.
         await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
-        await gzip_async(file_path[:-3])
+        await gzip_async(file_path[:-3], complevel=1)
     else:
         await loop.run_in_executor(None, hdu.writeto, file_path)
 
@@ -390,3 +424,15 @@ async def _write_image(
     command.debug(filename=file_path)
 
     return True
+
+
+def dict_get(d, k: str | list):
+    """Recursive dictionary get."""
+
+    if isinstance(k, str):
+        k = k.split(".")
+
+    if d[k[0]].value is None:
+        return {}
+
+    return reduce(lambda c, k: c.get(k, {}), k[1:], d[k[0]].value)
