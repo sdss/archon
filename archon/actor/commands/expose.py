@@ -332,14 +332,14 @@ async def get_header(
                         )
                         header[kname] = "N/A"
                         continue
-                    elif isinstance(kconfig, list):
-                        kpath, comment = kconfig[ccd_name]
                     else:
-                        command.warning(text=f"Invalid keyword format for {kname}.")
-                        header[kname] = "N/A"
-                        continue
-                else:
+                        kpath, comment = kconfig[ccd_name]
+                elif isinstance(kconfig, list):
                     kpath, comment = kconfig
+                else:
+                    command.warning(text=f"Invalid keyword format for {kname}.")
+                    header[kname] = "N/A"
+                    continue
                 kpath = kpath.format(sensor=sensor).lower()
                 value = dict_get(model, kpath)
                 if not value:
