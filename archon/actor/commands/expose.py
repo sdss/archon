@@ -318,11 +318,28 @@ async def get_header(
     config = actor.config
 
     # Add keywords specified in the configuration file.
+    sensor = config["controllers"][controller.name]["detectors"][ccd_name]["sensor"]
     if hconfig := config.get("header"):
-        sensor = config["controllers"][controller.name]["detectors"][ccd_name]["sensor"]
         for hcommand in hconfig:
             for kname in hconfig[hcommand]:
-                kpath, comment = hconfig[hcommand][kname]
+                kname = kname.upper()
+                kconfig = hconfig[hcommand][kname]
+                if isinstance(kconfig, dict):
+                    if ccd_name not in kconfig:
+                        command.warning(
+                            text=f"Mapping for keyword {kname} does not "
+                            f"specify CCD {ccd_name!r}."
+                        )
+                        header[kname] = "N/A"
+                        continue
+                    else:
+                        kpath, comment = kconfig[ccd_name]
+                elif isinstance(kconfig, list):
+                    kpath, comment = kconfig
+                else:
+                    command.warning(text=f"Invalid keyword format for {kname}.")
+                    header[kname] = "N/A"
+                    continue
                 kpath = kpath.format(sensor=sensor).lower()
                 value = dict_get(model, kpath)
                 if not value:
@@ -336,7 +353,7 @@ async def get_header(
                     if not value:
                         command.warning(text=f"Cannot retrieve {kpath}.")
                         value = "N/A"
-                header[kname.upper()] = (value, comment)
+                header[kname] = (value, comment)
 
     try:
         temp, hum = await read_govee()

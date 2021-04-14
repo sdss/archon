@@ -52,12 +52,14 @@ sensors:
 
 # Additional header keywords to be obtained from the SYSTEM and STATUS commands.
 # The {sensor} placeholder will be filled out with the sensor value for the detector.
+# If the value of the header keyword is a list, it must be [value, comment]. It can
+# also be a mapping of detector name to [value, comment].
 header:
   status:
-    CCDTEMP1:
-      ['status.mod2/temp{sensor}', 'Temperature of the sensor (HEATERX 2)']
-    CCDTEMP2:
-      ['status.mod12/temp{sensor}', 'Temperature of the sensor (HEATERX 12)']
+    CCDTEMP:
+      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
+      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
 
 # Actor congiguration for the AMQPActor class
 actor:
