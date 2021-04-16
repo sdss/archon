@@ -9,11 +9,12 @@ Exposure:
 X; CALL IntUnit(IntMS)
 X; Exposures--
 X; GOTO Main
+
 EndInt:
 NOINT; ReadOut--
 NOINT; CALL NoIntUnit(NoIntMS)
 NOCLAMP
-RGHIGH; CALL HorizontalSWShift(Lines)
+RGHIGH; CALL HorizontalSWShift(2200)
 RGLOW; CLAMP(10000)
 S1HIGH; X(ST)
 S3LOW; X(ST)
@@ -42,18 +43,18 @@ X; GOTO Main
 
 NoIntUnit:
 NOINT; CALL SmallIntUnit(502)
-NOINT; NOINT(99)
-NOINT; RETURN NoIntUnit
+X; NOINT(99)
+X; RETURN NoIntUnit
 
 SmallIntUnit:
 RGHIGH; X(21)
 RGLOW; X(15)
-S1LOW; X(20)
-S3HIGH; X(20)
-S2LOW; X(20)
 S1HIGH; X(20)
 S3LOW; X(20)
 S2HIGH; X(20)
+S1LOW; X(20)
+S3HIGH; X(20)
+S2LOW; X(20)
 SWLOW; X(16)
 SWHIGH; X(16)
 SWHIGH; RETURN SmallIntUnit
