@@ -9,19 +9,19 @@ controllers:
     port: 4242
     detectors:
       r1:
-        area: [0, 0, 4400, 4400]
+        area: [0, 0, 4120, 4080]
         sensor: A
-      b1:
-        area: [4400, 0, 8800, 4400]
-        sensor: B
-      z1:
-        area: [8800, 0, 13200, 4400]
-        sensor: C
+      # b1:
+      #   area: [4400, 0, 8800, 4400]
+      #   sensor: B
+      # z1:
+      #   area: [8800, 0, 13200, 4400]
+      #   sensor: C
 
 # This is the ACF configuration file to be loaded to the Archon including the
 # timing script. {archon_etc} gets completed with the path of the etc directory once
 # installed
-archon_config_file: '{archon_etc}/lvm2.acf'
+archon_config_file: '{archon_etc}/archon_config/LVM_slow_single_extra.acf'
 
 # The base directory where the data will be saved (and MJD subdirectory is always added)
 # and the format of the saved filename. Available placeholders are {observatory} which

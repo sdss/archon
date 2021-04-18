@@ -1,24 +1,26 @@
 # Parameters
 Exposures=0
-AbortExposure=0
-ReadOut=1
-DoFlush=0
-IntMS=1000
-NoIntMS=100
+IntMS=0
+NoIntMS=0
 PreSkipPixels=0
-Pixels=2200
+Pixels=2040
 PostSkipPixels=0
-OverscanPixels=0
+OverscanPixels=20
 PreSkipLines=0
-Lines=2200
+Lines=2040
 PostSkipLines=0
 OverScanLines=0
 HorizontalBinning=1
 VerticalBinning=1
 ST=12
 STM1=11
-AT=2000
+AT=9000
+
+# Switches
 FlushCount=2
+AbortExposure=0
+ReadOut=1
+DoFlush=0
 
 # Constants
 # Clock levels
