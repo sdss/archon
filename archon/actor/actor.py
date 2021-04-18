@@ -72,6 +72,9 @@ class ArchonActor(AMQPActor):
 
         self.expose_data: ExposeData | None = None
 
+        self._fetch_log_jobs = []
+        self._status_jobs = []
+
     async def start(self):
         """Start the actor and connect the controllers."""
 
@@ -103,7 +106,11 @@ class ArchonActor(AMQPActor):
             for task in self._fetch_log_jobs:
                 task.cancel()
                 await task
-        return super().stop()
+
+        for controller in self.controllers.values():
+            await controller.stop()
+
+        return await super().stop()
 
     @classmethod
     def from_config(cls, config, *args, **kwargs):
@@ -137,6 +144,9 @@ class ArchonActor(AMQPActor):
         """
 
         while True:
+            if not controller.is_connected():
+                await asyncio.sleep(1)
+                continue
             cmd: ArchonCommand = await controller.send_command("FETCHLOG")
             if cmd.succeeded() and len(cmd.replies) == 1:
                 if str(cmd.replies[0].reply) != "(null)":
