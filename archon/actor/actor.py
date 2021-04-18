@@ -103,7 +103,11 @@ class ArchonActor(AMQPActor):
             for task in self._fetch_log_jobs:
                 task.cancel()
                 await task
-        return super().stop()
+
+        for controller in self.controllers.values():
+            await controller.stop()
+
+        return await super().stop()
 
     @classmethod
     def from_config(cls, config, *args, **kwargs):
