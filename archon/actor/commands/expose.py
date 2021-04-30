@@ -118,7 +118,9 @@ async def start(
             )
 
     command.actor.expose_data = archon.actor.ExposeData(
-        exposure_time=exposure_time, flavour=flavour, controllers=selected_controllers
+        exposure_time=exposure_time,
+        flavour=flavour,
+        controllers=selected_controllers,
     )
 
     try:
@@ -253,14 +255,8 @@ async def _start_controllers(
 
             _jobs: list[asyncio.Task] = []
             for controller in controllers:
-                _jobs.append(
-                    asyncio.create_task(
-                        controller.expose(
-                            exposure_time + config["timeouts"]["expose_timeout"],
-                            readout=False,
-                        )
-                    )
-                )
+                t = asyncio.create_task(controller.expose(exposure_time, readout=False))
+                _jobs.append(t)
 
             try:
                 await asyncio.gather(*_jobs, return_exceptions=False)
