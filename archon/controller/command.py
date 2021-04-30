@@ -23,7 +23,7 @@ from . import MAX_COMMAND_ID
 
 __all__ = ["ArchonCommand", "ArchonCommandStatus", "ArchonCommandReply"]
 
-REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?$")
+REPLY_RE = re.compile(b"^([<|?])([0-9A-F]{2})(:?)(.*)\n?")
 
 
 class ArchonCommandStatus(enum.Enum):
@@ -210,8 +210,7 @@ class ArchonCommandReply:
         parsed = REPLY_RE.match(raw_reply)
         if not parsed:
             raise ArchonError(
-                f"Received unparseable reply to command "
-                f"{command.raw}: {raw_reply.decode()}"
+                f"Received unparseable reply to command " f"{command.raw}: {raw_reply}"
             )
 
         self.command = command
