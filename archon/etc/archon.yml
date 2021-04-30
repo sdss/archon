@@ -5,7 +5,7 @@
 # Archon constroller to that detector.
 controllers:
   sp1:
-    host: 10.7.45.25
+    host: 10.7.45.26
     port: 4242
     detectors:
       r1:
