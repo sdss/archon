@@ -33,7 +33,6 @@ sdsstools = ">=0.4.0"
 click = "^7.1.2"
 numpy = "^1.19.5"
 sdss-clu = "^0.8.1"
-# sdss-clu = {path = '../clu', develop = true}
 click-default-group = "^1.2.2"
 daemonocle = "^1.1.1"
 astropy = "^4.2"
