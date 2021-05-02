@@ -26,6 +26,7 @@ include = ["archon/etc/*"]
 
 [tool.poetry.scripts]
 archon = "archon.__main__:archon"
+lvm-lab = "archon.scripts.lvm_lab:lvm_lab"
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -60,7 +61,6 @@ sphinx-jsonschema = "^1.16.7"
 [tool.black]
 line-length = 88
 target-version = ['py38']
-# skip-string-normalization = true
 fast = true
 
 [tool.isort]
@@ -84,7 +84,8 @@ include = ["archon/*"]
 omit = [
     "*/__init__.py",
     "archon/__main__.py",
-    "archon/actor/*"
+    "archon/actor/*",
+    "archon/scripts/*"
 ]
 
 [tool.coverage.report]
