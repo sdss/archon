@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 #
 # @Author: José Sánchez-Gallego (gallegoj@uw.edu)
-# @Date: 2021-04-06
-# @Filename: flush.py
+# @Date: 2021-05-02
+# @Filename: reset.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ from . import parser
 
 @parser.command()
 @parallel_controllers()
-async def flush(command: Command, controller: ArchonController):
-    """Flushes controllers."""
+async def reset(command: Command, controller: ArchonController):
+    """Resets the controllers and discards ongoing exposures."""
 
     if not check_controller(command, controller):
         return False
@@ -28,8 +28,7 @@ async def flush(command: Command, controller: ArchonController):
     try:
         await controller.reset()
         command.actor.expose_data = None
-        await controller.flush()
     except (ArchonControllerError, ArchonError) as err:
-        return error_controller(command, controller, f"Failed flushing: {err}")
+        return error_controller(command, controller, f"Failed resetting: {err}")
 
     return True

@@ -44,7 +44,8 @@ class ControllerStatus(enum.Flag):
     READOUT_PENDING = 0x8
     READING = 0x10
     FETCHING = 0x20
-    ERROR = 0x40
+    FLUSHING = 0x40
+    ERROR = 0x80
 
     def get_flags(self):
         """Returns the the flags that compose the bit."""
