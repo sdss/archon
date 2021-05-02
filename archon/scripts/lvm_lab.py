@@ -141,11 +141,16 @@ async def read_pressure():
 
 @click.group()
 @click.option("-v", "--verbose", is_flag=True, help="Output additional information.")
-def lvm_lab(verbose: bool):
+@click.option("-q", "--quiet", is_flag=True, help="Only output resulting image.")
+def lvm_lab(verbose: bool, quiet: bool):
     """Tools for LVM lab testing."""
 
     if verbose:
         log.sh.setLevel(logging.DEBUG)
+
+    if quiet:
+        log.propagate = False  # Doesn't work for some reason. Just for info.
+        log.sh.setLevel(100)
 
 
 @lvm_lab.command()
@@ -259,4 +264,10 @@ async def expose(exposure_time: float, flavour: str):
         sys.exit(1)
 
     exp_name = model["filename"].value
-    log.info(f"Exposure saved to {exp_name}")
+
+    if log.propagate is False:
+        log.info(f"Exposure saved to {exp_name}")
+    else:
+        print(exp_name)
+
+    sys.exit(0)
