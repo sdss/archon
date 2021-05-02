@@ -149,7 +149,6 @@ def lvm_lab(verbose: bool, quiet: bool):
         log.sh.setLevel(logging.DEBUG)
 
     if quiet:
-        log.propagate = False  # Doesn't work for some reason. Just for info.
         log.sh.setLevel(100)
 
 
@@ -265,7 +264,7 @@ async def expose(exposure_time: float, flavour: str):
 
     exp_name = model["filename"].value
 
-    if log.propagate is False:
+    if log.sh.level <= logging.INFO:
         log.info(f"Exposure saved to {exp_name}")
     else:
         print(exp_name)
