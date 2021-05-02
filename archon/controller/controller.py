@@ -433,7 +433,7 @@ class ArchonController(Device):
         self.status = ControllerStatus.IDLE
 
     async def reset(self):
-        """Resets timing."""
+        """Resets timing and discards current exposures."""
 
         await self.set_param("Exposures", 0)
         await self.set_param("ReadOut", 0)
@@ -447,12 +447,7 @@ class ArchonController(Device):
                 f"Failed sending RESETTIMING ({cmd.status.name})"
             )
 
-        # This should reset everything except in the case in which the controller was
-        # exposing. In that case there will be change that we need to readout.
-        if self.status & ControllerStatus.READOUT_PENDING:
-            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
-        else:
-            self.status = ControllerStatus.IDLE
+        self.status = ControllerStatus.IDLE
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
@@ -530,20 +525,19 @@ class ArchonController(Device):
 
         return
 
-    async def flush(self, force: bool = False, wait_for: Optional[float] = None):
-        """Flushes the detector. Blocks until flushing completes."""
+    async def flush(self, wait_for: Optional[float] = None):
+        """Resets and flushes the detector. Blocks until flushing completes."""
 
-        if not force and not (self.status & ControllerStatus.READOUT_PENDING):
-            raise ArchonControllerError("No readout pending.")
-
+        await self.reset()
         await self.set_param("DoFlush", 1)
+
+        self.status = ControllerStatus.FLUSHING
 
         wait_for = wait_for or config["timeouts"]["flushing"]
         assert wait_for
 
         await asyncio.sleep(wait_for)
 
-        await self.reset()
         self.status = ControllerStatus.IDLE
 
     async def readout(

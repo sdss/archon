@@ -169,6 +169,8 @@ async def finish(
     except Exception as err:
         return command.fail(error=f"Failed reading out: {err}")
 
+    command.actor.expose_data = None
+
     return command.finish()
 
 

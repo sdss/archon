@@ -27,7 +27,8 @@ async def flush(command: Command, controller: ArchonController):
 
     try:
         await controller.reset()
-        await controller.flush(force=True)
+        command.actor.expose_data = None
+        await controller.flush()
     except (ArchonControllerError, ArchonError) as err:
         return error_controller(command, controller, f"Failed flushing: {err}")
 
