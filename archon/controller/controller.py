@@ -544,6 +544,7 @@ class ArchonController(Device):
         await asyncio.sleep(wait_for)
 
         await self.reset()
+        self.status = ControllerStatus.IDLE
 
     async def readout(
         self,
