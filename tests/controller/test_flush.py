@@ -26,15 +26,8 @@ async def test_flush(controller: ArchonController, mocker):
     )
     controller.status = ControllerStatus.EXPOSING
 
-    await controller.flush(force=True, wait_for=0.01)
+    await controller.flush(wait_for=0.01)
 
     set_param_mock.assert_any_call("DoFlush", 1)
 
     assert controller.status == ControllerStatus.IDLE
-
-
-async def test_flush_already_flushing(controller: ArchonController):
-    controller.status = ControllerStatus.IDLE
-
-    with pytest.raises(ArchonControllerError):
-        await controller.flush()

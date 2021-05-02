@@ -472,12 +472,12 @@ class ArchonController(Device):
         that the readout has started.
         """
 
-        await self.reset()
-
         if ControllerStatus.READOUT_PENDING & self.status:
             raise ArchonControllerError(
                 "Controller has a readout pending. Read the device or flush."
             )
+
+        await self.reset()
 
         if readout is False:
             await self.set_param("ReadOut", 0)
