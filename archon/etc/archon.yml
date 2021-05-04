@@ -56,11 +56,14 @@ sensors:
 # also be a mapping of detector name to [value, comment].
 header:
   status:
-    CCDTEMP:
+    CCDTEMP1:
       r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
       z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
-
+    CCDTEMP2:
+      r1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod12/tempb', 'Temperature of the sensor (HEATERX 12)']
+      z1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
 # Actor congiguration for the AMQPActor class
 actor:
   name: archon
