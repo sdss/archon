@@ -64,6 +64,7 @@ header:
       r1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
       b1: ['status.mod12/tempb', 'Temperature of the sensor (HEATERX 12)']
       z1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
+
 # Actor congiguration for the AMQPActor class
 actor:
   name: archon
