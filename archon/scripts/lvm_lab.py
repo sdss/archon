@@ -228,7 +228,7 @@ async def expose(exposure_time: float, flavour: str):
         await client.send_command("archon", "expose abort --flush")
         sys.exit(1)
 
-    if flavour != "bias":
+    if flavour != "bias" and exposure_time > 0:
         # Open shutter.
         log.debug("Opening shutter.")
         result = await command_shutter("QX3")
