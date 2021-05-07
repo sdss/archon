@@ -10,17 +10,20 @@ from __future__ import annotations
 
 from clu.command import Command
 
+import archon.actor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
-from .. import ArchonActor
 from ..tools import check_controller, error_controller, parallel_controllers
 from . import parser
 
 
 @parser.command()
 @parallel_controllers()
-async def status(command: Command[ArchonActor], controller: ArchonController):
+async def status(
+    command: Command[archon.actor.actor.ArchonActor],
+    controller: ArchonController,
+):
     """Reports the status of the controller."""
 
     if not check_controller(command, controller):
