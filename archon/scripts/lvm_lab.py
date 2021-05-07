@@ -32,7 +32,7 @@ log = get_logger("archon-lvm-lab")
 
 SHUTTER = ("10.7.45.27", 7776)
 RABBITMQ = ("localhost", 5672)
-SENS4 = ("10.7.45.27", 1112)
+SENS4 = ("10.7.45.30", 1112)
 
 
 async def command_shutter(command: str) -> bool | bytes:
