@@ -1,7 +1,8 @@
 Main:
 RESET; IF Exposures GOTO Exposure
 X; IF ReadOut GOTO EndInt
-X; IF DoFlush CALL Flush(FlushCount)
+X; IF DoFlush GOTO Flush
+X; CALL FlushOne
 X; CALL Line
 X; GOTO Main
 
@@ -27,8 +28,12 @@ X; GOTO Main
 
 Flush:
 X; DoFlush--
+X; CALL FlushOne(FlushCount)
+X; GOTO Main
+
+FlushOne:
 X; CALL SkipLine(Lines)
-X; RETURN Flush
+X; RETURN FlushOne
 
 IntUnit:
 INT; IF AbortExposure GOTO Abort
@@ -77,6 +82,12 @@ S1HIGH; X(ST)
 S3LOW; X(ST)
 S2HIGH; X(ST)
 X; RETURN Line
+
+Wait:
+X; X(1000000)
+X; X(1000000)
+X; X(1000000)
+X; RETURN Wait
 
 SkipLine:
 RGHIGH; CALL VerticalShift
