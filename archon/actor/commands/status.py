@@ -35,12 +35,12 @@ async def status(
         return error_controller(command, controller, str(ee))
 
     # Polling for status too often during an exposure seems to affect the timing script.
-    if command.actor.expose_data:
-        return error_controller(
-            command,
-            controller,
-            "Cannot report status during an exposure.",
-        )
+    # if command.actor.expose_data:
+    #     return error_controller(
+    #         command,
+    #         controller,
+    #         "Cannot report status during an exposure.",
+    #     )
 
     command.info(
         status={
