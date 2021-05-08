@@ -558,22 +558,31 @@ class ArchonController(Device):
         self,
         force: bool = False,
         block: bool = True,
+        delay: int = 0,
         wait_for: Optional[float] = None,
     ):
         """Reads the detector into a buffer.
 
         If ``force``, triggers the readout routine regardless of the detector expected
         state. If ``block``, blocks until the buffer has been fully written. Otherwise
-        returns immediately.
+        returns immediately. A ``delay`` can be passed to slow down the readout by as
+        many seconds (useful for creating photon transfer frames).
         """
 
         expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
         if not force and self.status != expected_state:
             raise ArchonControllerError("Controller is not in a readable state.")
 
+        delay = int(delay)
+
         await self.reset()
         await self.send_command("HOLDTIMING")
+
         await self.set_param("ReadOut", 1)
+
+        if delay > 0:
+            await self.set_param("WaitCount", delay)
+
         await self.send_command("RELEASETIMING")
 
         self.status = ControllerStatus.READING
@@ -585,7 +594,7 @@ class ArchonController(Device):
         max_wait = config["timeouts"]["readout_max"]
 
         assert wait_for
-        await asyncio.sleep(wait_for)
+        await asyncio.sleep(wait_for + delay)
 
         frame = await self.get_frame()
         wbuf = frame["wbuf"]

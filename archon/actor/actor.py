@@ -184,3 +184,4 @@ class ExposeData:
     mjd: int = 0
     exposure_no: int = 0
     header: Dict[str, Any] = field(default_factory=dict)
+    delay_readout: int = 0

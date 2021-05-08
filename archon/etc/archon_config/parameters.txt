@@ -20,7 +20,7 @@ WaitCount=0
 
 # Switches
 AbortExposure=0
-ReadOut=1
+ReadOut=0
 DoFlush=0
 
 # Flushing

@@ -155,8 +155,8 @@ def lvm_lab(verbose: bool, quiet: bool):
 @lvm_lab.command()
 @click.argument("exposure-time", type=float, required=False)
 @click.option(
-    "--flavour",
     "-f",
+    "--flavour",
     type=str,
     default="object",
     help="object, dark, or bias.",
@@ -169,8 +169,20 @@ def lvm_lab(verbose: bool, quiet: bool):
     default=1,
     help="Number of times to flush the detector.",
 )
+@click.option(
+    "-d",
+    "--delay-readout",
+    type=int,
+    default=0,
+    help="Slow down the readout by this many seconds.",
+)
 @cli_coro()
-async def expose(exposure_time: float, flavour: str, flush_count: int):
+async def expose(
+    exposure_time: float,
+    flavour: str,
+    flush_count: int,
+    delay_readout: int,
+):
     """Exposes the camera, while handling the shutter and sensors."""
 
     if flavour != "bias" and exposure_time is None:
@@ -265,10 +277,13 @@ async def expose(exposure_time: float, flavour: str, flush_count: int):
 
     # Finish exposure
     log.info("Finishing exposure and reading out.")
+    if delay_readout > 0:
+        log.debug(f"Readout will be delayed {delay_readout} seconds.")
+
     cmd = await (
         await client.send_command(
             "archon",
-            f"expose finish --header '{header_json}'",
+            f"expose finish --delay-readout {delay_readout} --header '{header_json}'",
         )
     )
     if cmd.status.did_fail:

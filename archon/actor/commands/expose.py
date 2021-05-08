@@ -140,10 +140,18 @@ async def start(
     default="{}",
     help="JSON string with additional header keyword-value pairs. Avoid using spaces.",
 )
+@click.option(
+    "-d",
+    "--delay-readout",
+    type=int,
+    default=0,
+    help="Slow down the readout by this many seconds.",
+)
 async def finish(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: Dict[str, ArchonController],
     header: str,
+    delay_readout: int,
 ):
     """Finishes the ongoing exposure."""
 
@@ -156,6 +164,7 @@ async def finish(
 
     command.actor.expose_data.end_time = astropy.time.Time.now()
     command.actor.expose_data.header = json.loads(header)
+    command.actor.expose_data.delay_readout = delay_readout
 
     try:
         await asyncio.gather(
@@ -408,7 +417,7 @@ async def _write_image(
     )
 
     # Read device
-    await controller.readout()
+    await controller.readout(delay=expose_data.delay_readout)
 
     # Fetch buffer
     data = await controller.fetch()
