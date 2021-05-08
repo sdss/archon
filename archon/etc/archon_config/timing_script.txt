@@ -1,10 +1,15 @@
 Main:
-RESET; IF Exposures GOTO Exposure
+RESET; IF ContinuousExposures GOTO Continuous
+X; IF Exposures GOTO Exposure
 X; IF ReadOut GOTO EndInt
 X; IF DoFlush GOTO Flush
 X; CALL FlushOne
 X; CALL Line
 X; GOTO Main
+
+Continuous:
+X; CALL IntUnit(IntMS)
+X; GOTO EndInt
 
 Exposure:
 X; CALL IntUnit(IntMS)
@@ -32,7 +37,7 @@ X; CALL FlushOne(FlushCount)
 X; GOTO Main
 
 FlushOne:
-X; CALL SkipLine(Lines)
+X; CALL SkipLineBin(FlushBin)
 X; RETURN FlushOne
 
 IntUnit:
@@ -81,12 +86,11 @@ NOCLAMP
 S1HIGH; X(ST)
 S3LOW; X(ST)
 S2HIGH; X(ST)
+X; CALL Wait(0)
 X; RETURN Line
 
-Wait:
-X; X(1000000)
-X; X(1000000)
-X; X(1000000)
+WaitOne:
+X; X(50000)
 X; RETURN Wait
 
 SkipLine:
@@ -103,6 +107,21 @@ S1HIGH; X(ST)
 S3LOW; X(ST)
 S2HIGH; X(ST)
 X; RETURN SkipLine
+
+SkipLineBin:
+RGHIGH; CALL VerticalShift(SkipLineBinVShift)
+X; TSHIFT1(AT)
+X; TSHIFT2(AT)
+S1LOW; X(ST)
+S3HIGH; X(ST)
+S2LOW; X(ST)
+X; CALL HorizontalSWShift(2200)
+RGLOW; CLAMP(10000)
+NOCLAMP
+S1HIGH; X(ST)
+S3LOW; X(ST)
+S2HIGH; X(ST)
+X; RETURN SkipLineBin
 
 Pixel:
 RGHIGH; X(24)
