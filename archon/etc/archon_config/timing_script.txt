@@ -86,12 +86,12 @@ NOCLAMP
 S1HIGH; X(ST)
 S3LOW; X(ST)
 S2HIGH; X(ST)
-X; CALL Wait(0)
+X; CALL WaitOne(WaitCount)
 X; RETURN Line
 
 WaitOne:
 X; X(50000)
-X; RETURN Wait
+X; RETURN WaitOne
 
 SkipLine:
 RGHIGH; CALL VerticalShift
