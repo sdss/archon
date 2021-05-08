@@ -163,13 +163,14 @@ def lvm_lab(verbose: bool, quiet: bool):
 )
 @click.option(
     "-s",
-    "--flush",
+    "--flush-count",
+    "flush_count",
     type=int,
     default=1,
     help="Number of times to flush the detector.",
 )
 @cli_coro()
-async def expose(exposure_time: float, flavour: str, flush: int):
+async def expose(exposure_time: float, flavour: str, flush_count: int):
     """Exposes the camera, while handling the shutter and sensors."""
 
     if flavour != "bias" and exposure_time is None:
@@ -231,8 +232,9 @@ async def expose(exposure_time: float, flavour: str, flush: int):
     header_json = json.dumps(header, indent=None)
 
     # Flushing
-    log.info("Flushing")
-    cmd = await (await client.send_command("archon", f"flush {flush}"))
+    if flush_count > 0:
+        log.info("Flushing")
+        cmd = await (await client.send_command("archon", f"flush {flush_count}"))
 
     # Start exposure.
     log.info("Starting exposure.")
