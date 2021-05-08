@@ -21,7 +21,7 @@ import numpy
 from clu.device import Device
 
 from archon import config
-from archon.controller.command import ArchonCommand
+from archon.controller.command import ArchonCommand, ArchonCommandStatus
 from archon.controller.maskbits import ControllerStatus, ModType
 from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
@@ -362,7 +362,7 @@ class ArchonController(Device):
             Requires ``applyall=True``.
         timeout
             The amount of time to wait for each command to succeed.  If `None`, reads
-            the value from the configuration entry for ``timeouts.wconfig`.
+            the value from the configuration entry for ``timeouts.write_config_timeout`.
         notifier
             A callback that receives a message with the current operation being
             performed. Useful when `.write_config` is called by the actor to report
@@ -373,7 +373,8 @@ class ArchonController(Device):
 
         notifier("Reading configuration file")
 
-        timeout = timeout or config["timeouts"]["wconfig"]
+        timeout = timeout or config["timeouts"]["write_config_timeout"]
+        delay: float = config["timeouts"]["write_config_delay"]
 
         if not os.path.exists(path):
             raise ArchonControllerError(f"File {path} does not exist.")
@@ -402,13 +403,18 @@ class ArchonController(Device):
         notifier("Sending configuration lines")
 
         cmd_strs = [f"WCONFIG{n_line:04X}{line}" for n_line, line in enumerate(lines)]
-        done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=timeout)
-        if len(failed) > 0:
-            ff = failed[0]
-            self.status = ControllerStatus.ERROR
-            raise ArchonControllerError(
-                f"Failed sending line {ff.raw!r} ({ff.status.name})"
-            )
+        # done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=timeout)
+        for line in cmd_strs:
+            cmd = await self.send_command(line, timeout=timeout)
+            if (
+                cmd.status == ArchonCommandStatus.FAILED
+                or cmd.status == ArchonCommandStatus.TIMEDOUT
+            ):
+                self.status = ControllerStatus.ERROR
+                raise ArchonControllerError(
+                    f"Failed sending line {cmd.raw!r} ({cmd.status.name})"
+                )
+            await asyncio.sleep(delay)
 
         notifier("Sucessfully sent config lines")
 

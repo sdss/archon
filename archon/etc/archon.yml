@@ -36,7 +36,8 @@ files:
 
 timeouts:
   controller_connect: 1
-  wconfig: 2
+  write_config_timeout: 2
+  write_config_delay: 0.001
   expose_timeout: 2
   readout_expected: 45
   readout_max: 60
