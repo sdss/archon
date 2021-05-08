@@ -42,7 +42,7 @@ timeouts:
   readout_max: 60
   fetching_expected: 5
   fetching_max: 10
-  flushing: 10
+  flushing: 6
 
 # Sensor configuration. Mainly for lab testing.
 sensors:

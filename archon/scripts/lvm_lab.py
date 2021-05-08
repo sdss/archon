@@ -153,6 +153,7 @@ def lvm_lab(verbose: bool, quiet: bool):
 
 
 @lvm_lab.command()
+@click.argument("exposure-time", type=float, required=False)
 @click.option(
     "--flavour",
     "-f",
@@ -160,9 +161,15 @@ def lvm_lab(verbose: bool, quiet: bool):
     default="object",
     help="object, dark, or bias.",
 )
-@click.argument("exposure-time", type=float, required=False)
+@click.option(
+    "-s",
+    "--flush",
+    type=int,
+    default=1,
+    help="Number of times to flush the detector.",
+)
 @cli_coro()
-async def expose(exposure_time: float, flavour: str):
+async def expose(exposure_time: float, flavour: str, flush: int):
     """Exposes the camera, while handling the shutter and sensors."""
 
     if flavour != "bias" and exposure_time is None:
@@ -215,6 +222,18 @@ async def expose(exposure_time: float, flavour: str):
             log.error("Failed flushing.")
             sys.exit(1)
 
+    # Read pressure.
+    log.debug("Reading pressure transducer.")
+    pressure = await read_pressure()
+
+    # Build extra header.
+    header = {"PRESURE": (pressure, "Spectrograph pressure [torr]")}
+    header_json = json.dumps(header, indent=None)
+
+    # Flushing
+    log.info("Flushing")
+    cmd = await (await client.send_command("archon", f"flush {flush}"))
+
     # Start exposure.
     log.info("Starting exposure.")
     cmd = await (
@@ -241,14 +260,6 @@ async def expose(exposure_time: float, flavour: str):
         if not (await asyncio.create_task(close_shutter_after(exposure_time))):
             await client.send_command("archon", "expose abort --flush")
             sys.exit(1)
-
-    # Read pressure.
-    log.debug("Reading pressure transducer.")
-    pressure = await read_pressure()
-
-    # Build extra header.
-    header = {"PRESURE": (pressure, "Spectrograph pressure [torr]")}
-    header_json = json.dumps(header, indent=None)
 
     # Finish exposure
     log.info("Finishing exposure and reading out.")

@@ -525,10 +525,11 @@ class ArchonController(Device):
 
         return
 
-    async def flush(self, wait_for: Optional[float] = None):
+    async def flush(self, count: int = 2, wait_for: Optional[float] = None):
         """Resets and flushes the detector. Blocks until flushing completes."""
 
         await self.reset()
+        await self.set_param("FlushCount", int(count))
         await self.set_param("DoFlush", 1)
 
         self.status = ControllerStatus.FLUSHING
@@ -536,7 +537,7 @@ class ArchonController(Device):
         wait_for = wait_for or config["timeouts"]["flushing"]
         assert wait_for
 
-        await asyncio.sleep(wait_for)
+        await asyncio.sleep(wait_for * count)
 
         self.status = ControllerStatus.IDLE
 
