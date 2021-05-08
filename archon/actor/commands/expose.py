@@ -255,9 +255,19 @@ async def _start_controllers(
             command.actor.expose_data.mjd = mjd
             command.actor.expose_data.exposure_no = next_exp_no
 
+            flavour = command.actor.expose_data.flavour
+
+            # If the exposure is a bias or dark we don't open the shutter, but
+            # otherwise we add an extra timeout to allow for the code that handles the
+            # shutter to open and close it and control the exposure time that way.
+            if exposure_time == 0.0 or flavour in ["bias", "dark"]:
+                etime = 0.0
+            else:
+                etime = exposure_time + config["timeouts"]["expose_timeout"]
+
             _jobs: list[asyncio.Task] = []
             for controller in controllers:
-                t = asyncio.create_task(controller.expose(exposure_time, readout=False))
+                t = asyncio.create_task(controller.expose(etime, readout=False))
                 _jobs.append(t)
 
             try:
