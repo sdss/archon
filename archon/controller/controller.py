@@ -441,6 +441,8 @@ class ArchonController(Device):
     async def reset(self):
         """Resets timing and discards current exposures."""
 
+        await self.send_command("HOLDTIMING")
+
         await self.set_param("Exposures", 0)
         await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
@@ -484,6 +486,7 @@ class ArchonController(Device):
             )
 
         await self.reset()
+        await self.send_command("HOLDTIMING")
 
         if readout is False:
             await self.set_param("ReadOut", 0)
@@ -492,6 +495,8 @@ class ArchonController(Device):
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
+
+        await self.send_command("RELEASETIMING")
 
         self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
 
@@ -535,8 +540,10 @@ class ArchonController(Device):
         """Resets and flushes the detector. Blocks until flushing completes."""
 
         await self.reset()
+        await self.send_command("HOLDTIMING")
         await self.set_param("FlushCount", int(count))
         await self.set_param("DoFlush", 1)
+        await self.send_command("RELEASETIMING")
 
         self.status = ControllerStatus.FLUSHING
 
@@ -564,7 +571,10 @@ class ArchonController(Device):
         if not force and self.status != expected_state:
             raise ArchonControllerError("Controller is not in a readable state.")
 
+        await self.reset()
+        await self.send_command("HOLDTIMING")
         await self.set_param("ReadOut", 1)
+        await self.send_command("RELEASETIMING")
 
         self.status = ControllerStatus.READING
 
