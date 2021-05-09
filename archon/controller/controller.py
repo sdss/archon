@@ -295,8 +295,13 @@ class ArchonController(Device):
                 v = f'"{v}"'
             return k, v
 
+        await self.send_command("POLLOFF")
+
         cmd_strs = [f"RCONFIG{n_line:04X}" for n_line in range(MAX_CONFIG_LINES)]
-        done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=0.5)
+        done, failed = await self.send_many(cmd_strs, max_chunk=50, timeout=0.5)
+
+        await self.send_command("POLLON")
+
         if len(failed) > 0:
             ff = failed[0]
             status = ff.status.name
@@ -402,6 +407,10 @@ class ArchonController(Device):
 
         notifier("Sending configuration lines")
 
+        # Stop the controller from polling internally to speed up network response
+        # time. This command is not in the official documentation.
+        await self.send_command("POLLOFF")
+
         cmd_strs = [f"WCONFIG{n_line:04X}{line}" for n_line, line in enumerate(lines)]
         # done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=timeout)
         for line in cmd_strs:
@@ -411,12 +420,16 @@ class ArchonController(Device):
                 or cmd.status == ArchonCommandStatus.TIMEDOUT
             ):
                 self.status = ControllerStatus.ERROR
+                await self.send_command("POLLON")
                 raise ArchonControllerError(
                     f"Failed sending line {cmd.raw!r} ({cmd.status.name})"
                 )
             await asyncio.sleep(delay)
 
         notifier("Sucessfully sent config lines")
+
+        # Restore polling
+        await self.send_command("POLLON")
 
         if applyall:
             notifier("Sending APPLYALL")
