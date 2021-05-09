@@ -155,6 +155,13 @@ def lvm_lab(verbose: bool, quiet: bool):
 @lvm_lab.command()
 @click.argument("exposure-time", type=float, required=False)
 @click.option(
+    "-c",
+    "--count",
+    type=int,
+    default=1,
+    help="Number of frames to take with this configuration.",
+)
+@click.option(
     "-f",
     "--flavour",
     type=str,
@@ -179,6 +186,7 @@ def lvm_lab(verbose: bool, quiet: bool):
 @cli_coro()
 async def expose(
     exposure_time: float,
+    count: int,
     flavour: str,
     flush_count: int,
     delay_readout: int,
@@ -221,8 +229,6 @@ async def expose(
     # Check that the shutter responds and is closed.
     await check_shutter()
 
-    # TODO: add option to flush before exposing.
-
     # If there is a readout pending, flush the camera.
     if status & CS.READOUT_PENDING:
         log.warning("Pending readout found. Aborting and flushing.")
@@ -235,66 +241,71 @@ async def expose(
             log.error("Failed flushing.")
             sys.exit(1)
 
-    # Read pressure.
-    log.debug("Reading pressure transducer.")
-    pressure = await read_pressure()
+    for nn in range(count):
 
-    # Build extra header.
-    header = {"PRESURE": (pressure, "Spectrograph pressure [torr]")}
-    header_json = json.dumps(header, indent=None)
+        log.info(f"Taking exposure {nn + 1} of {count}.")
 
-    # Flushing
-    if flush_count > 0:
-        log.info("Flushing")
-        cmd = await (await client.send_command("archon", f"flush {flush_count}"))
+        # Read pressure.
+        log.debug("Reading pressure transducer.")
+        pressure = await read_pressure()
 
-    # Start exposure.
-    log.info("Starting exposure.")
-    cmd = await (
-        await client.send_command(
-            "archon",
-            f"expose start sp1 --{flavour} {exposure_time}",
+        # Build extra header.
+        header = {"PRESURE": (pressure, "Spectrograph pressure [torr]")}
+        header_json = json.dumps(header, indent=None)
+
+        # Flushing
+        if flush_count > 0:
+            log.info("Flushing")
+            cmd = await (await client.send_command("archon", f"flush {flush_count}"))
+
+        # Start exposure.
+        log.info("Starting exposure.")
+        cmd = await (
+            await client.send_command(
+                "archon",
+                f"expose start sp1 --{flavour} {exposure_time}",
+            )
         )
-    )
-    if cmd.status.did_fail:
-        log.error("Failed starting exposure. Trying to abort and exiting.")
-        await client.send_command("archon", "expose abort --flush")
-        sys.exit(1)
-
-    if flavour != "bias" and exposure_time > 0:
-        # Open shutter.
-        log.debug("Opening shutter.")
-        result = await command_shutter("QX3")
-        if result is False:
-            log.error("Shutter failed to open.")
-            await command_shutter("QX4")
+        if cmd.status.did_fail:
+            log.error("Failed starting exposure. Trying to abort and exiting.")
             await client.send_command("archon", "expose abort --flush")
             sys.exit(1)
 
-        if not (await asyncio.create_task(close_shutter_after(exposure_time))):
-            await client.send_command("archon", "expose abort --flush")
+        if flavour != "bias" and exposure_time > 0:
+            # Open shutter.
+            log.debug("Opening shutter.")
+            result = await command_shutter("QX3")
+            if result is False:
+                log.error("Shutter failed to open.")
+                await command_shutter("QX4")
+                await client.send_command("archon", "expose abort --flush")
+                sys.exit(1)
+
+            if not (await asyncio.create_task(close_shutter_after(exposure_time))):
+                await client.send_command("archon", "expose abort --flush")
+                sys.exit(1)
+
+        # Finish exposure
+        log.info("Finishing exposure and reading out.")
+        if delay_readout > 0:
+            log.debug(f"Readout will be delayed {delay_readout} seconds.")
+
+        cmd = await (
+            await client.send_command(
+                "archon",
+                f"expose finish --delay-readout {delay_readout} "
+                f"--header '{header_json}'",
+            )
+        )
+        if cmd.status.did_fail:
+            log.error("Failed reading out exposure.")
             sys.exit(1)
 
-    # Finish exposure
-    log.info("Finishing exposure and reading out.")
-    if delay_readout > 0:
-        log.debug(f"Readout will be delayed {delay_readout} seconds.")
+        exp_name = model["filename"].value
 
-    cmd = await (
-        await client.send_command(
-            "archon",
-            f"expose finish --delay-readout {delay_readout} --header '{header_json}'",
-        )
-    )
-    if cmd.status.did_fail:
-        log.error("Failed reading out exposure.")
-        sys.exit(1)
-
-    exp_name = model["filename"].value
-
-    if log.sh.level <= logging.INFO:
-        log.info(f"Exposure saved to {exp_name}")
-    else:
-        print(exp_name)
+        if log.sh.level <= logging.INFO:
+            log.info(f"Exposure saved to {exp_name}")
+        else:
+            print(exp_name)
 
     sys.exit(0)
