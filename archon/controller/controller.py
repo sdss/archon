@@ -575,7 +575,6 @@ class ArchonController(Device):
 
         delay = int(delay)
 
-        await self.reset()
         await self.send_command("HOLDTIMING")
 
         await self.set_param("ReadOut", 1)
