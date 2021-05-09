@@ -449,11 +449,11 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 0)
         await self.set_param("WaitCount", 0)
 
-        cmd = await self.send_command("RESETTIMING", timeout=1)
+        cmd = await self.send_command("RELEASETIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
             raise ArchonControllerError(
-                f"Failed sending RESETTIMING ({cmd.status.name})"
+                f"Failed sending RELEASETIMING ({cmd.status.name})"
             )
 
         self.status = ControllerStatus.IDLE
