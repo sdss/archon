@@ -447,6 +447,7 @@ class ArchonController(Device):
         await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
         await self.set_param("DoFlush", 0)
+        await self.set_param("WaitCount", 0)
 
         cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
