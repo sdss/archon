@@ -24,7 +24,7 @@ jobs:
               with:
                   tag_name: ${{ github.ref }}
                   release_name: archon ${{ github.ref }}
-                  body:
+                  body: ""
                   draft: false
                   prerelease: false
 
