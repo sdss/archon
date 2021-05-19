@@ -107,7 +107,7 @@ Reference
    api
    actor-commands
    actor-schema
-   Changelog <CHANGELOG>
+   Changelog <changelog>
 
 
 Indices and tables

@@ -27,9 +27,8 @@ except ModuleNotFoundError:
 # Are we building in RTD?
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
-# Sphinx template selected in cookiecutter and whether to use releases
+# Sphinx template selected in cookiecutter
 sphinx_template = "alabaster"
-use_releases = "yes"
 
 if sphinx_template == "sphinx-bootstrap":
     import sphinx_bootstrap_theme
@@ -59,6 +58,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_click",
     "sphinx-jsonschema",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -320,11 +320,3 @@ texinfo_documents = [
         "Miscellaneous",
     ),
 ]
-
-if use_releases == "yes":
-
-    extensions += ["sdsstools.releases"]
-
-    releases_github_path = "sdss/archon"
-    releases_document_name = ["CHANGELOG"]
-    releases_unstable_prehistory = True

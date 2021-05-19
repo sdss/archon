@@ -367,7 +367,8 @@ class ArchonController(Device):
             Requires ``applyall=True``.
         timeout
             The amount of time to wait for each command to succeed.  If `None`, reads
-            the value from the configuration entry for ``timeouts.write_config_timeout`.
+            the value from the configuration entry for
+            ``timeouts.write_config_timeout``.
         notifier
             A callback that receives a message with the current operation being
             performed. Useful when `.write_config` is called by the actor to report
