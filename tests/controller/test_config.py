@@ -35,6 +35,10 @@ def send_command(parser: Optional[Callable[[ArchonCommand], ArchonCommand]] = No
             cmd._mark_done()
             cmd.replies = [ArchonCommandReply(b"<00SYSTEM=0 MOD1_TYPE=1", cmd)]
             return cmd
+        if cmd.command_string in ["POLLON", "POLLOFF"]:
+            cmd._mark_done()
+            cmd.replies = [ArchonCommandReply(b"<00", cmd)]
+            return cmd
 
         r_n = int(cmd.command_string[7:11], 16)
         cmd._mark_done()

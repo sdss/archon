@@ -90,12 +90,6 @@ async def test_controller_reset(controller: ArchonController):
     await controller.reset()
 
 
-@pytest.mark.commands([["RESETTIMING", ["?{cid}"]]])
-async def test_controller_reset_fails(controller: ArchonController):
-    with pytest.raises(ArchonControllerError):
-        await controller.reset()
-
-
 async def test_yield_status(controller: ArchonController):
     async def set_status():
         controller.status = ControllerStatus.IDLE
