@@ -1,0 +1,63 @@
+---
+# A dictionary of controller name to Archon controller connection parameters. The
+# detectors key determines the names and areas of each CCD in the buffer in the format
+# [x0, y0, x1, y1]. The sensor key indicates the identifier (A, B, C) assigned by the
+# Archon constroller to that detector.
+controllers:
+  sp1:
+    host: 10.7.45.26
+    port: 4242
+    detectors:
+      r1:
+        area: [0, 0, 4120, 4080]
+        sensor: A
+      # b1:
+      #   area: [4400, 0, 8800, 4400]
+      #   sensor: B
+      # z1:
+      #   area: [8800, 0, 13200, 4400]
+      #   sensor: C
+
+# This is the ACF configuration file to be loaded to the Archon including the
+# timing script. {archon_etc} gets completed with the path of the etc directory once
+# installed. If the path is not absolute, the working directory is the one for the
+# configuration file.
+archon_config_file: 'config/LVM_slow_single_extra.acf'
+
+# The base directory where the data will be saved (and MJD subdirectory is always added)
+# and the format of the saved filename. Available placeholders are {observatory} which
+# is replaced with "apo" or "lco", {hemisphere} replaced with "n" if the observatory is
+# "apo" and "s" if "lco", {controller} which is replaced with the name of the Archon
+# controller defined above, and {exposure} which is a never-repeating sequence
+# identifier. The CCD frames from each controller are saved as different HDU extensions
+# inside the FITS file.
+files:
+  data_dir: '/data/spectro/lvm'
+  template: 'sdR-{hemisphere}-{controller}-{exposure_no:08d}.fits.gz'
+
+# Sensor configuration. Mainly for lab testing.
+sensors:
+  H5179:
+    host: 10.7.45.27
+    port: 1111
+
+# Additional header keywords to be obtained from the SYSTEM and STATUS commands.
+# The {sensor} placeholder will be filled out with the sensor value for the detector.
+# If the value of the header keyword is a list, it must be [value, comment]. It can
+# also be a mapping of detector name to [value, comment].
+header:
+  status:
+    CCDTEMP1:
+      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
+      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
+    CCDTEMP2:
+      r1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod12/tempb', 'Temperature of the sensor (HEATERX 12)']
+      z1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
+
+# Actor congiguration for the LVMActor class
+actor:
+  name: archon
+  host: localhost
+  port: 5672
