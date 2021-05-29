@@ -6,6 +6,7 @@
 
 * Add option to define additional header keywords in the configuration file that read values from the actor keyword datamodel.
 * Add `lvm-lab` script for laboratory testing.
+* `POWERON` and `POWERBAD` controller status bits.
 
 ### 🔧 Fixed
 

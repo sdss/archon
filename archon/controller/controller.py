@@ -79,8 +79,10 @@ class ArchonController(Device):
 
         yield self.status  # Yield the status on subscription to the generator.
         while True:
+            prev_status = self._status
             await self.__status_event.wait()
-            yield self.status
+            if self.status != prev_status:
+                yield self.status
             self.__status_event.clear()
 
     def send_command(
@@ -249,6 +251,19 @@ class ArchonController(Device):
             key.lower(): int(value) if check_int(value) else float(value)
             for (key, value) in map(lambda k: k.split("="), keywords)
         }
+
+        # Set power bit.
+        bits = self._status.value
+        bits &= ~(ControllerStatus.POWERON | ControllerStatus.POWERBAD).value
+
+        power_bits: int = 0
+        if status["powergood"] != 1:
+            power_bits |= ControllerStatus.POWERBAD.value
+        else:
+            power_bits |= ControllerStatus.POWERON.value
+
+        bits |= power_bits
+        self.status = ControllerStatus(bits)
 
         return status
 
@@ -450,7 +465,10 @@ class ArchonController(Device):
                         f"Failed sending POWERON ({cmd.status.name})"
                     )
 
-        self.status = ControllerStatus.IDLE
+        await asyncio.sleep(5)
+        await self.reset()
+
+        return
 
     async def reset(self):
         """Resets timing and discards current exposures."""
@@ -470,7 +488,8 @@ class ArchonController(Device):
                 f"Failed sending RELEASETIMING ({cmd.status.name})"
             )
 
-        self.status = ControllerStatus.IDLE
+        self._status = ControllerStatus.IDLE
+        await self.get_device_status()  # Sets power and other bits.
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""

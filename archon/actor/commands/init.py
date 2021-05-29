@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 from clu.command import Command
@@ -44,7 +45,7 @@ async def init(command: Command, controller: ArchonController):
         return
 
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
-    _output(command, controller, "Loading and applying config")
+    _output(command, controller, "Loading and applying config", "i")
     configurtion_file: str = command.actor.config["archon_config_file"]
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
     configuration_file = configurtion_file.format(archon_etc=archon_etc)
@@ -61,16 +62,6 @@ async def init(command: Command, controller: ArchonController):
             await controller.set_param(param, value)
         except ArchonError as err:
             return error_controller(command, controller, str(err))
-
-    # Reset timing
-    _output(command, controller, "Reset timing")
-    acmd: ArchonCommand = await controller.send_command("RESETTIMING", timeout=2)
-    if not acmd.succeeded():
-        return error_controller(
-            command,
-            controller,
-            f"Failed while issuing RESETTIMING ({acmd.status.name})",
-        )
 
     # Unlock all buffers
     _output(command, controller, "Unlocking buffers")
@@ -91,5 +82,8 @@ async def init(command: Command, controller: ArchonController):
             controller,
             f"Failed while powering on ({acmd.status.name})",
         )
+
+    await asyncio.sleep(1)
+    await controller.reset()
 
     return True

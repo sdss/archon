@@ -46,6 +46,8 @@ class ControllerStatus(enum.Flag):
     FETCHING = 0x20
     FLUSHING = 0x40
     ERROR = 0x80
+    POWERON = 0x100
+    POWERBAD = 0x200
 
     def get_flags(self):
         """Returns the the flags that compose the bit."""
