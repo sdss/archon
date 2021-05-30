@@ -28,12 +28,14 @@ archon_config_file: 'lvm/config/archon/LVM_slow_single_extra.acf'
 # and the format of the saved filename. Available placeholders are {observatory} which
 # is replaced with "apo" or "lco", {hemisphere} replaced with "n" if the observatory is
 # "apo" and "s" if "lco", {controller} which is replaced with the name of the Archon
-# controller defined above, and {exposure} which is a never-repeating sequence
-# identifier. The CCD frames from each controller are saved as different HDU extensions
-# inside the FITS file.
+# controller defined above, {ccd} which is the name do the CCD (including the controller
+# identifier), and {exposure} which is a never-repeating sequence identifier. "split"
+# controls whether the CCD frames from each controller are saved as individual files
+# or as different HDU extensions inside the FITS file.
 files:
   data_dir: '/data/spectro/lvm'
-  template: 'sdR-{hemisphere}-{controller}-{exposure_no:08d}.fits.gz'
+  split: true
+  template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
 
 # Sensor configuration. Mainly for lab testing.
 sensors:

@@ -15,7 +15,7 @@ import pathlib
 from contextlib import suppress
 from functools import reduce
 
-from typing import Dict
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Union, cast
 
 import astropy.time
 import click
@@ -28,11 +28,34 @@ from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 from archon.tools import gzip_async
 
-from ..tools import check_controller, controller_list, open_with_lock, read_govee
+from ..tools import check_controller, controller_list, open_with_lock
 from . import parser
 
 
 __all__ = ["expose"]
+
+
+Post_process_cb_type = Union[
+    Callable[
+        [ArchonController, List[fits.PrimaryHDU]],
+        Tuple[ArchonController, List[fits.PrimaryHDU]],
+    ],
+    Callable[
+        [ArchonController, List[fits.PrimaryHDU]],
+        Coroutine[Tuple[ArchonController, List[fits.PrimaryHDU]], Any, Any],
+    ],
+]
+
+
+def annotate(params: Dict[str, Any]):
+    """Adds attributes to a function."""
+
+    def wrapper(func):
+        for param in params:
+            setattr(func, param, params[param])
+        return func
+
+    return wrapper
 
 
 @parser.group()
@@ -147,6 +170,7 @@ async def start(
     default=0,
     help="Slow down the readout by this many seconds.",
 )
+@annotate({"post_process": None})
 async def finish(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: Dict[str, ArchonController],
@@ -156,6 +180,9 @@ async def finish(
     """Finishes the ongoing exposure."""
 
     scontr: list[ArchonController]
+    post_process_callback: Optional[Post_process_cb_type] = finish.callback.post_process
+
+    loop = asyncio.get_running_loop()
 
     if command.actor.expose_data is None:
         return command.fail(error="No exposure found.")
@@ -174,9 +201,37 @@ async def finish(
                 if contr.status & ControllerStatus.EXPOSING
             ]
         )
-        await asyncio.gather(*[_write_image(command, contr) for contr in scontr])
+        hdus = await asyncio.gather(*[_fetch_hdus(command, contr) for contr in scontr])
     except Exception as err:
         return command.fail(error=f"Failed reading out: {err}")
+
+    controller_to_hdus = {scontr[ii]: hdus[ii] for ii in range(len(scontr))}
+
+    if post_process_callback is not None:
+        jobs = []
+        for controller, hdus in controller_to_hdus.items():
+            if asyncio.iscoroutinefunction(post_process_callback):
+                jobs.append(post_process_callback(controller, hdus))
+            else:
+                jobs.append(
+                    loop.run_in_executor(
+                        None,
+                        post_process_callback,
+                        controller,
+                        hdus,
+                    )
+                )
+        command.debug(text="Running post-process.")
+        controller_to_hdus = await asyncio.gather(*jobs)
+        controller_to_hdus = cast(
+            Dict[ArchonController, List[fits.PrimaryHDU]],
+            controller_to_hdus,
+        )
+
+    command.debug(text="Saving HDUs.")
+    await asyncio.gather(
+        *[_write_hdus(command, c, h) for c, h in controller_to_hdus.items()]
+    )
 
     command.actor.expose_data = None
 
@@ -322,6 +377,7 @@ async def get_header(
 
     # Basic header
     header["SPEC"] = controller.name
+    header["OBSERVAT"] = command.actor.observatory
     header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
     header["EXPTIME"] = expose_data.exposure_time
     header["IMAGETYP"] = expose_data.flavour
@@ -372,16 +428,6 @@ async def get_header(
                         value = "N/A"
                 header[kname] = (value, comment)
 
-    try:
-        temp, hum = await read_govee()
-    except BaseException as err:
-        command.warning(text=f"Failed retriving H5179 data: {err}")
-        temp = -999.0
-        hum = -999.0
-
-    header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
-    header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
-
     # Convert JSON lists to tuples or astropy fails.
     for key in expose_data.header:
         if isinstance(expose_data.header[key], list):
@@ -392,29 +438,14 @@ async def get_header(
     return header
 
 
-async def _write_image(
+async def _fetch_hdus(
     command: Command[archon.actor.ArchonActor],
     controller: ArchonController,
-) -> bool:
-    """Waits for readout to complete, fetches the buffer, and writes the image."""
-
-    # Prepare file path
-    observatory = command.actor.observatory.lower()
-    hemisphere = "n" if observatory == "apo" else "s"
+) -> List[fits.PrimaryHDU]:
+    """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
 
     config = command.actor.config
     expose_data = command.actor.expose_data
-
-    data_dir = pathlib.Path(config["files"]["data_dir"])
-    mjd_dir = data_dir / str(expose_data.mjd)
-
-    path: pathlib.Path = mjd_dir / config["files"]["template"]
-    file_path = str(path.absolute()).format(
-        exposure_no=expose_data.exposure_no,
-        controller=controller.name,
-        observatory=observatory,
-        hemisphere=hemisphere,
-    )
 
     # Read device
     await controller.readout(delay=expose_data.delay_readout)
@@ -422,38 +453,15 @@ async def _write_image(
     # Fetch buffer
     data = await controller.fetch()
 
-    # Divide array into CCDs and create FITS.
-    # TODO: add at least a placeholder header with some basics.
-    command.debug(
-        text=dict(
-            controller=controller.name,
-            text="Saving data to disk.",
-        )
-    )
-
-    loop = asyncio.get_running_loop()
     ccd_info = config["controllers"][controller.name]["detectors"]
-    hdu = fits.HDUList([fits.PrimaryHDU()])
+    hdus = []
     for ccd_name in ccd_info:
         area = ccd_info[ccd_name]["area"]
         header = await get_header(command, controller, ccd_name)
         ccd_data = data[area[1] : area[3], area[0] : area[2]]
-        hdu.append(fits.ImageHDU(data=ccd_data, header=header, name=ccd_name.upper()))
+        hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
 
-    if file_path.endswith(".gz"):
-        # Astropy compresses with gzip -9 which takes forever. Instead we compress
-        # manually with -1, which is still pretty good.
-        await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
-        await gzip_async(file_path[:-3], complevel=1)
-    else:
-        await loop.run_in_executor(None, hdu.writeto, file_path)
-
-    assert os.path.exists(file_path), "Failed writing image to disk."
-
-    command.info(text=f"File {os.path.basename(file_path)} written to disk.")
-    command.debug(filename=file_path)
-
-    return True
+    return hdus
 
 
 def dict_get(d, k: str | list):
@@ -466,3 +474,49 @@ def dict_get(d, k: str | list):
         return {}
 
     return reduce(lambda c, k: c.get(k, {}), k[1:], d[k[0]].value)
+
+
+async def _write_hdus(
+    command: Command[archon.actor.ArchonActor],
+    controller: ArchonController,
+    hdus: List[fits.PrimaryHDU],
+):
+
+    loop = asyncio.get_running_loop()
+
+    expose_data = command.actor.expose_data
+
+    config = command.actor.config
+
+    data_dir = pathlib.Path(config["files"]["data_dir"])
+    mjd_dir = data_dir / str(expose_data.mjd)
+
+    path: pathlib.Path = mjd_dir / config["files"]["template"]
+
+    for hdu in hdus:
+        ccd = hdu.header["ccd"]
+        observatory = str(hdu.header["OBSERVAT"]).lower()
+        hemisphere = "n" if observatory == "apo" else "s"
+
+        file_path = str(path.absolute()).format(
+            exposure_no=expose_data.exposure_no,
+            controller=controller.name,
+            observatory=observatory,
+            hemisphere=hemisphere,
+            ccd=ccd,
+        )
+
+        if file_path.endswith(".gz"):
+            # Astropy compresses with gzip -9 which takes forever. Instead we compress
+            # manually with -1, which is still pretty good.
+            await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
+            await gzip_async(file_path[:-3], complevel=1)
+        else:
+            await loop.run_in_executor(None, hdu.writeto, file_path)
+
+        assert os.path.exists(file_path), "Failed writing image to disk."
+
+        command.info(text=f"File {os.path.basename(file_path)} written to disk.")
+        command.debug(filename=file_path)
+
+    return
