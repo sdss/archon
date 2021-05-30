@@ -97,12 +97,20 @@ def expose(*args):
     default=True,
     help="Take an object frame",
 )
+@click.option(
+    "--finish",
+    "-f",
+    "do_finish",
+    is_flag=True,
+    help="Finish the exposure",
+)
 async def start(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
     controller_list: tuple[str, ...],
     flavour: str,
+    do_finish: bool,
 ):
     """Exposes the cameras."""
 
@@ -148,6 +156,9 @@ async def start(
 
     try:
         if await _start_controllers(command, selected_controllers):
+            if do_finish:
+                await asyncio.sleep(exposure_time)
+                return await finish.callback(command, selected_controllers, "{}", 0)
             return command.finish()
         else:
             return command.fail()
