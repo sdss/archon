@@ -37,11 +37,11 @@ __all__ = ["expose"]
 
 Post_process_cb_type = Union[
     Callable[
-        [ArchonController, List[fits.PrimaryHDU]],
+        [Command, ArchonController, List[fits.PrimaryHDU]],
         Tuple[ArchonController, List[fits.PrimaryHDU]],
     ],
     Callable[
-        [ArchonController, List[fits.PrimaryHDU]],
+        [Command, ArchonController, List[fits.PrimaryHDU]],
         Coroutine[Tuple[ArchonController, List[fits.PrimaryHDU]], Any, Any],
     ],
 ]
@@ -211,22 +211,19 @@ async def finish(
         jobs = []
         for controller, hdus in controller_to_hdus.items():
             if asyncio.iscoroutinefunction(post_process_callback):
-                jobs.append(post_process_callback(controller, hdus))
+                jobs.append(post_process_callback(command, controller, hdus))
             else:
                 jobs.append(
                     loop.run_in_executor(
                         None,
                         post_process_callback,
+                        command,
                         controller,
                         hdus,
                     )
                 )
         command.debug(text="Running post-process.")
-        controller_to_hdus = await asyncio.gather(*jobs)
-        controller_to_hdus = cast(
-            Dict[ArchonController, List[fits.PrimaryHDU]],
-            controller_to_hdus,
-        )
+        controller_to_hdus = dict(await asyncio.gather(*jobs))
 
     command.debug(text="Saving HDUs.")
     await asyncio.gather(
