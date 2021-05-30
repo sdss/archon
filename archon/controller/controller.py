@@ -465,7 +465,6 @@ class ArchonController(Device):
                         f"Failed sending POWERON ({cmd.status.name})"
                     )
 
-        await asyncio.sleep(5)
         await self.reset()
 
         return

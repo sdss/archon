@@ -77,7 +77,10 @@ async def controller(request, unused_tcp_port: int):
 
             # Default reply
             if not found_command:
-                writer.write(f"<{cid}\n".encode())
+                if com.upper() == "STATUS":
+                    writer.write(f"<{cid}POWERGOOD=1\n".encode())
+                else:
+                    writer.write(f"<{cid}\n".encode())
                 await writer.drain()
 
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
