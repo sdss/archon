@@ -14,10 +14,11 @@ import warnings
 from contextlib import suppress
 from dataclasses import dataclass, field
 
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 import astropy.time
-from clu.actor import AMQPActor
+import click
+from clu.actor import BaseActor
 
 from archon import __version__
 from archon.controller.command import ArchonCommand
@@ -30,11 +31,11 @@ from .commands import parser as archon_command_parser
 __all__ = ["ArchonActor"]
 
 
-class ArchonActor(AMQPActor):
-    """Archon controller actor.
+class ArchonActor(BaseActor):
+    """Archon controller base actor.
 
-    In addition to the normal arguments and keyword parameters for
-    `~clu.actor.AMQPActor`, the class accepts the following parameters.
+    This class is intended to be subclassed with a specific actor class (normally
+    ``AMQPActor`` or ``LegacyActor``).
 
     Parameters
     ----------
@@ -42,7 +43,8 @@ class ArchonActor(AMQPActor):
         The list of `.ArchonController` instances to manage.
     """
 
-    parser = archon_command_parser
+    parser: ClassVar[click.Group] = archon_command_parser
+    BASE_CONFIG: ClassVar[str | Dict | None] = None
 
     def __init__(
         self,
@@ -67,8 +69,8 @@ class ArchonActor(AMQPActor):
         self.version = __version__
 
         # Issue status and system on a loop.
-        self.timed_commands.add_command("status", delay=60)
-        self.timed_commands.add_command("system", delay=60)
+        self.timed_commands.add_command("status", delay=60)  # type: ignore
+        self.timed_commands.add_command("system", delay=60)  # type: ignore
 
         self.expose_data: ExposeData | None = None
 
@@ -115,6 +117,11 @@ class ArchonActor(AMQPActor):
     @classmethod
     def from_config(cls, config, *args, **kwargs):
         """Creates an actor from a configuration file."""
+
+        if config is None:
+            if cls.BASE_CONFIG is None:
+                raise RuntimeError("The class does not have a base configuration.")
+            config = cls.BASE_CONFIG
 
         instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
 

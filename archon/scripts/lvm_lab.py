@@ -17,7 +17,7 @@ import warnings
 
 import click
 import clu
-from clu.client import AMQPClient
+from clu.client import AMQPClient, AMQPReply
 
 from sdsstools import get_logger
 from sdsstools.daemonizer import cli_coro
@@ -33,6 +33,16 @@ log = get_logger("archon-lvm-lab")
 SHUTTER = ("10.7.45.27", 7776)
 RABBITMQ = ("localhost", 5672)
 SENS4 = ("10.7.45.30", 1112)
+
+
+def finish_callback(reply: AMQPReply):
+
+    if "filename" in reply.body:
+        exp_name = reply.body["filename"]
+        if log.sh.level <= logging.INFO:
+            log.info(f"Exposure saved to {exp_name}")
+        else:
+            print(exp_name)
 
 
 async def command_shutter(command: str) -> bool | bytes:
@@ -210,8 +220,6 @@ async def expose(
         log.error("Archon actor does not seem to be running. Run with 'archon start'")
         sys.exit(1)
 
-    model = client.models["archon"]
-
     # Check that the configuration has been loaded.
     status = await get_controller_status(client)
     if status & CS.UNKNOWN:
@@ -295,17 +303,11 @@ async def expose(
                 "archon",
                 f"expose finish --delay-readout {delay_readout} "
                 f"--header '{header_json}'",
+                callback=finish_callback,
             )
         )
         if cmd.status.did_fail:
             log.error("Failed reading out exposure.")
             sys.exit(1)
-
-        exp_name = model["filename"].value
-
-        if log.sh.level <= logging.INFO:
-            log.info(f"Exposure saved to {exp_name}")
-        else:
-            print(exp_name)
 
     sys.exit(0)

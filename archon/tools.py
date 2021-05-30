@@ -11,10 +11,11 @@ from __future__ import annotations
 import asyncio
 import os
 import pathlib
+import socket
 from subprocess import CalledProcessError
 
 
-__all__ = ["Timer", "gzip_async", "subprocess_run_async"]
+__all__ = ["Timer", "gzip_async", "subprocess_run_async", "get_profile_name"]
 
 
 class Timer:
@@ -101,3 +102,18 @@ async def gzip_async(file: pathlib.Path | str, complevel=1):
         )
     except Exception as err:
         raise OSError(f"Failed compressing file {file}: {err}")
+
+
+def get_profile_name() -> str:  # pragma: no cover
+    """Determines the profile to use from the domain name."""
+
+    fqdn = socket.getfqdn()
+
+    if fqdn == "obsvld01":
+        return "lvm"
+    elif fqdn.endswith("sdss5-boss-icc.lco.cl"):
+        return "boss"
+    elif fqdn.endswith("lco.cl"):
+        return "lvm"
+
+    raise RuntimeError(f"Cannot infer profile from domain {fqdn!r}.")

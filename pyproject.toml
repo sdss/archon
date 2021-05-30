@@ -22,7 +22,6 @@ classifiers = [
 packages = [
     { include = "archon" }
 ]
-include = ["archon/etc/*"]
 
 [tool.poetry.scripts]
 archon = "archon.__main__:archon"
@@ -61,7 +60,7 @@ myst-parser = ">=0.14.0"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py39']
 fast = true
 
 [tool.isort]
@@ -86,7 +85,9 @@ omit = [
     "*/__init__.py",
     "archon/__main__.py",
     "archon/actor/*",
-    "archon/scripts/*"
+    "archon/scripts/*",
+    "archon/lvm/*",
+    "archon/boss/*"
 ]
 
 [tool.coverage.report]
