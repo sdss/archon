@@ -15,7 +15,7 @@ import pathlib
 from contextlib import suppress
 from functools import reduce
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, Union
 
 import astropy.time
 import click
