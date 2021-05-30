@@ -18,7 +18,7 @@ from typing import Any, ClassVar, Dict
 
 import astropy.time
 import click
-from clu.actor import BaseActor
+from clu.actor import AMQPActor, BaseActor
 
 from archon import __version__
 from archon.controller.command import ArchonCommand
@@ -28,10 +28,10 @@ from archon.exceptions import ArchonUserWarning
 from .commands import parser as archon_command_parser
 
 
-__all__ = ["ArchonActor"]
+__all__ = ["ArchonBaseActor", "ArchonActor"]
 
 
-class ArchonActor(BaseActor):
+class ArchonBaseActor(BaseActor):
     """Archon controller base actor.
 
     This class is intended to be subclassed with a specific actor class (normally
@@ -177,6 +177,12 @@ class ArchonActor(BaseActor):
                     status_names=[flag.name for flag in status.get_flags()],
                 )
             )
+
+
+class ArchonActor(ArchonBaseActor, AMQPActor):
+    """Archon actor based on the AMQP protocol."""
+
+    pass
 
 
 @dataclass
