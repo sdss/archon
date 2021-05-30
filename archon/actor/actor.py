@@ -123,9 +123,9 @@ class ArchonBaseActor(BaseActor):
                 raise RuntimeError("The class does not have a base configuration.")
             config = cls.BASE_CONFIG
 
-        instance = super(ArchonActor, cls).from_config(config, *args, **kwargs)
+        instance = super(ArchonBaseActor, cls).from_config(config, *args, **kwargs)
 
-        assert isinstance(instance, ArchonActor)
+        assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)
 
         if "controllers" in instance.config:
