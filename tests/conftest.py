@@ -87,7 +87,7 @@ async def controller(request, unused_tcp_port: int):
 
     async with server:
         archon = ArchonController("localhost", unused_tcp_port, name="test_controller")
-        await archon.start()
+        await archon.start(reset=False)
         archon.status = ControllerStatus.IDLE
 
         yield archon
