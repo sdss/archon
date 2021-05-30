@@ -61,7 +61,7 @@ myst-parser = ">=0.14.0"
 
 [tool.black]
 line-length = 88
-target-version = ['py38']
+target-version = ['py39']
 fast = true
 
 [tool.isort]
