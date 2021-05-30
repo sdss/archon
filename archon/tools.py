@@ -104,7 +104,7 @@ async def gzip_async(file: pathlib.Path | str, complevel=1):
         raise OSError(f"Failed compressing file {file}: {err}")
 
 
-def get_profile_name() -> str:
+def get_profile_name() -> str:  # pragma: no cover
     """Determines the profile to use from the domain name."""
 
     fqdn = socket.getfqdn()
