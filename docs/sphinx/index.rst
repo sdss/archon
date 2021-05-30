@@ -33,9 +33,9 @@ The ``archon`` product provides a `wrapper <.ArchonController>` for the `STA Arc
 
 `~.ArchonController.send_command` allows to send a raw command to the controller, while managing command IDs, message formatting, and reply parsing. `~.ArchonController.send_command` returns a `.ArchonCommand`, which is a `~asyncio.Future` that can e awaited until the Archon command completes or fails. The replies from the controller are stored in `.ArchonCommand.replies` as a list of `.ArchonCommandReply`.
 
-`.ArchonController` also provides some mid-level routines to automate complex processes such as `loading a configuration file <.ArchonController.read_config>`, retrieving the `controller status <.ArchonController.get_status>`, `integrating <.ArchonController.integrate>`, `fetching the buffer <.ArchonController.fetch>`, etc. Refer to the API documentation for a list of methods.
+`.ArchonController` also provides some mid-level routines to automate complex processes such as `loading a configuration file <.ArchonController.read_config>`, retrieving the `controller status <.ArchonController.get_device_status>`, `integrating <.ArchonController.expose>`, `fetching the buffer <.ArchonController.fetch>`, etc. Refer to the API documentation for a list of methods.
 
-The controller object tracks its internal status via the `.ArchonController.status` attribute, which is always one of `.ControllerStatus`. It's possible to "subscribe" to the controller status via the `~.ArchonController.get_status` asynchronous generator.
+The controller object tracks its internal status via the `.ArchonController.status` attribute, which is always one of `.ControllerStatus`. It's possible to "subscribe" to the controller status via the `~.ArchonController.get_device_status` asynchronous generator.
 
 Actor
 ^^^^^
