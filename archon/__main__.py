@@ -69,7 +69,7 @@ def archon(ctx, profile, config_file, verbose):
     ctx.obj = {"verbose": verbose, "config_file": config_file, "profile": profile}
 
 
-@archon.group(cls=DaemonGroup, prog="archon_actor", workdir=os.getcwd())
+@archon.group(cls=DaemonGroup, prog="archon_actor", workdir=os.getcwd(), umask=0o002)
 @click.pass_context
 @cli_coro
 async def actor(ctx):
