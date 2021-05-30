@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 
@@ -19,7 +20,14 @@ from astropy.time import Time
 
 from ..actor import ArchonActor
 from . import config
+from .commands import parser
 from .expose import LVMExposeDelegate
+
+
+try:
+    from drift import Drift
+except ImportError:
+    raise ImportError("Cannot import sdss-drift. Did you install the lvm extra?")
 
 
 if TYPE_CHECKING:
@@ -32,15 +40,40 @@ class LVMActor(ArchonActor):
     BASE_CONFIG = config
     DELEGATE_CLASS = LVMExposeDelegate
 
+    parser = parser
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._log_lock = asyncio.Lock()
         self._log_values = {}
 
+        self.drift: Drift | None = None
+
     async def start(self):
 
+        # Merge LVM schema with base schema.
+        lvm_schema = json.loads(
+            open(
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "config/schema.json",
+                ),
+                "r",
+            ).read()
+        )
+        schema = self.model.schema.copy()
+        schema["properties"].update(lvm_schema["properties"])
+
+        self.model.__init__("archon", schema, is_file=False)
+
+        # Define Drift. This needs to happen here because __init__ is not
+        # aware of the configuration until after from_config appends it.
+        if "devices" in self.config and "wago" in self.config["devices"]:
+            self.drift = Drift.from_config(self.config["devices"]["wago"])
+
         await super().start()
+
         self.model["filename"].register_callback(self.fill_log)
 
         return self

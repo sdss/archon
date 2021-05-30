@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "lvm_status": {
+      "type": "object",
+      "properties": {
+        "shutter": {
+          "type": "object",
+          "properties": {
+            "power": { "type": "boolean" },
+            "status": { "enum": ["closed", "open", "?"] }
+          }
+        },
+        "hartman_left": {
+          "type": "object",
+          "properties": {
+            "power": { "type": "boolean" },
+            "status": { "enum": ["closed", "open", "?"] }
+          }
+        },
+        "hartman_right": {
+          "type": "object",
+          "properties": {
+            "power": { "type": "boolean" },
+            "status": { "enum": ["closed", "open", "?"] }
+          }
+        },
+        "environmental": {
+          "type": "object",
+          "properties": {
+            "rh1": { "type": "number" },
+            "rh2": { "type": "number" },
+            "rh3": { "type": "number" },
+            "t1": { "type": "number" },
+            "t2": { "type": "number" },
+            "t3": { "type": "number" },
+            "rtd1": { "type": "number" },
+            "rtd2": { "type": "number" },
+            "rtd3": { "type": "number" },
+            "rtd4": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}
