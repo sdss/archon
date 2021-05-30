@@ -24,6 +24,9 @@ controllers:
 # directory.
 archon_config_file: 'lvm/config/archon/LVM_slow_single_extra.acf'
 
+# Write a log for each exposure (requires files.lab_log to be set).
+write_log: true
+
 # The base directory where the data will be saved (and MJD subdirectory is always added)
 # and the format of the saved filename. Available placeholders are {observatory} which
 # is replaced with "apo" or "lco", {hemisphere} replaced with "n" if the observatory is
@@ -36,6 +39,7 @@ files:
   data_dir: '/data/spectro/lvm'
   split: true
   template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
+  lab_log: '/data/spectro/lvm/exposure_log.csv'
 
 # Sensor configuration. Mainly for lab testing.
 sensors:
@@ -54,9 +58,9 @@ header:
       b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
       z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
     CCDTEMP2:
-      r1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod12/tempb', 'Temperature of the sensor (HEATERX 12)']
-      z1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
+      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
+      b1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+      z1: ['status.mod12/tempc', 'LN2 temperature (HEATERX 12)']
 
 # Actor congiguration for the LVMActor class
 actor:
