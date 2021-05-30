@@ -13,6 +13,7 @@ import os
 
 from clu.command import Command
 
+import archon
 from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
@@ -46,9 +47,14 @@ async def init(command: Command, controller: ArchonController):
 
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config", "i")
-    configurtion_file: str = command.actor.config["archon_config_file"]
+
+    configuration_file: str = command.actor.config["archon_config_file"]
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
-    configuration_file = configurtion_file.format(archon_etc=archon_etc)
+    configuration_file = configuration_file.format(archon_etc=archon_etc)
+    if not os.path.isabs(configuration_file):
+        archon_root = os.path.dirname(os.path.realpath(archon.__file__))
+        configuration_file = os.path.join(archon_root, configuration_file)
+
     try:
         await controller.write_config(configuration_file, applyall=True, poweron=False)
     except ArchonError as err:

@@ -20,9 +20,9 @@ controllers:
 
 # This is the ACF configuration file to be loaded to the Archon including the
 # timing script. {archon_etc} gets completed with the path of the etc directory once
-# installed. If the path is not absolute, the working directory is the one for the
-# configuration file.
-archon_config_file: 'config/LVM_slow_single_extra.acf'
+# installed. If the path is not absolute, the root of the package is used as working
+# directory.
+archon_config_file: 'lvm/config/archon/LVM_slow_single_extra.acf'
 
 # The base directory where the data will be saved (and MJD subdirectory is always added)
 # and the format of the saved filename. Available placeholders are {observatory} which
