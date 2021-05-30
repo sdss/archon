@@ -61,6 +61,15 @@ class ArchonController(Device):
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
 
+    async def start(self, reset=True):
+        """Starts the controller connection. If ``reset=True``, resets the status."""
+
+        await super().start()
+        if reset:
+            await self.reset()
+
+        return self
+
     @property
     def status(self) -> ControllerStatus:
         """Returns the status of the controller as a `.ControllerStatus` enum type."""

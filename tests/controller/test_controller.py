@@ -104,3 +104,11 @@ async def test_yield_status(controller: ArchonController):
             break
 
     assert status.name == "EXPOSING"
+
+
+async def test_start_with_reset(controller: ArchonController):
+
+    await controller.stop()
+    await controller.start(reset=True)
+
+    assert controller.status & ControllerStatus.IDLE
