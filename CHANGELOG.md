@@ -5,6 +5,7 @@
 ### 🚀 New
 
 * [#21](https://github.com/sdss/archon/pull/21) Implemented profiles for LVM and BOSS (placeholder).
+* [#22](https://github.com/sdss/archon/pull/22) Implement custom LVM expose delegate along with a group of `lvm` commands to control the shutter, hartmann doors, and to expose using the shutter.
 * [#23](https://github.com/sdss/archon/pull/23) Refactor expose actor code into an `ExposeDelegate` that allows for more flexible customisation.
 * Add option to define additional header keywords in the configuration file that read values from the actor keyword datamodel.
 * Add `lvm-lab` script for laboratory testing.
