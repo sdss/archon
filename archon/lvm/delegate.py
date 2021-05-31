@@ -73,7 +73,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         expose_data = self.expose_data
 
-        if expose_data.exposure_time == 0 or expose_data.flavour in ['bias', 'dark']:
+        if expose_data.exposure_time == 0 or expose_data.flavour in ["bias", "dark"]:
             return False
 
         action = "open" if open else "close"
