@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "shutter": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "power": { "type": "boolean" },
+        "status": { "enum": ["closed", "open", "?"] }
+      }
+    },
+    "hartmann_left": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "power": { "type": "boolean" },
+        "status": { "enum": ["closed", "open", "?"] }
+      }
+    },
+    "hartmann_right": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "power": { "type": "boolean" },
+        "status": { "enum": ["closed", "open", "?"] }
+      }
+    },
+    "environmental": {
+      "type": "object",
+      "properties": {
+        "controller": { "type": "string" },
+        "rh1": { "type": "number" },
+        "rh2": { "type": "number" },
+        "rh3": { "type": "number" },
+        "t1": { "type": "number" },
+        "t2": { "type": "number" },
+        "t3": { "type": "number" },
+        "rtd1": { "type": "number" },
+        "rtd2": { "type": "number" },
+        "rtd3": { "type": "number" },
+        "rtd4": { "type": "number" }
+      }
+    },
+    "pressure": {
+      "type": "object",
+      "properties": {
+        "r1": { "type": "number" }
+      }
+    },
+    "lamps": {
+      "type": "object",
+      "properties": {
+        "HgAr": { "type": "boolean" },
+        "MI150": { "type": "boolean" },
+        "M625L4": { "type": "boolean" }
+      }
+    }
+  }
+}

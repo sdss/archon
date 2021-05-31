@@ -9,9 +9,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import re
 import sys
 import warnings
 
@@ -30,9 +28,8 @@ warnings.simplefilter("ignore", clu.exceptions.CluWarning)
 log = get_logger("archon-lvm-lab")
 
 
-SHUTTER = ("10.7.45.27", 7776)
 RABBITMQ = ("localhost", 5672)
-SENS4 = ("10.7.45.30", 1112)
+READOUT_DELAY = 49
 
 
 def finish_callback(reply: AMQPReply):
@@ -43,63 +40,6 @@ def finish_callback(reply: AMQPReply):
             log.info(f"Exposure saved to {exp_name}")
         else:
             print(exp_name)
-
-
-async def command_shutter(command: str) -> bool | bytes:
-    """Sends a command to the shutter."""
-
-    r, w = await asyncio.open_connection(*SHUTTER)
-
-    w.write((f"\x00\x07{command}\r").encode())
-    await w.drain()
-
-    reply = await r.readuntil(b"\r")
-    if command == "IS" and reply:
-        return reply
-    else:
-        if reply != b"\x00\x07%\r":
-            return False
-        else:
-            await asyncio.sleep(0.61)
-            reply = await r.readuntil(b"\r")
-            if b"DONE" in reply:
-                return True
-            else:
-                return False
-
-
-def parse_IS(reply: bytes):
-    """Parses the reply to the shutter IS command."""
-
-    match = re.search(b"\x00\x07IS=([0-1])([0-1])[0-1]{6}\r$", reply)
-    if match is None:
-        return False
-
-    if match.groups() == (b"1", b"0"):
-        return "open"
-    elif match.groups() == (b"0", b"1"):
-        return "closed"
-    else:
-        return False
-
-
-async def check_shutter():
-    """Checks the status of the shutter and closes it if open."""
-
-    log.debug("Checking shutter.")
-
-    shutter_is = await command_shutter("IS")
-    assert isinstance(shutter_is, bytes)
-    shutter_status = parse_IS(shutter_is)
-    if shutter_status is None:
-        log.error("Shutter is in a bad state.")
-        sys.exit(1)
-    elif shutter_status == "open":
-        log.warning("Shutter is open. Closing it.")
-        result = await command_shutter("QX4")
-        if result is False:
-            log.error("Failed closing the shutter. Fix the problem manually.")
-            sys.exit(1)
 
 
 async def get_controller_status(client: clu.AMQPClient) -> CS:
@@ -116,37 +56,12 @@ async def get_controller_status(client: clu.AMQPClient) -> CS:
     return CS(status)
 
 
-async def close_shutter_after(delay: float):
-    """Waits ``delay`` before closing the shutter."""
+def check_expose_task(cmd):
+    """Checks the exposure task."""
 
-    await asyncio.sleep(delay)
-
-    log.debug("Closing shutter")
-
-    result = await command_shutter("QX4")
-    if result is False:
-        log.error("Shutter failed to close.")
-        return False
-
-    return True
-
-
-async def read_pressure():
-    """Reads the pressure transducer."""
-
-    r, w = await asyncio.open_connection(*SENS4)
-
-    w.write(b"@253P?\\")
-    await w.drain()
-
-    reply = await r.readuntil(b"\\")
-    match = re.search(r"@[0-9]{1,3}ACK([0-9.E+-]+)\\$".encode(), reply)
-
-    if not match:
-        log.warning("Failed reading pressure.")
-        return "NA"
-
-    return float(match.groups()[0])
+    if cmd.status.did_fail:
+        log.error("Exposure failed.")
+        sys.exit(1)
 
 
 @click.group()
@@ -174,7 +89,7 @@ def lvm_lab(verbose: bool, quiet: bool):
 @click.option(
     "-f",
     "--flavour",
-    type=str,
+    type=click.Choice(["object", "dark", "bias"]),
     default="object",
     help="object, dark, or bias.",
 )
@@ -193,6 +108,17 @@ def lvm_lab(verbose: bool, quiet: bool):
     default=0,
     help="Slow down the readout by this many seconds.",
 )
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    help="Prompts for the log parameters.",
+)
+@click.option("--lamp-current", type=str)
+@click.option("--test-no", type=str)
+@click.option("--test-iteration", type=str)
+@click.option("--purpose", type=str)
+@click.option("--notes", type=str)
 @cli_coro()
 async def expose(
     exposure_time: float,
@@ -200,6 +126,12 @@ async def expose(
     flavour: str,
     flush_count: int,
     delay_readout: int,
+    interactive: bool,
+    lamp_current: str | None,
+    purpose: str | None,
+    notes: str | None,
+    test_no: str | None,
+    test_iteration: str | None,
 ):
     """Exposes the camera, while handling the shutter and sensors."""
 
@@ -207,6 +139,25 @@ async def expose(
         raise click.UsageError("EXPOSURE-TIME is required unless --flavour=bias.")
     elif flavour == "bias":
         exposure_time = 0.0
+
+    # Get lab notebook values.
+    if interactive:
+        if test_no is None:
+            test_no = input("Test #: ")
+        if test_iteration is None:
+            test_iteration = input("Test iteration: ")
+        if lamp_current is None:
+            lamp_current = input("Lamp current: ")
+        if purpose is None:
+            purpose = input("Purpose: ")
+        if notes is None:
+            notes = input("Notes: ")
+    else:
+        lamp_current = lamp_current or ""
+        purpose = purpose or ""
+        notes = notes or ""
+        test_no = test_no or ""
+        test_iteration = test_iteration or ""
 
     # Check that the actor is running.
     client = AMQPClient(
@@ -234,9 +185,6 @@ async def expose(
                 log.error("Initialisation succeeded but the Archon is not IDLE.")
                 sys.exit(1)
 
-    # Check that the shutter responds and is closed.
-    await check_shutter()
-
     # If there is a readout pending, flush the camera.
     if status & CS.READOUT_PENDING:
         log.warning("Pending readout found. Aborting and flushing.")
@@ -253,61 +201,34 @@ async def expose(
 
         log.info(f"Taking exposure {nn + 1} of {count}.")
 
-        # Read pressure.
-        log.debug("Reading pressure transducer.")
-        pressure = await read_pressure()
-
-        # Build extra header.
-        header = {"PRESURE": (pressure, "Spectrograph pressure [torr]")}
-        header_json = json.dumps(header, indent=None)
-
         # Flushing
         if flush_count > 0:
             log.info("Flushing")
             cmd = await (await client.send_command("archon", f"flush {flush_count}"))
 
         # Start exposure.
-        log.info("Starting exposure.")
-        cmd = await (
-            await client.send_command(
-                "archon",
-                f"expose start sp1 --{flavour} {exposure_time}",
-            )
+        log.info("Exposing.")
+        cmd = await client.send_command(
+            "archon",
+            f"lvm expose --{flavour} "
+            f"--delay-readout '{delay_readout}' "
+            f"--lamp-current '{lamp_current}' "
+            f"--purpose '{purpose}' "
+            f"--notes '{notes}' "
+            f"--test-no '{test_no}' "
+            f"--test-iteration '{test_iteration}' "
+            f"sp1 {exposure_time}",
+            callback=finish_callback,
         )
-        if cmd.status.did_fail:
-            log.error("Failed starting exposure. Trying to abort and exiting.")
-            await client.send_command("archon", "expose abort --flush")
-            sys.exit(1)
 
-        if flavour != "bias" and exposure_time > 0:
-            # Open shutter.
-            log.debug("Opening shutter.")
-            result = await command_shutter("QX3")
-            if result is False:
-                log.error("Shutter failed to open.")
-                await command_shutter("QX4")
-                await client.send_command("archon", "expose abort --flush")
-                sys.exit(1)
+        cmd.add_done_callback(check_expose_task)
 
-            if not (await asyncio.create_task(close_shutter_after(exposure_time))):
-                await client.send_command("archon", "expose abort --flush")
-                sys.exit(1)
+        if log.sh.level <= logging.INFO:
+            nsecs = int(READOUT_DELAY + exposure_time)
+            with click.progressbar(range(nsecs)) as bar:
+                for _ in bar:
+                    await asyncio.sleep(1)
 
-        # Finish exposure
-        log.info("Finishing exposure and reading out.")
-        if delay_readout > 0:
-            log.debug(f"Readout will be delayed {delay_readout} seconds.")
-
-        cmd = await (
-            await client.send_command(
-                "archon",
-                f"expose finish --delay-readout {delay_readout} "
-                f"--header '{header_json}'",
-                callback=finish_callback,
-            )
-        )
-        if cmd.status.did_fail:
-            log.error("Failed reading out exposure.")
-            sys.exit(1)
+        await cmd
 
     sys.exit(0)

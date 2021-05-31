@@ -18,11 +18,135 @@ controllers:
       #   area: [8800, 0, 13200, 4400]
       #   sensor: C
 
+devices:
+  motor_controllers:
+    sp1:
+      shutter:
+        host: 10.7.45.28
+        port: 7776
+      hartmann_left:
+        host: 10.7.45.28
+        port: 7777
+      hartmann_right:
+        host: 10.7.45.28
+        port: 7778
+  lamps:
+    HgAr:
+      host: 10.7.45.22
+      outlet: 3
+    MI150:
+      host: 10.7.45.22
+      outlet: 4
+    M625L4:
+      host: 10.7.45.22
+      outlet: 7
+  pressure:
+    r1:
+      host: 10.7.45.30
+      port: 1112
+      id: 253
+  wago:
+    controllers:
+      sp1:
+        address: 10.7.45.28
+        port: 502
+    modules:
+      ANALOG1:
+        model: 750-497
+        mode: input_register
+        channels: 8
+        description: E+E temperature and humidity sensors
+        devices:
+          RH1:
+            address: 40001
+            category: humidity
+            adaptor: rh_dwyer
+            units: percent
+          T1:
+            address: 40002
+            category: temperature
+            adaptor: t_dwyer
+            units: degC
+          RH2:
+            address: 40003
+            category: humidity
+            adaptor: rh_dwyer
+            units: percent
+          T2:
+            address: 40004
+            category: temperature
+            adaptor: t_dwyer
+            units: degC
+          RH3:
+            address: 40005
+            category: humidity
+            adaptor: rh_dwyer
+            units: percent
+          T3:
+            address: 40006
+            category: temperature
+            adaptor: t_dwyer
+            units: degC
+      ANALOG2:
+        model: 750-450
+        mode: input_register
+        channels: 4
+        description: Pt RTD sensors
+        devices:
+          RTD1:
+            address: 40009
+            category: temperature
+            adaptor: rtd
+            units: degC
+            description: Inside the controller box
+          RTD2:
+            address: 40010
+            category: temperature
+            adaptor: rtd
+            units: degC
+            description:
+          RTD3:
+            address: 40011
+            category: temperature
+            adaptor: rtd
+            units: degC
+            description:
+          RTD4:
+            address: 40012
+            category: temperature
+            adaptor: rtd
+            units: degC
+            description:
+      DO:
+        model: 750-530
+        mode: coil
+        channels: 8
+        description: Power relays
+        devices:
+          shutter:
+            address: 40513
+            type: relay
+            category: relays
+            relay_type: NC
+          hartmann_left:
+            address: 40515
+            type: relay
+            category: relays
+            relay_type: N0
+          hartmann_right:
+            address: 40516
+            type: relay
+            category: relays
+            relay_type: NC
+
 # This is the ACF configuration file to be loaded to the Archon including the
 # timing script. {archon_etc} gets completed with the path of the etc directory once
 # installed. If the path is not absolute, the root of the package is used as working
 # directory.
 archon_config_file: 'lvm/config/archon/LVM_slow_single_extra.acf'
+
+# Write a log for each exposure (requires files.lab_log to be set).
+write_log: true
 
 # The base directory where the data will be saved (and MJD subdirectory is always added)
 # and the format of the saved filename. Available placeholders are {observatory} which
@@ -36,6 +160,7 @@ files:
   data_dir: '/data/spectro/lvm'
   split: true
   template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
+  lab_log: '/data/spectro/lvm/exposure_log.csv'
 
 # Sensor configuration. Mainly for lab testing.
 sensors:
@@ -54,9 +179,9 @@ header:
       b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
       z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
     CCDTEMP2:
-      r1: ['status.mod2/tempb', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod12/tempb', 'Temperature of the sensor (HEATERX 12)']
-      z1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
+      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
+      b1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+      z1: ['status.mod12/tempc', 'LN2 temperature (HEATERX 12)']
 
 # Actor congiguration for the LVMActor class
 actor:

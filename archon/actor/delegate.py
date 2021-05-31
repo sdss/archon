@@ -15,7 +15,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import reduce
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
 import astropy.time
 from astropy.io import fits
@@ -31,17 +31,22 @@ if TYPE_CHECKING:
     from .actor import ArchonActor
 
 
-class ExposureDelegate(object):
+Actor_co = TypeVar("Actor_co", bound="ArchonActor", covariant=True)
+
+
+class ExposureDelegate(Generic[Actor_co]):
     """Handles the exposure workflow."""
 
-    def __init__(self):
+    def __init__(self, actor: Actor_co):
+
+        self.actor = actor
 
         self.exposure_data: ExposeData | None = None
         self.next_exp_file: pathlib.Path | None = None
 
         self.lock = asyncio.Lock()
 
-        self._command: Command[ArchonActor] | None = None
+        self._command: Command[Actor_co] | None = None
 
     @property
     def command(self):
@@ -53,17 +58,10 @@ class ExposureDelegate(object):
         return self._command
 
     @command.setter
-    def command(self, value: Command[ArchonActor] | None):
+    def command(self, value: Command[Actor_co] | None):
         """Sets the current command."""
 
         self._command = value
-
-    @property
-    def actor(self) -> ArchonActor:
-        """Returns the actor."""
-
-        assert self.command.actor, "actor not defined in command."
-        return self.command.actor
 
     def reset(self):
         """Resets the exposure delegate."""
@@ -88,23 +86,15 @@ class ExposureDelegate(object):
 
     async def expose(
         self,
-        command: Command[ArchonActor],
+        command: Command[Actor_co],
         controllers: List[ArchonController],
         flavour: str = "object",
         exposure_time: float = 1.0,
         readout: bool = True,
+        **readout_params,
     ):
 
         self.command = command
-
-        for controller in controllers:
-            cname = controller.name
-            if controller.status & ControllerStatus.EXPOSING:
-                return self.fail(f"Controller {cname} is exposing.")
-            elif controller.status & ControllerStatus.READOUT_PENDING:
-                return self.fail(f"Controller {cname} has a read out pending.")
-            elif controller.status & ControllerStatus.ERROR:
-                return self.fail(f"Controller {cname} has status ERROR.")
 
         if self.lock.locked():
             return self.fail("The expose delegate is locked.")
@@ -121,7 +111,10 @@ class ExposureDelegate(object):
             controllers=controllers,
         )
 
-        next_exp_file = self.prepare_exposure()
+        if not (await self.check_expose()):
+            return False
+
+        next_exp_file = self._prepare_directories()
 
         config = self.actor.config
 
@@ -159,18 +152,33 @@ class ExposureDelegate(object):
             return self.fail()
 
         # Operate the shutter
-        await self.shutter(True)
+        if not (await self.shutter(True)):
+            return False
 
         with open(next_exp_file, "w") as fd:
             fd.write(str(next_exp_no + 1))
 
         if readout:
             await asyncio.sleep(exposure_time)
-            return await self.readout(self.command)
+            return await self.readout(self.command, **readout_params)
 
         return True
 
-    def prepare_exposure(self) -> pathlib.Path:
+    async def check_expose(self) -> bool:
+        """Performs a series of checks to confirm we can expose."""
+
+        for controller in self.expose_data.controllers:
+            cname = controller.name
+            if controller.status & ControllerStatus.EXPOSING:
+                return self.fail(f"Controller {cname} is exposing.")
+            elif controller.status & ControllerStatus.READOUT_PENDING:
+                return self.fail(f"Controller {cname} has a read out pending.")
+            elif controller.status & ControllerStatus.ERROR:
+                return self.fail(f"Controller {cname} has status ERROR.")
+
+        return True
+
+    def _prepare_directories(self) -> pathlib.Path:
         """Prepares directories."""
 
         config = self.actor.config
@@ -198,14 +206,14 @@ class ExposureDelegate(object):
 
         return next_exp_file
 
-    async def shutter(self, open=False):
+    async def shutter(self, open=False) -> bool:
         """Operate the shutter."""
 
-        pass
+        return True
 
     async def readout(
         self,
-        command: Command[ArchonActor],
+        command: Command[Actor_co],
         extra_header={},
         delay_readout=False,
     ):
@@ -220,7 +228,8 @@ class ExposureDelegate(object):
             return self.fail("No exposure found.")
 
         # Close shutter.
-        await self.shutter(False)
+        if not (await self.shutter(False)):
+            return False
 
         controllers = self.expose_data.controllers
 
