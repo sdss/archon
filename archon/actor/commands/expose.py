@@ -172,19 +172,19 @@ async def abort(
     if all_:
         force = True
 
-    expose_data = command.actor.expose_delegate.expose_data
+    exposure_data = command.actor.expose_delegate.exposure_data
 
-    if expose_data is None:
+    if exposure_data is None:
         if force:
             command.warning(error="No exposure found.")
         else:
             return command.fail(error="No exposure found.")
 
     scontr: list[ArchonController]
-    if all_ or not expose_data:
+    if all_ or not exposure_data:
         scontr = list(controllers.values())
     else:
-        scontr = expose_data.controllers
+        scontr = exposure_data.controllers
 
     command.debug(text="Aborting exposures")
     try:
