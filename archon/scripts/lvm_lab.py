@@ -79,7 +79,7 @@ def lvm_lab(verbose: bool, quiet: bool):
 @click.option(
     "-f",
     "--flavour",
-    type=str,
+    type=click.Choice(["object", "dark", "bias"]),
     default="object",
     help="object, dark, or bias.",
 )
@@ -98,6 +98,17 @@ def lvm_lab(verbose: bool, quiet: bool):
     default=0,
     help="Slow down the readout by this many seconds.",
 )
+@click.option(
+    "--interactive",
+    "-i",
+    is_flag=True,
+    help="Prompts for the log parameters.",
+)
+@click.option("--lamp-current", type=str)
+@click.option("--test-no", type=str)
+@click.option("--test-iteration", type=str)
+@click.option("--purpose", type=str)
+@click.option("--notes", type=str)
 @cli_coro()
 async def expose(
     exposure_time: float,
@@ -105,6 +116,12 @@ async def expose(
     flavour: str,
     flush_count: int,
     delay_readout: int,
+    interactive: bool,
+    lamp_current: str | None,
+    purpose: str | None,
+    notes: str | None,
+    test_no: str | None,
+    test_iteration: str | None,
 ):
     """Exposes the camera, while handling the shutter and sensors."""
 
@@ -112,6 +129,25 @@ async def expose(
         raise click.UsageError("EXPOSURE-TIME is required unless --flavour=bias.")
     elif flavour == "bias":
         exposure_time = 0.0
+
+    # Get lab notebook values.
+    if interactive:
+        if test_no is None:
+            test_no = input("Test #: ")
+        if test_iteration is None:
+            test_iteration = input("Test iteration: ")
+        if lamp_current is None:
+            lamp_current = input("Lamp current: ")
+        if purpose is None:
+            purpose = input("Purpose: ")
+        if notes is None:
+            notes = input("Notes: ")
+    else:
+        lamp_current = lamp_current or ""
+        purpose = purpose or ""
+        notes = notes or ""
+        test_no = test_no or ""
+        test_iteration = test_iteration or ""
 
     # Check that the actor is running.
     client = AMQPClient(
@@ -165,8 +201,14 @@ async def expose(
         cmd = await (
             await client.send_command(
                 "archon",
-                f"lvm expose sp1 --{flavour} {exposure_time} "
-                f"--delay-readout {delay_readout}",
+                f"lvm expose --{flavour} "
+                f"--delay-readout '{delay_readout}' "
+                f"--lamp-current '{lamp_current}' "
+                f"--purpose '{purpose}' "
+                f"--notes '{notes}' "
+                f"--test-no '{test_no}' "
+                f"--test-iteration '{test_iteration}' "
+                f"sp1 {exposure_time}",
                 callback=finish_callback,
             )
         )

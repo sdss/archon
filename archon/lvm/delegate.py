@@ -91,11 +91,6 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         return True
 
-    def _hartmann_cb(self, property):
-        """Tracks the status of the hartmann doors."""
-
-        print(property)
-
     async def post_process(
         self,
         controller: ArchonController,

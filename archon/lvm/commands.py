@@ -301,6 +301,11 @@ async def lamps(command, controllers, lamp, state, list_):
     default=0,
     help="Slow down the readout by this many seconds.",
 )
+@click.option("--lamp-current", type=str)
+@click.option("--test-no", type=str)
+@click.option("--test-iteration", type=str)
+@click.option("--purpose", type=str)
+@click.option("--notes", type=str)
 async def expose(
     command,
     controllers,
@@ -308,6 +313,11 @@ async def expose(
     controller_list,
     flavour,
     delay_readout,
+    lamp_current,
+    test_no,
+    test_iteration,
+    purpose,
+    notes,
 ):
     """Exposes the cameras."""
 
@@ -328,6 +338,14 @@ async def expose(
     delegate = command.actor.expose_delegate
     if delegate is None:
         return command.fail(error="Cannot find expose delegate.")
+
+    command.actor.set_log_values(
+        lamp_current=lamp_current,
+        test_no=test_no,
+        test_iteration=test_iteration,
+        purpose=purpose,
+        notes=notes,
+    )
 
     delegate.use_shutter = True
     result = await delegate.expose(
