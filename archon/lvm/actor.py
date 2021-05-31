@@ -50,8 +50,6 @@ class LVMActor(ArchonActor):
 
         self.drift: Dict[str, Drift] = {}
 
-    async def start(self):
-
         # Merge LVM schema with base schema.
         lvm_schema = json.loads(
             open(
@@ -66,6 +64,8 @@ class LVMActor(ArchonActor):
         schema["properties"].update(lvm_schema["properties"])
 
         self.model.__init__("archon", schema, is_file=False)
+
+    async def start(self):
 
         # Define Drift. This needs to happen here because __init__ is not
         # aware of the configuration until after from_config appends it.
