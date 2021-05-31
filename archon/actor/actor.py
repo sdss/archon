@@ -12,11 +12,9 @@ import asyncio
 import os
 import warnings
 from contextlib import suppress
-from dataclasses import dataclass, field
 
-from typing import Any, ClassVar, Dict
+from typing import ClassVar, Dict, Type
 
-import astropy.time
 import click
 from clu.actor import AMQPActor, BaseActor
 
@@ -26,6 +24,7 @@ from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonUserWarning
 
 from .commands import parser as archon_command_parser
+from .delegate import ExposureDelegate
 
 
 __all__ = ["ArchonBaseActor", "ArchonActor"]
@@ -44,7 +43,9 @@ class ArchonBaseActor(BaseActor):
     """
 
     parser: ClassVar[click.Group] = archon_command_parser
+
     BASE_CONFIG: ClassVar[str | Dict | None] = None
+    DELEGATE_CLASS: ClassVar[Type[ExposureDelegate]] = ExposureDelegate
 
     def __init__(
         self,
@@ -72,7 +73,7 @@ class ArchonBaseActor(BaseActor):
         self.timed_commands.add_command("status", delay=60)  # type: ignore
         self.timed_commands.add_command("system", delay=60)  # type: ignore
 
-        self.expose_data: ExposeData | None = None
+        self.expose_delegate = self.DELEGATE_CLASS()
 
         self._fetch_log_jobs = []
         self._status_jobs = []
@@ -183,18 +184,3 @@ class ArchonActor(ArchonBaseActor, AMQPActor):
     """Archon actor based on the AMQP protocol."""
 
     pass
-
-
-@dataclass
-class ExposeData:
-    """Data about the ongoing exposure."""
-
-    exposure_time: float
-    flavour: str
-    controllers: list[ArchonController]
-    start_time: astropy.time.Time = astropy.time.Time.now()
-    end_time: astropy.time.Time | None = None
-    mjd: int = 0
-    exposure_no: int = 0
-    header: Dict[str, Any] = field(default_factory=dict)
-    delay_readout: int = 0
