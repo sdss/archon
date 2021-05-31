@@ -11,8 +11,10 @@ import asyncio
 import click
 from drift import Drift, Relay
 
+from archon.controller.controller import ArchonController
+
 from ..actor.commands import parser
-from ..actor.tools import parallel_controllers
+from ..actor.tools import check_controller, controller_list, parallel_controllers
 from .motor import get_motor_status, is_device_powered, move_motor
 from .wago import read_many
 
@@ -211,3 +213,72 @@ async def power(command, controllers, controller, device, state):
     await asyncio.sleep(3)
 
     return command.finish(message={device: status})
+
+
+@lvm.command()
+@controller_list
+@click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
+@click.option(
+    "--bias",
+    "flavour",
+    flag_value="bias",
+    default=False,
+    show_default=True,
+    help="Take a bias",
+)
+@click.option(
+    "--dark",
+    "flavour",
+    flag_value="dark",
+    default=False,
+    help="Take a dark",
+)
+@click.option(
+    "--flat",
+    "flavour",
+    flag_value="flat",
+    default=False,
+    help="Take a flat",
+)
+@click.option(
+    "--object",
+    "flavour",
+    flag_value="object",
+    default=True,
+    help="Take an object frame",
+)
+async def expose(command, controllers, exposure_time, controller_list, flavour):
+    """Exposes the cameras."""
+
+    selected_controllers: list[ArchonController]
+
+    if len(controller_list) == 0:
+        selected_controllers = list(controllers.values())
+    else:
+        selected_controllers = []
+        for cname in controller_list:
+            if cname not in controllers:
+                return command.fail(error=f"Controller {cname!r} not found.")
+            selected_controllers.append(controllers[cname])
+
+    if not all([check_controller(command, c) for c in selected_controllers]):
+        return command.fail()
+
+    delegate = command.actor.expose_delegate
+    if delegate is None:
+        return command.fail(error="Cannot find expose delegate.")
+
+    delegate.use_shutter = True
+    result = await delegate.expose(
+        command,
+        selected_controllers,
+        flavour=flavour,
+        exposure_time=exposure_time,
+        readout=True,
+    )
+
+    if result:
+        return command.finish()
+    else:
+        # expose will fail the command.
+        return
