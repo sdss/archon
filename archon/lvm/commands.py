@@ -71,6 +71,12 @@ async def status(command, controller):
 
     lvm_status["environmental"] = environmental
 
+    # Lamps
+    lamps_dict = await command.actor.dli.get_all_lamps(command)
+
+    if len(lamps_dict) > 0:
+        lvm_status["lamps"] = lamps_dict
+
     command.info(**lvm_status)
 
     return True
@@ -184,7 +190,7 @@ async def hartmann(command, controllers, door, controller, action):
 @click.option("--on", "state", flag_value="on", required=True, help="Turn on device")
 @click.option("--off", "state", flag_value="off", required=True, help="Turn off device")
 async def power(command, controllers, controller, device, state):
-    """Powers on/off devices. Without flags, reports the status."""
+    """Powers devices on/off. Without flags, reports the status."""
 
     if controller not in command.actor.drift:
         return command.fail(error=f"Unknown controller {controller}.")
@@ -213,6 +219,34 @@ async def power(command, controllers, controller, device, state):
     await asyncio.sleep(3)
 
     return command.finish(message={device: status})
+
+
+@lvm.command()
+@click.argument("LAMP", type=str, nargs=1, required=False)
+@click.option("--on", "state", flag_value=True, help="Turn on lamp.")
+@click.option("--off", "state", flag_value=False, help="Turn off lamp.")
+@click.option("--list", "-l", "list_", is_flag=True, help="Lists lamps.")
+async def lamps(command, controllers, lamp, state, list_):
+    """Powers lamps on/off. Without flags, reports the status."""
+
+    lamps = command.actor.lamps
+    dli = command.actor.dli
+
+    if list_ is True:
+        lamp_names = ", ".join(list(lamps.keys()))
+        return command.finish(text=f"Available lamps: {lamp_names}.")
+
+    if lamp is None:
+        raise click.MissingParameter("Missing argument 'LAMP'.")
+
+    if lamp not in lamps:
+        return command.fail("Lamp not found.")
+
+    if state is not None:
+        await dli.set_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"], state)
+
+    value = await dli.get_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"])
+    return command.finish(lamps={lamp: value})
 
 
 @lvm.command()

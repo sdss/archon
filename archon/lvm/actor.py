@@ -9,19 +9,24 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
 import os
 import re
+import warnings
 
 from typing import TYPE_CHECKING, Dict
 
 from astropy.io import fits
 from astropy.time import Time
 
+from archon.exceptions import ArchonWarning
+
 from ..actor import ArchonActor
 from . import config
 from .commands import parser
 from .delegate import LVMExposeDelegate
+from .dli import DLI
 
 
 try:
@@ -47,6 +52,9 @@ class LVMActor(ArchonActor):
 
         self._log_lock = asyncio.Lock()
         self._log_values = {}
+
+        self.dli = DLI()
+        self.lamps: Dict[str, Dict] = {}
 
         self.drift: Dict[str, Drift] = {}
 
@@ -77,11 +85,38 @@ class LVMActor(ArchonActor):
                 }
                 self.drift[controller] = Drift.from_config(wago_config)
 
+        self.add_lamps()
+
         await super().start()
 
         self.model["filename"].register_callback(self.fill_log)
 
         return self
+
+    def add_lamps(self):
+        """Adds the lamps."""
+
+        if "lamps" not in self.config["devices"]:
+            return
+
+        if "credentials" not in self.config or "dli" not in self.config["credentials"]:
+            warnings.warn(
+                "Credentials for DLI not found. Lamps will not be loaded.",
+                ArchonWarning,
+            )
+
+        for lamp in self.config["devices"]["lamps"]:
+            host = self.config["devices"]["lamps"][lamp]["host"]
+
+            if host not in self.dli.clients:
+                if host not in self.config["credentials"]["dli"]:
+                    warnings.warn(f"Missing credentials for DLI {host}.", ArchonWarning)
+                    continue
+                else:
+                    cred = self.config["credentials"]["dli"][host]
+                    self.dli.add_client(host, cred["user"], cred["password"])
+
+            self.lamps[lamp] = self.config["devices"]["lamps"][lamp].copy()
 
     def set_log_values(self, **values):
         """Sets additional values for the log."""
@@ -115,7 +150,12 @@ class LVMActor(ArchonActor):
         channel = header["CCD"]
         exptime = header["EXPTIME"]
 
-        lamp_sources = self._log_values.get("lamp_sources", "")
+        lamp_sources = []
+        for lamp in self.lamps:
+            if lamp.upper() in header and header[lamp.upper()] is True:
+                lamp_sources.append(lamp)
+        lamp_sources = " ".join(lamp_sources)
+
         lamp_current = self._log_values.get("lamp_current", "")
         lab_temp = header["LABTEMP"]
         ccd_temp = header["CCDTEMP1"]
@@ -147,4 +187,7 @@ class LVMActor(ArchonActor):
 
         async with self._log_lock:
             with open(lab_log_path, "a") as log:
-                log.write(",".join(map(str, data)) + "\n")
+                writer = csv.writer(log)
+                writer.writerow(data)
+
+        self._log_values = {}

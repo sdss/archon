@@ -127,4 +127,10 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             right = "0" if hartmann["hartmann_right"] == "open" else "1"
             hdu.header["HARTMANN"] = (f"{left} {right}", "Left/right. 0=open 1=closed")
 
+        # Record lamp status.
+        lamps = await self.actor.dli.get_all_lamps(self.command)
+        for name, value in lamps.items():
+            for hdu in hdus:
+                hdu.header[name.upper()] = (value, f"Status of lamp {name}")
+
         return (controller, hdus)

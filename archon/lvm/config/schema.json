@@ -41,6 +41,14 @@
         "rtd3": { "type": "number" },
         "rtd4": { "type": "number" }
       }
+    },
+    "lamps": {
+      "type": "object",
+      "properties": {
+        "HgAr": { "type": "boolean" },
+        "MI150": { "type": "boolean" },
+        "M625L4": { "type": "boolean" }
+      }
     }
   }
 }
