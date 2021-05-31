@@ -33,7 +33,7 @@ devices:
   lamps:
     HgAr:
       host: 10.7.45.22
-      outlet: 2
+      outlet: 3
     MI150:
       host: 10.7.45.22
       outlet: 4
