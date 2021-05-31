@@ -91,6 +91,7 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float = 1.0,
         readout: bool = True,
+        **readout_params,
     ):
 
         self.command = command
@@ -159,7 +160,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         if readout:
             await asyncio.sleep(exposure_time)
-            return await self.readout(self.command)
+            return await self.readout(self.command, **readout_params)
 
         return True
 
