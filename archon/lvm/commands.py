@@ -281,7 +281,21 @@ async def lamps(command, controllers, lamp, state, list_):
     default=True,
     help="Take an object frame",
 )
-async def expose(command, controllers, exposure_time, controller_list, flavour):
+@click.option(
+    "-d",
+    "--delay-readout",
+    type=int,
+    default=0,
+    help="Slow down the readout by this many seconds.",
+)
+async def expose(
+    command,
+    controllers,
+    exposure_time,
+    controller_list,
+    flavour,
+    delay_readout,
+):
     """Exposes the cameras."""
 
     selected_controllers: list[ArchonController]
@@ -309,6 +323,7 @@ async def expose(command, controllers, exposure_time, controller_list, flavour):
         flavour=flavour,
         exposure_time=exposure_time,
         readout=True,
+        delay_readout=delay_readout,
     )
 
     if result:
