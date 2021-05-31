@@ -21,7 +21,7 @@ from astropy.time import Time
 from ..actor import ArchonActor
 from . import config
 from .commands import parser
-from .expose import LVMExposeDelegate
+from .delegate import LVMExposeDelegate
 
 
 try:
