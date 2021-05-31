@@ -9,29 +9,30 @@
 from typing import List, Tuple
 
 from astropy.io import fits
-from clu.actor import Command
 
+from archon.actor import ExposureDelegate
 from archon.controller.controller import ArchonController
 
 from .tools import read_govee
 
 
-async def lvm_post_process(
-    command: Command,
-    controller: ArchonController,
-    hdus: List[fits.PrimaryHDU],
-) -> Tuple[ArchonController, List[fits.PrimaryHDU]]:
+class LVMExposeDelegate(ExposureDelegate):
+    async def post_process(
+        self,
+        controller: ArchonController,
+        hdus: List[fits.PrimaryHDU],
+    ) -> Tuple[ArchonController, List[fits.PrimaryHDU]]:
 
-    # Govee lab temperature and RH.
-    try:
-        temp, hum = await read_govee()
-    except BaseException as err:
-        command.warning(text=f"Failed retriving H5179 data: {err}")
-        temp = -999.0
-        hum = -999.0
+        # Govee lab temperature and RH.
+        try:
+            temp, hum = await read_govee()
+        except BaseException as err:
+            self.command.warning(text=f"Failed retriving H5179 data: {err}")
+            temp = -999.0
+            hum = -999.0
 
-    for hdu in hdus:
-        hdu.header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
-        hdu.header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
+        for hdu in hdus:
+            hdu.header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
+            hdu.header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
 
-    return (controller, hdus)
+        return (controller, hdus)

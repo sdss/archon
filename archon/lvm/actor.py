@@ -7,15 +7,12 @@
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
 from ..actor import ArchonActor
-from ..actor.commands.expose import finish
 from . import config
-from .expose import lvm_post_process
+from .expose import LVMExposeDelegate
 
 
 class LVMActor(ArchonActor):
     """LVM actor."""
 
     BASE_CONFIG = config
-
-
-finish.callback.post_process = lvm_post_process
+    DELEGATE_CLASS = LVMExposeDelegate
