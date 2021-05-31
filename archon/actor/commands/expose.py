@@ -112,7 +112,7 @@ async def start(
     if result:
         return command.finish()
     else:
-        # integrate will fail the command.
+        # expose will fail the command.
         return
 
 
