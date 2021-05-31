@@ -13,7 +13,7 @@ import json
 import os
 import re
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from astropy.io import fits
 from astropy.time import Time
@@ -48,7 +48,7 @@ class LVMActor(ArchonActor):
         self._log_lock = asyncio.Lock()
         self._log_values = {}
 
-        self.drift: Drift | None = None
+        self.drift: Dict[str, Drift] = {}
 
     async def start(self):
 
@@ -70,7 +70,12 @@ class LVMActor(ArchonActor):
         # Define Drift. This needs to happen here because __init__ is not
         # aware of the configuration until after from_config appends it.
         if "devices" in self.config and "wago" in self.config["devices"]:
-            self.drift = Drift.from_config(self.config["devices"]["wago"])
+            for controller in self.config["devices"]["wago"]["controllers"]:
+                wago_config = {
+                    **self.config["devices"]["wago"]["controllers"][controller],
+                    "modules": self.config["devices"]["wago"]["modules"],
+                }
+                self.drift[controller] = Drift.from_config(wago_config)
 
         await super().start()
 
