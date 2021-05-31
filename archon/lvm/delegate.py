@@ -61,8 +61,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             results = await asyncio.gather(*jobs_status)
             for result in results:
                 if result["shutter"] != "closed":
-                    self.fail("Some shutters are not closed.")
-                return False
+                    return self.fail("Some shutters are not closed.")
 
         return True
 
