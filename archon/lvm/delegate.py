@@ -18,7 +18,7 @@ from archon.actor import ExposureDelegate
 from archon.controller.controller import ArchonController
 
 from .motor import get_motor_status, is_device_powered, move_motor
-from .tools import read_govee
+from .tools import read_govee, read_pressure
 
 
 if TYPE_CHECKING:
@@ -132,5 +132,17 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         for name, value in lamps.items():
             for hdu in hdus:
                 hdu.header[name.upper()] = (value, f"Status of lamp {name}")
+
+        # Record pressure
+        for hdu in hdus:
+            ccd = hdu.header["CCD"]
+            value = "NA"
+            if "pressure" in self.actor.config["devices"]:
+                if ccd in self.actor.config["devices"]["pressure"]:
+                    data = self.actor.config["devices"]["pressure"][ccd]
+                    pressure = await read_pressure(**data)
+                    if value is not None:
+                        value = pressure
+            hdu.header["PRESSURE"] = (value, "Cryostat pressure [torr]")
 
         return (controller, hdus)

@@ -16,6 +16,7 @@ from archon.controller.controller import ArchonController
 from ..actor.commands import parser
 from ..actor.tools import check_controller, controller_list, parallel_controllers
 from .motor import get_motor_status, is_device_powered, move_motor
+from .tools import read_pressure
 from .wago import read_many
 
 
@@ -30,6 +31,7 @@ def lvm():
 async def status(command, controller):
     """Reports the status of the LVM devices."""
 
+    config = command.actor.config
     drift: Drift = command.actor.drift[controller.name]
 
     # Read status of motor controllers
@@ -76,6 +78,17 @@ async def status(command, controller):
 
     if len(lamps_dict) > 0:
         lvm_status["lamps"] = lamps_dict
+
+    # Pressure
+    if "pressure" in config["devices"]:
+        pressure = {}
+        for ccd, data in config["devices"]["pressure"].items():
+            value = await read_pressure(**data)
+            if value is None:
+                continue
+            pressure[ccd] = value
+        if len(pressure) > 0:
+            lvm_status["pressure"] = pressure
 
     command.info(**lvm_status)
 

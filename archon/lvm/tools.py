@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 from typing import Tuple
 
@@ -53,3 +54,26 @@ async def read_govee() -> Tuple[float, float]:
         raise RuntimeError("Lab metrology is over 10 minutes old.")
 
     return temp, hum
+
+
+async def read_pressure(host: str, port: int, id: int) -> bool | float:
+    """Reads pressure from a SENS4 device."""
+
+    try:
+        r, w = await asyncio.wait_for(asyncio.open_connection(host, port), 1)
+    except asyncio.TimeoutError:
+        return False
+
+    w.write(b"@" + str(id).encode() + b"P?\\")
+    await w.drain()
+
+    try:
+        reply = await asyncio.wait_for(r.readuntil(b"\\"), 1)
+        match = re.search(r"@[0-9]{1,3}ACK([0-9.E+-]+)\\$".encode(), reply)
+
+        if not match:
+            return False
+
+        return float(match.groups()[0])
+    except Exception:
+        return False

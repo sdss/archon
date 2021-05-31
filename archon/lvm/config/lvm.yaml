@@ -40,6 +40,11 @@ devices:
     M625L4:
       host: 10.7.45.22
       outlet: 7
+  pressure:
+    r1:
+      host: 10.7.45.30
+      port: 1112
+      id: 253
   wago:
     controllers:
       sp1:
