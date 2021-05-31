@@ -32,7 +32,7 @@ async def read_govee() -> Tuple[float, float]:
     writer.write(b"status\n")
     await writer.drain()
 
-    data = await asyncio.wait_for(reader.readline(), timeout=1)
+    data = await asyncio.wait_for(reader.readline(), timeout=5)
     lines = data.decode().strip().splitlines()
 
     temp = hum = last = None
