@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import sys
 import warnings
@@ -28,6 +29,7 @@ log = get_logger("archon-lvm-lab")
 
 
 RABBITMQ = ("localhost", 5672)
+READOUT_DELAY = 49
 
 
 def finish_callback(reply: AMQPReply):
@@ -52,6 +54,14 @@ async def get_controller_status(client: clu.AMQPClient) -> CS:
 
     status = client.models["archon"]["status"].value["status"]
     return CS(status)
+
+
+def check_expose_task(cmd):
+    """Checks the exposure task."""
+
+    if cmd.status.did_fail:
+        log.error("Exposure failed.")
+        sys.exit(1)
 
 
 @click.group()
@@ -198,23 +208,27 @@ async def expose(
 
         # Start exposure.
         log.info("Exposing.")
-        cmd = await (
-            await client.send_command(
-                "archon",
-                f"lvm expose --{flavour} "
-                f"--delay-readout '{delay_readout}' "
-                f"--lamp-current '{lamp_current}' "
-                f"--purpose '{purpose}' "
-                f"--notes '{notes}' "
-                f"--test-no '{test_no}' "
-                f"--test-iteration '{test_iteration}' "
-                f"sp1 {exposure_time}",
-                callback=finish_callback,
-            )
+        cmd = await client.send_command(
+            "archon",
+            f"lvm expose --{flavour} "
+            f"--delay-readout '{delay_readout}' "
+            f"--lamp-current '{lamp_current}' "
+            f"--purpose '{purpose}' "
+            f"--notes '{notes}' "
+            f"--test-no '{test_no}' "
+            f"--test-iteration '{test_iteration}' "
+            f"sp1 {exposure_time}",
+            callback=finish_callback,
         )
-        if cmd.status.did_fail:
-            log.error("Exposure failed. Trying to abort and exiting.")
-            await client.send_command("archon", "expose abort --flush")
-            sys.exit(1)
+
+        cmd.add_done_callback(check_expose_task)
+
+        if log.sh.level <= logging.INFO:
+            nsecs = int(READOUT_DELAY + exposure_time)
+            with click.progressbar(range(nsecs)) as bar:
+                for _ in bar:
+                    await asyncio.sleep(1)
+
+        await cmd
 
     sys.exit(0)
