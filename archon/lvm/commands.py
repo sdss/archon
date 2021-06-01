@@ -84,8 +84,8 @@ async def status(command, controller):
         pressure = {}
         for ccd, data in config["devices"]["pressure"].items():
             value = await read_pressure(**data)
-            if value is None:
-                continue
+            if value is False:
+                value = -999.0
             pressure[ccd] = value
         if len(pressure) > 0:
             lvm_status["pressure"] = pressure
