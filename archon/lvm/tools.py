@@ -61,7 +61,7 @@ async def read_pressure(host: str, port: int, id: int) -> bool | float:
 
     try:
         r, w = await asyncio.wait_for(asyncio.open_connection(host, port), 1)
-    except asyncio.TimeoutError:
+    except Exception:
         return False
 
     w.write(b"@" + str(id).encode() + b"P?\\")
