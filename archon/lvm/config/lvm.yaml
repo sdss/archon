@@ -132,12 +132,12 @@ devices:
             address: 40515
             type: relay
             category: relays
-            relay_type: N0
+            relay_type: NO
           hartmann_right:
             address: 40516
             type: relay
             category: relays
-            relay_type: NC
+            relay_type: NO
 
 # This is the ACF configuration file to be loaded to the Archon including the
 # timing script. {archon_etc} gets completed with the path of the etc directory once
