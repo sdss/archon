@@ -142,7 +142,7 @@ async def move_motor(
                 config["devices"]["motor_controllers"][controller][motor]["host"],
                 config["devices"]["motor_controllers"][controller][motor]["port"],
             ),
-            1,
+            2,
         )
     except asyncio.TimeoutError:
         return False
@@ -163,7 +163,7 @@ async def move_motor(
 
     while True:
         try:
-            reply = await asyncio.wait_for(r.readuntil(b"\r"), 1)
+            reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
             if b"ERR" in reply:
                 return False
             elif b"DONE" in reply:
