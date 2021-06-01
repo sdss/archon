@@ -27,7 +27,7 @@ def lvm():
 
 
 @lvm.command()
-@parallel_controllers()
+@parallel_controllers(check=False)
 async def status(command, controller):
     """Reports the status of the LVM devices."""
 
