@@ -106,12 +106,12 @@ def parse_IS(reply: bytes, device: str):
         return False
 
     if match.groups() == (b"1", b"0"):
-        if device == "shutter":
+        if device in ["shutter", "hartmann_right"]:
             return "open"
         else:
             return "closed"
     elif match.groups() == (b"0", b"1"):
-        if device == "shutter":
+        if device in ["shutter", "hartmann_right"]:
             return "closed"
         else:
             return "open"
