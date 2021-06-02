@@ -29,7 +29,7 @@ log = get_logger("archon-lvm-lab")
 
 
 RABBITMQ = ("localhost", 5672)
-READOUT_DELAY = 49
+READOUT_DELAY = 45
 
 
 def finish_callback(reply: AMQPReply):
