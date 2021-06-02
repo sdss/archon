@@ -66,7 +66,12 @@ class ArchonController(Device):
 
         await super().start()
         if reset:
-            await self.reset()
+            try:
+                await self.reset()
+            except ArchonControllerError:
+                # Sometimes after a power cycle this will fail until the controller
+                # has been initialised.
+                pass
 
         return self
 

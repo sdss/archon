@@ -160,7 +160,8 @@ files:
   data_dir: '/data/spectro/lvm'
   split: true
   template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
-  lab_log: '/data/spectro/lvm/exposure_log.csv'
+
+exposure_list_sheet: 103BNxjlZ59Sob3jDO4EN1z6zp2q5YrYA6nTjGlZM6XY
 
 # Sensor configuration. Mainly for lab testing.
 sensors:

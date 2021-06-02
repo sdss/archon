@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import asyncio
-import csv
 import json
 import os
 import re
@@ -19,6 +18,7 @@ from typing import TYPE_CHECKING, Dict
 
 from astropy.io import fits
 from astropy.time import Time
+from authlib.integrations.httpx_client import AsyncAssertionClient
 
 from archon.exceptions import ArchonWarning
 
@@ -87,6 +87,13 @@ class LVMActor(ArchonActor):
 
         self.add_lamps()
 
+        self.google_client: AsyncAssertionClient | None
+        try:
+            self.google_client = await self._get_google_client()
+        except Exception as err:
+            warnings.warn(f"Failed authenticating with Google: {err}", ArchonWarning)
+            self.google_client = None
+
         await super().start()
 
         self.model["filename"].register_callback(self.fill_log)
@@ -118,6 +125,35 @@ class LVMActor(ArchonActor):
 
             self.lamps[lamp] = self.config["devices"]["lamps"][lamp].copy()
 
+    async def _get_google_client(self) -> AsyncAssertionClient | None:
+        """Returns the client to communicate with the Google API."""
+
+        credentials = self.config.get("credentials", None)
+        if not credentials or "google" not in credentials:
+            warnings.warn("No credentials for the Google API.", ArchonWarning)
+            return None
+
+        with open(credentials["google"]) as fd:
+            conf = json.load(fd)
+
+        token_uri = conf["token_uri"]
+        header = {"alg": "RS256"}
+        key_id = conf.get("private_key_id")
+        if key_id:
+            header["kid"] = key_id
+
+        client = AsyncAssertionClient(
+            token_endpoint=token_uri,
+            issuer=conf["client_email"],
+            audience=token_uri,
+            claims={"scope": "https://www.googleapis.com/auth/spreadsheets"},
+            subject=None,
+            key=conf["private_key"],
+            header=header,
+        )
+
+        return client
+
     def set_log_values(self, **values):
         """Sets additional values for the log."""
 
@@ -126,6 +162,9 @@ class LVMActor(ArchonActor):
     async def fill_log(self, key: Property):
 
         if not self.config.get("write_log", False):
+            return
+
+        if self.google_client is None or "exposure_list_sheet" not in self.config:
             return
 
         path = key.value
@@ -137,7 +176,6 @@ class LVMActor(ArchonActor):
             return
 
         header = fits.getheader(path)
-        lab_log_path = self.config["files"]["lab_log"]
 
         filename = os.path.basename(path)
         exp_no = int(re.match(r".+-([0-9]+)\.fits(?:\.gz)$", filename).group(1))
@@ -185,9 +223,20 @@ class LVMActor(ArchonActor):
             notes,
         )
 
-        async with self._log_lock:
-            with open(lab_log_path, "a") as log:
-                writer = csv.writer(log)
-                writer.writerow(data)
-
         self._log_values = {}
+
+        google_data = {
+            "range": "Sheet1!A1:A1",
+            "majorDimension": "ROWS",
+            "values": [data],
+        }
+
+        spreadsheet_id = self.config["exposure_list_sheet"]
+        r = await self.google_client.post(
+            f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
+            "values/Sheet1!A1:A1:append?valueInputOption=USER_ENTERED",
+            json=google_data,
+        )
+
+        if not r.status_code == 200:
+            warnings.warn("Failed writing exposure to spreadsheet.", ArchonWarning)
