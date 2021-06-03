@@ -9,12 +9,9 @@
 import glob
 import importlib
 import os
-import warnings
 
 import click
 from clu.parsers.click import CluGroup, get_schema, help_, keyword, ping, version
-
-from archon.exceptions import ArchonUserWarning
 
 
 @click.group(cls=CluGroup)
