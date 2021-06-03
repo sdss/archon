@@ -383,7 +383,7 @@ python-versions = "*"
 
 [[package]]
 name = "ipdb"
-version = "0.13.8"
+version = "0.13.9"
 description = "IPython-enabled pdb"
 category = "dev"
 optional = false
@@ -396,7 +396,7 @@ toml = {version = ">=0.10.2", markers = "python_version > \"3.6\""}
 
 [[package]]
 name = "ipython"
-version = "7.24.0"
+version = "7.24.1"
 description = "IPython: Productive Interactive Computing"
 category = "dev"
 optional = false
@@ -977,7 +977,7 @@ docutils = ">=0.7"
 
 [[package]]
 name = "sdss-clu"
-version = "1.1.2"
+version = "1.2.0"
 description = "A new protocol for SDSS actors."
 category = "main"
 optional = false
@@ -1261,7 +1261,7 @@ lvm = ["sdss-drift", "httpx", "Authlib"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "fe4a9a59ffef157c6996d1b45b76800ffad01a8d65fa11eac3101db558037aa8"
+content-hash = "ba3b812e1ce91212b946004bb70390bc6d0b3dcfb439e6b6e7be011045c63c8a"
 
 [metadata.files]
 aio-pika = [
@@ -1518,11 +1518,11 @@ invoke = [
     {file = "invoke-1.5.0.tar.gz", hash = "sha256:f0c560075b5fb29ba14dad44a7185514e94970d1b9d57dcd3723bec5fed92650"},
 ]
 ipdb = [
-    {file = "ipdb-0.13.8.tar.gz", hash = "sha256:8d368fa048a93ad6c1985d7f1d78d68580c879e4053fc15714bdcf2a1b042d06"},
+    {file = "ipdb-0.13.9.tar.gz", hash = "sha256:951bd9a64731c444fd907a5ce268543020086a697f6be08f7cc2c9a752a278c5"},
 ]
 ipython = [
-    {file = "ipython-7.24.0-py3-none-any.whl", hash = "sha256:f86788eef439891438af3498525094cc2acbdbea4f2aa2f8895782d4ff471341"},
-    {file = "ipython-7.24.0.tar.gz", hash = "sha256:a171caa3d3d4c819a1c0742e3abecfd5a2b8ab525ca1c9f114b40b76b0679ab1"},
+    {file = "ipython-7.24.1-py3-none-any.whl", hash = "sha256:d513e93327cf8657d6467c81f1f894adc125334ffe0e4ddd1abbb1c78d828703"},
+    {file = "ipython-7.24.1.tar.gz", hash = "sha256:9bc24a99f5d19721fb8a2d1408908e9c0520a17fff2233ffe82620847f17f1b6"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -1906,8 +1906,8 @@ rstcheck = [
     {file = "rstcheck-3.3.1.tar.gz", hash = "sha256:92c4f79256a54270e0402ba16a2f92d0b3c15c8f4410cb9c57127067c215741f"},
 ]
 sdss-clu = [
-    {file = "sdss-clu-1.1.2.tar.gz", hash = "sha256:dc82af2072f0cc45a982fa208d4358a89476612a0e771932ebb326d968a0edae"},
-    {file = "sdss_clu-1.1.2-py3-none-any.whl", hash = "sha256:5e8af8f98c27ccc819b5cc68ef6402373078b5c11f2596030509bf5a84b937ff"},
+    {file = "sdss-clu-1.2.0.tar.gz", hash = "sha256:c8cfdd3601ab8f0ce2b1999088a00dd217fb859a42640ac8a00ac2a1422f4fee"},
+    {file = "sdss_clu-1.2.0-py3-none-any.whl", hash = "sha256:d6b86e13adb0e80ede226e7b8a3ceb576f476a872e6d65fcf856a54ff0c78bfd"},
 ]
 sdss-drift = [
     {file = "sdss-drift-0.2.2.tar.gz", hash = "sha256:2da2a9379dec09dd5933afa5c59890a442c629a6d10ca225e716e337dec4c4a5"},

@@ -56,11 +56,11 @@ async def status(command, controller):
 
     # Temperatures and RH
     sensor_data = data[1]
-    environmental = {"controller": controller.name}
+    environmental = {}
     for ii, sensor in enumerate(SENSORS):
         environmental[sensor] = sensor_data[ii]
 
-    lvm_status["environmental"] = environmental
+    lvm_status["environmental"] = {controller.name: environmental}
 
     # Lamps
     lvm_status["lamps"] = data[2]

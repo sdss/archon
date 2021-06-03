@@ -61,6 +61,7 @@ class LVMActor(ArchonActor):
         lvm_schema = os.path.join(FILE_PATH, "config/schema.json")
         lvm_schema = json.loads(open(lvm_schema, "r").read())
         schema = self.model.schema.copy()
+        schema["definitions"].update(lvm_schema["definitions"])
         schema["properties"].update(lvm_schema["properties"])
 
         self.model.__init__("archon", schema, is_file=False)
