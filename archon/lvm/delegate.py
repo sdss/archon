@@ -29,6 +29,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
     """Expose delegate for LVM."""
 
     def __init__(self, actor):
+
         super().__init__(actor)
 
         self.use_shutter = False
@@ -111,11 +112,15 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             hdu.header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
 
         # Record hartmann status
-        hartmann = await get_motor_status(
-            controller.name,
-            ["hartmann_left", "hartmann_right"],
-            drift=self.actor.drift[controller.name],
-        )
+        try:
+            hartmann = await get_motor_status(
+                controller.name,
+                ["hartmann_left", "hartmann_right"],
+                drift=self.actor.drift[controller.name],
+            )
+        except Exception as err:
+            self.command.warning(text=f"Failed retrieving hartmann door status: {err}")
+            hartmann = {"hartmann_left": "?", "hartmann_right": "?"}
 
         for hdu in hdus:
             for door in ["left", "right"]:
@@ -128,15 +133,22 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             hdu.header["HARTMANN"] = (f"{left} {right}", "Left/right. 0=open 1=closed")
 
         # Record lamp status.
-        lamps = await self.actor.dli.get_all_lamps(self.command)
-        for name, value in lamps.items():
+        for lamp_name, lamp_config in self.actor.lamps.items():
+            try:
+                value = await self.actor.dli.get_outlet_state(**lamp_config)
+                value = "ON" if value is True else "OFF"
+            except Exception as err:
+                self.command.warning(
+                    text=f"Failed retrieving status of lamp {lamp_name}: {err}"
+                )
+                value = "?"
             for hdu in hdus:
-                hdu.header[name.upper()] = (value, f"Status of lamp {name}")
+                hdu.header[lamp_name.upper()] = (value, f"Status of lamp {lamp_name}")
 
         # Record pressure
         for hdu in hdus:
             ccd = hdu.header["CCD"]
-            value = "NA"
+            value = -999.0
             if "pressure" in self.actor.config["devices"]:
                 if ccd in self.actor.config["devices"]["pressure"]:
                     data = self.actor.config["devices"]["pressure"][ccd]

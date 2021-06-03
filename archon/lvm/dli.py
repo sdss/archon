@@ -68,13 +68,21 @@ class DLI(object):
 
         return
 
-    async def get_all_lamps(self, command) -> Dict[str, bool]:
+    async def report_lamps(
+        self,
+        command,
+        lamp_names=None,
+        write=True,
+    ) -> Dict[str, bool]:
         """Returns a dictionary of lamp statues."""
 
         actor = command.actor
         assert actor.dli == self
 
-        lamps = actor.lamps
+        if lamp_names is None:
+            lamps = actor.lamps
+        else:
+            lamps = {name: actor.lamps[name] for name in lamp_names}
 
         jobs = []
         for name, data in lamps.items():
@@ -96,5 +104,8 @@ class DLI(object):
                 command.warning(f"Status of lamp {lname} cannot be retrieved.")
                 continue
             lamps_dict[lname] = job.result()
+
+        if write:
+            command.info(lamps=lamps_dict)
 
         return lamps_dict

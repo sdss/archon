@@ -19,6 +19,7 @@ from . import config
 
 
 if TYPE_CHECKING:
+    from clu.command import Command
     from drift import Drift
 
 
@@ -58,6 +59,7 @@ async def get_motor_status(
 
     """
 
+    # Make recursive.
     if not isinstance(motors, str):
         data = await asyncio.gather(
             *[get_motor_status(controller, m, drift=drift) for m in motors]
@@ -67,6 +69,7 @@ async def get_motor_status(
             final_dict.update(d)
         return final_dict
 
+    # The rest assumes a single motor.
     if drift:
         if not (await is_device_powered(motors, drift)):
             return {motors: "?"}
@@ -79,7 +82,7 @@ async def get_motor_status(
             ),
             1,
         )
-    except asyncio.TimeoutError:
+    except (asyncio.TimeoutError, OSError):
         return {motors: "?"}
 
     w.write(b"\00\07IS\r")
@@ -136,16 +139,13 @@ async def move_motor(
     if (current == "closed" and action == "close") or current == action:
         return True
 
-    try:
-        r, w = await asyncio.wait_for(
-            asyncio.open_connection(
-                config["devices"]["motor_controllers"][controller][motor]["host"],
-                config["devices"]["motor_controllers"][controller][motor]["port"],
-            ),
-            2,
-        )
-    except asyncio.TimeoutError:
-        return False
+    r, w = await asyncio.wait_for(
+        asyncio.open_connection(
+            config["devices"]["motor_controllers"][controller][motor]["host"],
+            config["devices"]["motor_controllers"][controller][motor]["port"],
+        ),
+        2,
+    )
 
     if action == "open":
         sequence = "QX3"
@@ -156,17 +156,66 @@ async def move_motor(
     elif action == "home":
         sequence = "QX2"
     else:
-        return False
+        raise ValueError(f"Invalid action {action!r}.")
 
     w.write(b"\00\07" + sequence.encode() + b"\r")
     await w.drain()
 
     while True:
-        try:
-            reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
-            if b"ERR" in reply:
-                return False
-            elif b"DONE" in reply:
-                return True
-        except asyncio.TimeoutError:
+        reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
+        if b"ERR" in reply:
             return False
+        elif b"DONE" in reply:
+            return True
+
+
+async def report_motors(
+    command: Command,
+    controller: str,
+    motors=["shutter", "hartmann_left", "hartmann_right"],
+    drift=None,
+    write=True,
+) -> Dict[str, Dict]:
+    """Reports status of the motors to actor users."""
+
+    motors_dict = {}
+
+    for dev in motors:
+        try:
+            powered = await is_device_powered(dev, drift)
+        except Exception as err:
+            command.warning(error=f"Failed checking {dev!r} power status: {err}")
+            continue
+
+        if not powered:
+            motors_dict[dev] = {
+                "controller": controller,
+                "power": False,
+                "status": "?",
+            }
+        else:
+            motors_dict[dev] = {
+                "controller": controller,
+                "power": True,
+                "status": "?",
+            }
+
+    for dev in motors_dict:
+        if motors_dict[dev]["power"] is True:
+            try:
+
+                dev_status = await get_motor_status(controller, dev)
+            except Exception as err:
+                print("x")
+                command.warning(error=f"Failed getting status of device {dev!r}: {err}")
+                continue
+        else:
+            continue
+
+        if dev_status is not None:
+            motors_dict[dev]["status"] = dev_status[dev]
+
+    if write:
+        command.info(**motors_dict)
+
+    return motors_dict

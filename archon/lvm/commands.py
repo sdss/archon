@@ -15,7 +15,7 @@ from archon.controller.controller import ArchonController
 
 from ..actor.commands import parser
 from ..actor.tools import check_controller, controller_list, parallel_controllers
-from .motor import get_motor_status, is_device_powered, move_motor
+from .motor import is_device_powered, move_motor, report_motors
 from .tools import read_pressure
 from .wago import read_many
 
@@ -34,39 +34,28 @@ async def status(command, controller):
     config = command.actor.config
     drift: Drift = command.actor.drift[controller.name]
 
-    # Read status of motor controllers
-    MOTORS = ["shutter", "hartmann_left", "hartmann_right"]
-
-    lvm_status = {}
-    for dev in MOTORS:
-        if not (await is_device_powered(dev, drift)):
-            lvm_status[dev] = {
-                "controller": controller.name,
-                "power": False,
-                "status": "?",
-            }
-        else:
-            lvm_status[dev] = {
-                "controller": controller.name,
-                "power": True,
-                "status": "?",
-            }
-
-    conn_devs = [dev for dev in MOTORS if lvm_status[dev]["power"] is True]
-    dev_status = await get_motor_status(controller.name, conn_devs)
-
-    for dev in dev_status:
-        if dev_status[dev] is not None:
-            lvm_status[dev]["status"] = dev_status[dev]
-
-    # Read temperatures and RH
     SENSORS = []
     for module in drift.modules.values():
         for device in module.devices.values():
             if device.category in ["temperature", "humidity"]:
                 SENSORS.append(device.name)
 
-    sensor_data = await read_many(SENSORS, drift)
+    # Run most tasks concurrently.
+    tasks = [
+        report_motors(command, controller.name, drift=drift, write=False),
+        read_many(SENSORS, drift),
+        command.actor.dli.report_lamps(command, write=False),
+    ]
+    data = await asyncio.gather(*tasks)
+
+    lvm_status = {}
+
+    # Status of motor controllers
+    motors_dict = data[0]
+    lvm_status.update(**motors_dict)
+
+    # Temperatures and RH
+    sensor_data = data[1]
     environmental = {"controller": controller.name}
     for ii, sensor in enumerate(SENSORS):
         environmental[sensor] = sensor_data[ii]
@@ -74,12 +63,9 @@ async def status(command, controller):
     lvm_status["environmental"] = environmental
 
     # Lamps
-    lamps_dict = await command.actor.dli.get_all_lamps(command)
+    lvm_status["lamps"] = data[2]
 
-    if len(lamps_dict) > 0:
-        lvm_status["lamps"] = lamps_dict
-
-    # Pressure
+    # Pressure (syncrhonous for now).
     if "pressure" in config["devices"]:
         pressure = {}
         for ccd, data in config["devices"]["pressure"].items():
@@ -89,6 +75,8 @@ async def status(command, controller):
             pressure[ccd] = value
         if len(pressure) > 0:
             lvm_status["pressure"] = pressure
+
+    lvm_status = {key: value for key, value in lvm_status.items() if value != {}}
 
     command.info(**lvm_status)
 
@@ -108,33 +96,37 @@ async def shutter(command, controllers, controller, action):
         return command.fail(error=f"Unknown controller {controller}.")
 
     drift: Drift = command.actor.drift[controller]
-    power = (await drift.read_device("shutter"))[0]
 
-    shutter = {
-        "controller": controller,
-        "power": True if power == "closed" else False,
-        "status": "?",
-    }
+    shutter = (
+        await report_motors(
+            command,
+            controller,
+            motors=["shutter"],
+            drift=drift,
+            write=False,
+        )
+    )["shutter"]
 
     if action is None:
-        if power == "closed":
-            motor_status = await get_motor_status(controller, "shutter")
-            shutter["status"] = motor_status["shutter"]
         return command.finish(shutter=shutter)
     else:
-        if power == "open":
+        if shutter["power"] is not True:
             command.info(shutter=shutter)
             return command.fail(
                 error="Cannot command the shutter because it is powered down. "
                 "Use the 'lvm power' command to turn the power on."
             )
 
-        if not (await move_motor(controller, "shutter", action)):
-            return command.fail(error="Failed commanding the shutter.")
+        try:
+            moved = await move_motor(controller, "shutter", action)
+        except Exception as err:
+            return command.fail(error=f"Failed moving shutter: {err}")
+
+        if not moved:
+            return command.fail(error="Failed moving the shutter.")
         else:
-            motor_status = await get_motor_status(controller, "shutter")
-            shutter["status"] = motor_status["shutter"]
-            return command.finish(shutter=shutter)
+            await report_motors(command, controller, motors=["shutter"], drift=drift)
+            return command.finish()
 
 
 @lvm.command()
@@ -157,20 +149,18 @@ async def hartmann(command, controllers, door, controller, action):
 
     drift: Drift = command.actor.drift[controller]
 
-    status = {}
-
     if door == "both":
         doors = ["left", "right"]
     else:
         doors = [door]
 
-    for d in doors:
-        key = "hartmann_" + d
-        status.update({key: {"controller": controller, "power": False, "status": "?"}})
-        status[key]["power"] = await is_device_powered(key, drift)
-
-        if status[key]["power"]:
-            status[key]["status"] = (await get_motor_status(controller, key))[key]
+    status = await report_motors(
+        command,
+        controller,
+        motors=[f"hartmann_{door}" for door in doors],
+        drift=drift,
+        write=False,
+    )
 
     if not action:
         return command.finish(**status)
@@ -185,13 +175,16 @@ async def hartmann(command, controllers, door, controller, action):
 
         key = "hartmann_" + door
 
-        result = await move_motor(controller, key, action)
-        if result is False:
+        try:
+            moved = await move_motor(controller, key, action)
+        except Exception as err:
+            return command.fail(error=f"Failed moving {door}: {err}")
+
+        if moved is False:
             return command.fail(error=f"Failed moving {door} hartmann door.")
 
-        status[key]["status"] = (await get_motor_status(controller, key))[key]
-
-        return command.finish(**status)
+        await report_motors(command, controller, motors=[key], drift=drift)
+        return command.finish()
 
 
 @lvm.command()
@@ -265,12 +258,9 @@ async def lamps(command, controllers, lamp, state, list_):
         except RuntimeError as err:
             return command.fail(error=f"Failed setting lamp power: {err}")
 
-    try:
-        value = await dli.get_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"])
-    except RuntimeError as err:
-        return command.fail(error=f"Failed getting update lamp status: {err}")
+    await dli.report_lamps(command, lamp_names=[lamp])
 
-    return command.finish(lamps={lamp: value})
+    return command.finish()
 
 
 @lvm.command()

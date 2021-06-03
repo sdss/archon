@@ -39,6 +39,9 @@ if TYPE_CHECKING:
     from clu.model import Property
 
 
+FILE_PATH = os.path.dirname(os.path.realpath(__file__))
+
+
 class LVMActor(ArchonActor):
     """LVM actor."""
 
@@ -48,57 +51,46 @@ class LVMActor(ArchonActor):
     parser = parser
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
         self._log_lock = asyncio.Lock()
         self._log_values = {}
 
-        self.dli = DLI()
-        self.lamps: Dict[str, Dict] = {}
-
-        self.drift: Dict[str, Drift] = {}
-
         # Merge LVM schema with base schema.
-        lvm_schema = json.loads(
-            open(
-                os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    "config/schema.json",
-                ),
-                "r",
-            ).read()
-        )
+        lvm_schema = os.path.join(FILE_PATH, "config/schema.json")
+        lvm_schema = json.loads(open(lvm_schema, "r").read())
         schema = self.model.schema.copy()
         schema["properties"].update(lvm_schema["properties"])
 
         self.model.__init__("archon", schema, is_file=False)
 
-    async def start(self):
-
-        # Define Drift. This needs to happen here because __init__ is not
-        # aware of the configuration until after from_config appends it.
+        # Define Drift.
+        self.drift: Dict[str, Drift] = {}
         if "devices" in self.config and "wago" in self.config["devices"]:
-            for controller in self.config["devices"]["wago"]["controllers"]:
-                wago_config = {
-                    **self.config["devices"]["wago"]["controllers"][controller],
-                    "modules": self.config["devices"]["wago"]["modules"],
-                }
+            wago_controllers = self.config["devices"]["wago"]["controllers"]
+            modules = self.config["devices"]["wago"]["modules"]
+            for controller in wago_controllers:
+                wago_config = {**wago_controllers[controller], "modules": modules}
                 self.drift[controller] = Drift.from_config(wago_config)
 
+        # Add lamps
+        self.dli = DLI()
+        self.lamps: Dict[str, Dict] = {}
         self.add_lamps()
 
-        self.google_client: AsyncAssertionClient | None
+        # Add Google API client
         try:
-            self.google_client = await self._get_google_client()
+            self.google_client = self.get_google_client()
         except Exception as err:
             warnings.warn(f"Failed authenticating with Google: {err}", ArchonWarning)
             self.google_client = None
 
-        await super().start()
-
+        # Model callbacks
         self.model["filename"].register_callback(self.fill_log)
 
-        return self
+        # Timed commands
+        self.timed_commands.add_command("lvm status", delay=30, first_silent=True)
 
     def add_lamps(self):
         """Adds the lamps."""
@@ -125,7 +117,7 @@ class LVMActor(ArchonActor):
 
             self.lamps[lamp] = self.config["devices"]["lamps"][lamp].copy()
 
-    async def _get_google_client(self) -> AsyncAssertionClient | None:
+    def get_google_client(self) -> AsyncAssertionClient | None:
         """Returns the client to communicate with the Google API."""
 
         credentials = self.config.get("credentials", None)
@@ -190,9 +182,20 @@ class LVMActor(ArchonActor):
 
         lamp_sources = []
         for lamp in self.lamps:
-            if lamp.upper() in header and header[lamp.upper()] is True:
+            if lamp.upper() in header and header[lamp.upper()] == "ON":
                 lamp_sources.append(lamp)
         lamp_sources = " ".join(lamp_sources)
+
+        hartmanns = "?"
+        if "HARTMANN" in header:
+            if header["HARTMANN"].strip() == "0 1":
+                hartmanns = "R"
+            elif header["HARTMANN"].strip() == "1 0":
+                hartmanns = "L"
+            elif header["HARTMANN"].strip() == "1 1":
+                hartmanns = "L R"
+            elif header["HARTMANN"].strip() == "0 0":
+                hartmanns = ""
 
         lamp_current = self._log_values.get("lamp_current", "")
         lab_temp = header["LABTEMP"]
@@ -216,6 +219,7 @@ class LVMActor(ArchonActor):
             channel,
             lamp_sources,
             lamp_current,
+            hartmanns,
             exptime,
             lab_temp,
             ccd_temp,
