@@ -236,8 +236,8 @@ async def power(command, controllers, controller, device, state):
 
 @lvm.command()
 @click.argument("LAMP", type=str, nargs=1, required=False)
-@click.option("--on", "state", flag_value=True, help="Turn on lamp.")
-@click.option("--off", "state", flag_value=False, help="Turn off lamp.")
+@click.option("--on", "state", flag_value=True, default=None, help="Turn on lamp.")
+@click.option("--off", "state", flag_value=False, default=None, help="Turn off lamp.")
 @click.option("--list", "-l", "list_", is_flag=True, help="Lists lamps.")
 async def lamps(command, controllers, lamp, state, list_):
     """Powers lamps on/off. Without flags, reports the status."""
@@ -256,9 +256,20 @@ async def lamps(command, controllers, lamp, state, list_):
         return command.fail("Lamp not found.")
 
     if state is not None:
-        await dli.set_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"], state)
+        try:
+            await dli.set_outlet_state(
+                lamps[lamp]["host"],
+                lamps[lamp]["outlet"],
+                state,
+            )
+        except RuntimeError as err:
+            return command.fail(error=f"Failed setting lamp power: {err}")
 
-    value = await dli.get_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"])
+    try:
+        value = await dli.get_outlet_state(lamps[lamp]["host"], lamps[lamp]["outlet"])
+    except RuntimeError as err:
+        return command.fail(error=f"Failed getting update lamp status: {err}")
+
     return command.finish(lamps={lamp: value})
 
 
