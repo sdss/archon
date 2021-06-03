@@ -189,31 +189,32 @@ async def report_motors(
 
         if not powered:
             motors_dict[dev] = {
-                "controller": controller,
-                "power": False,
-                "status": "?",
+                controller: {
+                    "power": False,
+                    "status": "?",
+                }
             }
         else:
             motors_dict[dev] = {
-                "controller": controller,
-                "power": True,
-                "status": "?",
+                controller: {
+                    "power": True,
+                    "status": "?",
+                }
             }
 
     for dev in motors_dict:
-        if motors_dict[dev]["power"] is True:
+        if motors_dict[dev][controller]["power"] is True:
             try:
 
                 dev_status = await get_motor_status(controller, dev)
             except Exception as err:
-                print("x")
                 command.warning(error=f"Failed getting status of device {dev!r}: {err}")
                 continue
         else:
             continue
 
         if dev_status is not None:
-            motors_dict[dev]["status"] = dev_status[dev]
+            motors_dict[dev][controller]["status"] = dev_status[dev]
 
     if write:
         command.info(**motors_dict)

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
-    "environmental_data": {
+    "environmental_props": {
       "type": "object",
       "properties": {
         "rh1": { "type": "number" },
@@ -15,6 +15,13 @@
         "rtd3": { "type": "number" },
         "rtd4": { "type": "number" }
       }
+    },
+    "motor_props": {
+      "type": "object",
+      "properties": {
+        "power": { "type": "boolean" },
+        "status": { "enum": ["closed", "open", "?"] }
+      }
     }
   },
   "type": "object",
@@ -22,31 +29,25 @@
     "shutter": {
       "type": "object",
       "properties": {
-        "controller": { "type": "string" },
-        "power": { "type": "boolean" },
-        "status": { "enum": ["closed", "open", "?"] }
+        "sp1": { "$ref": "#/definitions/motor_props" }
       }
     },
     "hartmann_left": {
       "type": "object",
       "properties": {
-        "controller": { "type": "string" },
-        "power": { "type": "boolean" },
-        "status": { "enum": ["closed", "open", "?"] }
+        "sp1": { "$ref": "#/definitions/motor_props" }
       }
     },
     "hartmann_right": {
       "type": "object",
       "properties": {
-        "controller": { "type": "string" },
-        "power": { "type": "boolean" },
-        "status": { "enum": ["closed", "open", "?"] }
+        "sp1": { "$ref": "#/definitions/motor_props" }
       }
     },
     "environmental": {
       "type": "object",
       "properties": {
-        "sp1": { "$ref": "#/definitions/environmental_data" }
+        "sp1": { "$ref": "#/definitions/environmental_props" }
       }
     },
     "pressure": {

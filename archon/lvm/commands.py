@@ -110,7 +110,7 @@ async def shutter(command, controllers, controller, action):
     if action is None:
         return command.finish(shutter=shutter)
     else:
-        if shutter["power"] is not True:
+        if shutter[controller]["power"] is not True:
             command.info(shutter=shutter)
             return command.fail(
                 error="Cannot command the shutter because it is powered down. "
@@ -169,7 +169,7 @@ async def hartmann(command, controllers, door, controller, action):
             command.info(**status)
             return command.fail(error="Move one door at a time.")
 
-        if not status["hartmann_" + door]["power"]:
+        if not status["hartmann_" + door][controller]["power"]:
             command.info(**status)
             return command.fail(error="The door is not powered on.")
 
@@ -193,9 +193,21 @@ async def hartmann(command, controllers, door, controller, action):
     "DEVICE",
     type=click.Choice(["shutter", "hartmann_left", "hartmann_right"]),
 )
-@click.option("--on", "state", flag_value="on", required=True, help="Turn on device")
-@click.option("--off", "state", flag_value="off", required=True, help="Turn off device")
-async def power(command, controllers, controller, device, state):
+@click.option(
+    "--on",
+    "action",
+    flag_value="on",
+    required=True,
+    help="Turn on device",
+)
+@click.option(
+    "--off",
+    "action",
+    flag_value="off",
+    required=True,
+    help="Turn off device",
+)
+async def power(command, controllers, controller, device, action):
     """Powers devices on/off. Without flags, reports the status."""
 
     if controller not in command.actor.drift:
@@ -203,11 +215,11 @@ async def power(command, controllers, controller, device, state):
 
     drift: Drift = command.actor.drift[controller]
 
-    status = {controller: controller}
+    status = {}
 
     current = await is_device_powered(device, drift)
 
-    if (current is True and state == "on") or (current is False and state == "off"):
+    if (current is True and action == "on") or (current is False and action == "off"):
         status["power"] = current
         command.warning(text="Device already at desired power state.")
         return command.finish(message={device: status})
@@ -215,16 +227,18 @@ async def power(command, controllers, controller, device, state):
     dev = drift.get_device(device)
     assert isinstance(dev, Relay)
 
-    if state == "on":
+    if action == "on":
         await dev.close()
         status["power"] = True
+        status["status"] = "?"
     else:
         await dev.open()
         status["power"] = False
+        status["status"] = command.actor.model[device].value[controller]["status"]
 
     await asyncio.sleep(3)
 
-    return command.finish(message={device: status})
+    return command.finish(message={controller: {device: status}})
 
 
 @lvm.command()
