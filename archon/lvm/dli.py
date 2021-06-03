@@ -31,7 +31,7 @@ class DLI(object):
         self.clients[host] = httpx.AsyncClient(
             auth=auth,
             base_url=f"http://{host}/restapi",
-            headers={"X-CSRF": "x"},
+            headers={},
         )
 
     async def get_outlet_state(self, host: str, outlet: int) -> bool:
@@ -58,7 +58,11 @@ class DLI(object):
 
         client = self.clients[host]
 
-        r = await client.put(f"relay/outlets/{outlet}/state/", data={"value": value})
+        r = await client.put(
+            f"relay/outlets/{outlet}/state/",
+            data={"value": value},
+            headers={"X-CSRF": "x"},
+        )
         if r.status_code != 204:
             raise RuntimeError(f"PUT returned code {r.status_code}.")
 
@@ -75,9 +79,14 @@ class DLI(object):
         jobs = []
         for name, data in lamps.items():
             jobs.append(
-                asyncio.create_task(self.get_outlet_state(data["host"], data["outlet"]))
+                asyncio.create_task(
+                    self.get_outlet_state(
+                        data["host"],
+                        data["outlet"],
+                    )
+                )
             )
-        await asyncio.gather(*jobs, return_exceptions=False)
+        await asyncio.gather(*jobs, return_exceptions=True)
 
         lamps_dict = {}
         keys = list(lamps.keys())
