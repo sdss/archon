@@ -20,7 +20,8 @@
       "type": "object",
       "properties": {
         "power": { "type": "boolean" },
-        "status": { "enum": ["closed", "open", "?"] }
+        "status": { "enum": ["closed", "open", "?"] },
+        "bits": { "type": "string" }
       }
     }
   },

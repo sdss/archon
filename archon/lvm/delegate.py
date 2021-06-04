@@ -61,7 +61,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
             results = await asyncio.gather(*jobs_status)
             for result in results:
-                if result["shutter"] != "closed":
+                if result["shutter"]["status"] != "closed":
                     return self.fail("Some shutters are not closed.")
 
         return True
@@ -98,6 +98,8 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         hdus: List[fits.PrimaryHDU],
     ) -> Tuple[ArchonController, List[fits.PrimaryHDU]]:
         """Post-process images."""
+
+        self.command.debug(text="Running exposure post-process.")
 
         # Govee lab temperature and RH.
         try:

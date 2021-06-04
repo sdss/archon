@@ -69,10 +69,12 @@ async def get_motor_status(
             final_dict.update(d)
         return final_dict
 
+    result = {motors: {"status": "?", "bits": "?"}}
+
     # The rest assumes a single motor.
     if drift:
         if not (await is_device_powered(motors, drift)):
-            return {motors: "?"}
+            return result
 
     try:
         r, w = await asyncio.wait_for(
@@ -83,7 +85,7 @@ async def get_motor_status(
             1,
         )
     except (asyncio.TimeoutError, OSError):
-        return {motors: "?"}
+        return result
 
     w.write(b"\00\07IS\r")
     await w.drain()
@@ -91,14 +93,18 @@ async def get_motor_status(
     try:
         reply = await asyncio.wait_for(r.readuntil(b"\r"), 1)
     except asyncio.TimeoutError:
-        return {motors: "?"}
+        return result
+
+    match = re.search(b"\x00\x07IS=([0-1]{8})\r$", reply)
+    bits = match.group(1).decode()
+    result[motors]["bits"] = bits
 
     status = parse_IS(reply, motors)
-
     if not status:
-        return {motors: "?"}
-    else:
-        return {motors: status}
+        return result
+
+    result[motors]["status"] = status
+    return result
 
 
 def parse_IS(reply: bytes, device: str):
@@ -135,7 +141,7 @@ async def move_motor(
 
     assert action in ["open", "close", "init", "home"]
 
-    current = (await get_motor_status(controller, motor))[motor]
+    current = (await get_motor_status(controller, motor))[motor]["status"]
     if (current == "closed" and action == "close") or current == action:
         return True
 
@@ -192,6 +198,7 @@ async def report_motors(
                 controller: {
                     "power": False,
                     "status": "?",
+                    "bits": "?",
                 }
             }
         else:
@@ -199,6 +206,7 @@ async def report_motors(
                 controller: {
                     "power": True,
                     "status": "?",
+                    "bits": "?",
                 }
             }
 
@@ -206,7 +214,7 @@ async def report_motors(
         if motors_dict[dev][controller]["power"] is True:
             try:
 
-                dev_status = await get_motor_status(controller, dev)
+                dev_status = (await get_motor_status(controller, dev))[dev]
             except Exception as err:
                 command.warning(error=f"Failed getting status of device {dev!r}: {err}")
                 continue
@@ -214,7 +222,7 @@ async def report_motors(
             continue
 
         if dev_status is not None:
-            motors_dict[dev][controller]["status"] = dev_status[dev]
+            motors_dict[dev][controller].update(dev_status)
 
     if write:
         command.info(**motors_dict)

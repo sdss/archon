@@ -119,6 +119,8 @@ async def shutter(command, controllers, controller, action):
 
         try:
             moved = await move_motor(controller, "shutter", action)
+        except asyncio.TimeoutError:
+            return command.fail(error=f"Failed moving {door} due to timeout.")
         except Exception as err:
             return command.fail(error=f"Failed moving shutter: {err}")
 
@@ -177,6 +179,8 @@ async def hartmann(command, controllers, door, controller, action):
 
         try:
             moved = await move_motor(controller, key, action)
+        except asyncio.TimeoutError:
+            return command.fail(error=f"Failed moving {door} due to timeout.")
         except Exception as err:
             return command.fail(error=f"Failed moving {door}: {err}")
 
