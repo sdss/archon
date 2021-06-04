@@ -219,14 +219,14 @@ async def power(command, controllers, controller, device, action):
 
     drift: Drift = command.actor.drift[controller]
 
-    status = {}
+    status = {"power": None, "status": "?", "bits": "?"}
 
     current = await is_device_powered(device, drift)
 
     if (current is True and action == "on") or (current is False and action == "off"):
         status["power"] = current
         command.warning(text="Device already at desired power state.")
-        return command.finish(message={device: status})
+        return command.finish()
 
     dev = drift.get_device(device)
     assert isinstance(dev, Relay)
@@ -234,15 +234,16 @@ async def power(command, controllers, controller, device, action):
     if action == "on":
         await dev.close()
         status["power"] = True
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
         try:
-            status["status"] = await get_motor_status(controller, device)
+            result = await get_motor_status(controller, device)
+            status["status"] = result[device]["status"]
+            status["bits"] = result[device]["bits"]
         except Exception:
-            status["status"] = "?"
+            pass
     else:
         await dev.open()
         status["power"] = False
-        status["status"] = command.actor.model[device].value[controller]["status"]
 
     return command.finish(message={controller: {device: status}})
 
