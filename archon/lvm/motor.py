@@ -82,7 +82,7 @@ async def get_motor_status(
                 config["devices"]["motor_controllers"][controller][motors]["host"],
                 config["devices"]["motor_controllers"][controller][motors]["port"],
             ),
-            1,
+            5,
         )
     except (asyncio.TimeoutError, OSError):
         return result
