@@ -15,7 +15,7 @@ from archon.controller.controller import ArchonController
 
 from ..actor.commands import parser
 from ..actor.tools import check_controller, controller_list, parallel_controllers
-from .motor import is_device_powered, move_motor, report_motors
+from .motor import get_motor_status, is_device_powered, move_motor, report_motors
 from .tools import read_pressure
 from .wago import read_many
 
@@ -234,13 +234,15 @@ async def power(command, controllers, controller, device, action):
     if action == "on":
         await dev.close()
         status["power"] = True
-        status["status"] = "?"
+        await asyncio.sleep(3)
+        try:
+            status["status"] = await get_motor_status(controller, device)
+        except Exception:
+            status["status"] = "?"
     else:
         await dev.open()
         status["power"] = False
         status["status"] = command.actor.model[device].value[controller]["status"]
-
-    await asyncio.sleep(3)
 
     return command.finish(message={controller: {device: status}})
 
