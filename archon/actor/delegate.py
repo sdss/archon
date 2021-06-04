@@ -140,6 +140,8 @@ class ExposureDelegate(Generic[Actor_co]):
         ]
 
         try:
+            c_list = ", ".join([controller.name for controller in controllers])
+            self.command.debug(text=f"Starting exposure in controllers {c_list}.")
             await asyncio.gather(*jobs)
         except BaseException as err:
             self.command.error(error=str(err))
@@ -349,9 +351,11 @@ class ExposureDelegate(Generic[Actor_co]):
         expose_data = self.expose_data
 
         # Read device
+        self.command.debug(text=f"Reading out {controller.name}.")
         await controller.readout(delay=expose_data.delay_readout)
 
         # Fetch buffer
+        self.command.debug(text=f"Fetching {controller.name} buffer.")
         data = await controller.fetch()
 
         ccd_info = config["controllers"][controller.name]["detectors"]
