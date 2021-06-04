@@ -113,19 +113,19 @@ async def shutter(command, controllers, controller, action):
         if shutter[controller]["power"] is not True:
             command.info(shutter=shutter)
             return command.fail(
-                error="Cannot command the shutter because it is powered down. "
+                error=f"Cannot command {controller} shutter because it is not powered. "
                 "Use the 'lvm power' command to turn the power on."
             )
 
         try:
             moved = await move_motor(controller, "shutter", action)
         except asyncio.TimeoutError:
-            return command.fail(error=f"Failed moving {door} due to timeout.")
+            return command.fail(error=f"Timed out trying to move {controller} shutter.")
         except Exception as err:
-            return command.fail(error=f"Failed moving shutter: {err}")
+            return command.fail(error=f"Failed moving {controller} shutter: {err}")
 
         if not moved:
-            return command.fail(error="Failed moving the shutter.")
+            return command.fail(error=f"Failed moving {controller} shutter.")
         else:
             await report_motors(command, controller, motors=["shutter"], drift=drift)
             return command.finish()
@@ -180,12 +180,12 @@ async def hartmann(command, controllers, door, controller, action):
         try:
             moved = await move_motor(controller, key, action)
         except asyncio.TimeoutError:
-            return command.fail(error=f"Failed moving {door} due to timeout.")
+            return command.fail(error=f"Timed out trying to move {controller} {door}.")
         except Exception as err:
-            return command.fail(error=f"Failed moving {door}: {err}")
+            return command.fail(error=f"Failed moving {controller} {door}: {err}")
 
         if moved is False:
-            return command.fail(error=f"Failed moving {door} hartmann door.")
+            return command.fail(error=f"Failed moving {controller} {door} door.")
 
         await report_motors(command, controller, motors=[key], drift=drift)
         return command.finish()
