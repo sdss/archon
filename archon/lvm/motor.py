@@ -38,7 +38,7 @@ async def get_motor_status(
     controller: str,
     motors: str | List[str],
     drift: Optional[Drift] = None,
-) -> Dict[str, str]:
+) -> Dict[str, Dict[str, str]]:
     """Returns the status of the queried motors.
 
     Parameters
