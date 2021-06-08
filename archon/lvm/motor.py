@@ -94,12 +94,16 @@ async def get_motor_status(
         reply = await asyncio.wait_for(r.readuntil(b"\r"), 1)
     except asyncio.TimeoutError:
         return result
+    finally:
+        w.close()
+        await w.wait_closed()
 
     match = re.search(b"\x00\x07IS=([0-1]{8})\r$", reply)
     bits = match.group(1).decode()
     result[motors]["bits"] = bits
 
     status = parse_IS(reply, motors)
+
     if not status:
         return result
 
@@ -168,10 +172,20 @@ async def move_motor(
     await w.drain()
 
     while True:
-        reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
+        try:
+            reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
+        except asyncio.TimeoutError:
+            w.close()
+            await w.wait_closed()
+            raise
+
         if b"ERR" in reply:
+            w.close()
+            await w.wait_closed()
             return False
         elif b"DONE" in reply:
+            w.close()
+            await w.wait_closed()
             return True
 
 
