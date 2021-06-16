@@ -126,12 +126,12 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         for hdu in hdus:
             for door in ["left", "right"]:
-                if hartmann[f"hartmann_{door}"] == "open":
-                    hartmann[f"hartmann_{door}"] = "0"
-                elif hartmann[f"hartmann_{door}"] == "closed":
-                    hartmann[f"hartmann_{door}"] = "1"
-            left = hartmann["hartmann_left"]
-            right = hartmann["hartmann_right"]
+                if hartmann[f"hartmann_{door}"]["status"] == "open":
+                    hartmann[f"hartmann_{door}"]["status"] = "0"
+                elif hartmann[f"hartmann_{door}"]["status"] == "closed":
+                    hartmann[f"hartmann_{door}"]["status"] = "1"
+            left = hartmann["hartmann_left"]["status"]
+            right = hartmann["hartmann_right"]["status"]
             hdu.header["HARTMANN"] = (f"{left} {right}", "Left/right. 0=open 1=closed")
 
         # Record lamp status.
