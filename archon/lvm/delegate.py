@@ -122,7 +122,10 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             )
         except Exception as err:
             self.command.warning(text=f"Failed retrieving hartmann door status: {err}")
-            hartmann = {"hartmann_left": "?", "hartmann_right": "?"}
+            hartmann = {
+                "hartmann_left": {"status": "?"},
+                "hartmann_right": {"status": "?"},
+            }
 
         for hdu in hdus:
             for door in ["left", "right"]:
