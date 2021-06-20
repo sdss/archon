@@ -27,12 +27,6 @@ except ModuleNotFoundError:
 # Are we building in RTD?
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
-# Sphinx template selected in cookiecutter
-sphinx_template = "alabaster"
-
-if sphinx_template == "sphinx-bootstrap":
-    import sphinx_bootstrap_theme
-
 
 # Importing matplotlib here with agg to prevent tkinter error in readthedocs
 # import matplotlib
@@ -59,6 +53,7 @@ extensions = [
     "sphinx_click",
     "sphinx-jsonschema",
     "myst_parser",
+    "sphinx_copybutton",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -139,9 +134,13 @@ intersphinx_mapping = {
 
 autodoc_mock_imports = ["_tkinter"]
 autodoc_member_order = "groupwise"
+autodoc_typehints = "description"
 
 napoleon_use_rtype = False
 napoleon_use_ivar = True
+
+copybutton_prompt_text = r">>> |\$ "
+copybutton_prompt_is_regexp = True
 
 rst_epilog = f"""
 .. |numpy_array| replace:: Numpy array
@@ -157,98 +156,9 @@ html_css_files = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 
-if sphinx_template == "sphinx-bootstrap":
-
-    html_theme = "bootstrap"
-
-    html_sidebars = {}
-
-    # Theme options are theme-specific and customize the look and feel of a theme
-    # further.  For a list of options available for each theme, see the
-    # documentation.
-    html_theme_options = {
-        # Navigation bar title. (Default: ``project`` value)
-        "navbar_title": "SDSS: {0}".format(project),
-        # Tab name for entire site. (Default: "Site")
-        "navbar_site_name": "Site",
-        # A list of tuples containing pages or urls to link to.
-        # Valid tuples should be in the following forms:
-        #    (name, page)                 # a link to a page
-        #    (name, "/aa/bb", 1)          # a link to an arbitrary relative url
-        #    (name, "http://example.com", True) # arbitrary absolute url
-        # Note the "1" or "True" value above as the third argument to indicate
-        # an arbitrary url.
-        "navbar_links": [],
-        # Render the next and previous page links in navbar. (Default: true)
-        "navbar_sidebarrel": False,
-        # Render the current pages TOC in the navbar. (Default: true)
-        "navbar_pagenav": False,
-        # Tab name for the current pages TOC. (Default: "Page")
-        "navbar_pagenav_name": "Page",
-        # Global TOC depth for "site" navbar tab. (Default: 1)
-        # Switching to -1 shows all levels.
-        "globaltoc_depth": 2,
-        # Include hidden TOCs in Site navbar?
-        #
-        # Note: If this is "false", you cannot have mixed ``:hidden:`` and
-        # non-hidden ``toctree`` directives in the same page, or else the build
-        # will break.
-        #
-        # Values: "true" (default) or "false"
-        "globaltoc_includehidden": "true",
-        # HTML navbar class (Default: "navbar") to attach to <div> element.
-        # For black navbar, do "navbar navbar-inverse"
-        "navbar_class": "navbar",
-        # Fix navigation bar to top of page?
-        # Values: "true" (default) or "false"
-        "navbar_fixed_top": "true",
-        # Location of link to source.
-        # Options are "nav" (default), "footer" or anything else to exclude.
-        "source_link_position": "",
-        # Bootswatch (http://bootswatch.com/) theme.
-        #
-        # Options are nothing (default) or the name of a valid theme
-        # such as "amelia" or "cosmo".
-        "bootswatch_theme": "paper",
-        # Choose Bootstrap version.
-        # Values: "3" (default) or "2" (in quotes)
-        "bootstrap_version": "3",
-    }
-
-    # Add any paths that contain custom themes here, relative to this directory.
-    html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-
-    html_logo = "_static/sdssv_logo_small.png"
-
-    html_css_files += ["custom_bootstrap.css"]
-
-    html_sidebars = {"**": ["localtoc.html"]}
-
-elif sphinx_template == "alabaster":
-
-    html_theme = "alabaster"
-
-    html_theme_options = {
-        "logo": "sdssv_logo.png",
-        "github_user": "sdss",
-        "github_repo": project,
-        "github_button": True,
-        "github_type": "star",
-        "sidebar_collapse": True,
-        "page_width": "80%",
-    }
-
-    # html_sidebars = {
-    #     "**": [
-    #         "about.html",
-    #         "fulltoc.html",
-    #         "relations.html",
-    #         "searchbox.html",
-    #     ]
-    # }
-
-    html_css_files += ["custom.css"]
-
+html_theme = "furo"
+html_title = "archon"
+html_logo = "_static/sdssv_logo.png"
 html_favicon = "./_static/favicon_sdssv.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,

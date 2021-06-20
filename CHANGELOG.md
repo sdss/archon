@@ -11,6 +11,7 @@
 * Add `lvm-lab` script for laboratory testing.
 * `POWERON` and `POWERBAD` controller status bits.
 * Code to log LVM exposures in Google Sheets.
+* Use the [furo](https://pradyunsg.me/furo/) theme for the documentation.
 
 ### 🔧 Fixed
 

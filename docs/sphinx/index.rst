@@ -98,20 +98,21 @@ To run the actor as a Docker container (for production, replace ``latest`` with 
 
 The container needs access to the host network to connect to the Archon controller(s) (usually on port 4242) and to the RabbitMQ instance (usually on port 5672). There are different ways to accomplish that (see the documentation for `Bridge networking <https://docs.docker.com/network/bridge/>`__ and `this thread <https://forums.docker.com/t/accessing-host-machine-from-within-docker-container/14248>`__) but the easiest one is to use the `host network <https://docs.docker.com/network/host/>`__ by passing ``--network host`` as we did above. Note that this breaks the isolation of the container in ways that may be unsafe.
 
-Reference
----------
 
 .. toctree::
-   :maxdepth: 3
+  :caption: Reference
+  :maxdepth: 3
+  :hidden:
 
-   api
-   actor-commands
-   actor-schema
-   Changelog <changelog>
+  api
+  actor-commands
+  actor-schema
 
+.. toctree::
+  :caption: Development
+  :maxdepth: 3
+  :hidden:
 
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
+  Changelog <changelog>
+  GitHub Repository <https://github.com/sdss/archon>
+  Issues  <https://github.com/sdss/archon/issues>
