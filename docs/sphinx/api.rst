@@ -1,8 +1,8 @@
 
 .. _api:
 
-archon Reference
-================
+API
+===
 
 .. _api-archon:
 

@@ -62,6 +62,10 @@ jedi = "0.17.2"
 sphinx-click = ">=2.6.0"
 sphinx-jsonschema = ">=1.16.7"
 myst-parser = ">=0.14.0"
+furo = "^2021.6.18-beta.36"
+nox = "^2021.6.12"
+sphinx-autobuild = "^2021.3.14"
+sphinx-copybutton = "^0.3.3"
 
 [tool.poetry.extras]
 lvm = ["sdss-drift", "httpx", "Authlib"]
