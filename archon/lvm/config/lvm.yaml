@@ -166,7 +166,7 @@ exposure_list_sheet: 103BNxjlZ59Sob3jDO4EN1z6zp2q5YrYA6nTjGlZM6XY
 # Sensor configuration. Mainly for lab testing.
 sensors:
   H5179:
-    host: 10.7.45.27
+    host: 10.7.45.30
     port: 1111
 
 # Additional header keywords to be obtained from the SYSTEM and STATUS commands.
