@@ -11,9 +11,9 @@ controllers:
       r1:
         area: [0, 0, 4120, 4080]
         sensor: A
-      # b1:
-      #   area: [4400, 0, 8800, 4400]
-      #   sensor: B
+      b1:
+        area: [0, 0, 4120, 4080]
+        sensor: B
       # z1:
       #   area: [8800, 0, 13200, 4400]
       #   sensor: C
@@ -44,6 +44,10 @@ devices:
     r1:
       host: 10.7.45.30
       port: 1112
+      id: 253
+    b1:
+      host: 10.7.45.30
+      port: 1114
       id: 253
   wago:
     controllers:
@@ -176,13 +180,13 @@ sensors:
 header:
   status:
     CCDTEMP1:
-      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
-      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
+      r1: ['status.mod12/tempa', 'Temperature of the r1 sensor (HEATERX 12)']
+      b1: ['status.mod12/tempc', 'Temperature of the b1 sensor (HEATERX 12)']
+      z1: ['status.mod2/tempa', 'Temperature of the z1 sensor (HEATERX 12)']
     CCDTEMP2:
-      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
-      b1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
-      z1: ['status.mod12/tempc', 'LN2 temperature (HEATERX 12)']
+      r1: ['status.mod12/tempb', 'LN2 r1 temperature (HEATERX 2)']
+      b1: ['status.mod2/tempc', 'LN2 b1 temperature (HEATERX 2)']
+      z1: ['status.mod2/tempb', 'LN2 z1 temperature (HEATERX 2)']
 
 # Actor congiguration for the LVMActor class
 actor:
