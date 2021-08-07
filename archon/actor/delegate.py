@@ -276,7 +276,10 @@ class ExposureDelegate(Generic[Actor_co]):
     async def build_base_header(self, controller: ArchonController, ccd_name: str):
         """Returns the basic header of the FITS file."""
 
+        assert self.command.actor
+
         expose_data = self.expose_data
+        assert expose_data.end_time
 
         header = fits.Header()
 
