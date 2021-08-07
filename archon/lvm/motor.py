@@ -99,6 +99,9 @@ async def get_motor_status(
         await w.wait_closed()
 
     match = re.search(b"\x00\x07IS=([0-1]{8})\r$", reply)
+    if match is None:
+        return result
+
     bits = match.group(1).decode()
     result[motors]["bits"] = bits
 
