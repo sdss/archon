@@ -12,11 +12,11 @@ controllers:
         area: [0, 0, 4120, 4080]
         sensor: A
       b1:
-        area: [0, 0, 4120, 4080]
+        area: [4400, 0, 8800, 4400]
         sensor: B
-      # z1:
-      #   area: [8800, 0, 13200, 4400]
-      #   sensor: C
+      z1:
+        area: [8800, 0, 13200, 4400]
+        sensor: C
 
 devices:
   motor_controllers:
@@ -48,6 +48,10 @@ devices:
     b1:
       host: 10.7.45.30
       port: 1114
+      id: 253
+    z1:
+      host: 10.7.45.30
+      port: 1115
       id: 253
   wago:
     controllers:
