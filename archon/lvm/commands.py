@@ -317,6 +317,13 @@ async def lamps(command, controllers, lamp, state, list_):
     help="Take an object frame",
 )
 @click.option(
+    "-c",
+    "--count",
+    type=int,
+    default=1,
+    help="Number of exposure to take.",
+)
+@click.option(
     "-d",
     "--delay-readout",
     type=int,
@@ -334,6 +341,7 @@ async def expose(
     exposure_time,
     controller_list,
     flavour,
+    count,
     delay_readout,
     lamp_current,
     test_no,
@@ -357,30 +365,32 @@ async def expose(
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
 
-    delegate = command.actor.expose_delegate
-    if delegate is None:
-        return command.fail(error="Cannot find expose delegate.")
+    for __ in range(count):
 
-    command.actor.set_log_values(
-        lamp_current=lamp_current,
-        test_no=test_no,
-        test_iteration=test_iteration,
-        purpose=purpose,
-        notes=notes,
-    )
+        delegate = command.actor.expose_delegate
+        if delegate is None:
+            return command.fail(error="Cannot find expose delegate.")
 
-    delegate.use_shutter = True
-    result = await delegate.expose(
-        command,
-        selected_controllers,
-        flavour=flavour,
-        exposure_time=exposure_time,
-        readout=True,
-        delay_readout=delay_readout,
-    )
+        command.actor.set_log_values(
+            lamp_current=lamp_current,
+            test_no=test_no,
+            test_iteration=test_iteration,
+            purpose=purpose,
+            notes=notes,
+        )
 
-    if result:
-        return command.finish()
-    else:
-        # expose will fail the command.
-        return
+        delegate.use_shutter = True
+        result = await delegate.expose(
+            command,
+            selected_controllers,
+            flavour=flavour,
+            exposure_time=exposure_time,
+            readout=True,
+            delay_readout=delay_readout,
+        )
+
+        if not result:
+            # expose will fail the command.
+            return
+
+    return command.finish()
