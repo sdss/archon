@@ -185,12 +185,12 @@ header:
   status:
     CCDTEMP1:
       r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod2/tempc', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
       z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
     CCDTEMP2:
       r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
-      b1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
-      z1: ['status.mod12/tempc', 'LN2 temperature (HEATERX 12)']
+      b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)']
+      z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
 
 # Actor congiguration for the LVMActor class
 actor:
