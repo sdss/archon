@@ -12,10 +12,10 @@ controllers:
         area: [0, 0, 4120, 4080]
         sensor: A
       b1:
-        area: [4400, 0, 8800, 4400]
+        area: [4120, 0, 8240, 4080]
         sensor: B
       z1:
-        area: [8800, 0, 13200, 4400]
+        area: [8240, 0, 12360, 4080]
         sensor: C
 
 devices:
