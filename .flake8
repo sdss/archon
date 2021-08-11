@@ -9,6 +9,9 @@ extend-ignore =
 
 max-line-length = 88
 
+exclude =
+    .nox/
+
 per-file-ignores =
     *lib.py:E221,E501
     setup.py:E
