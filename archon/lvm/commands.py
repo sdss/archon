@@ -43,7 +43,7 @@ async def status(command, controller):
     # Run most tasks concurrently.
     tasks = [
         report_motors(command, controller.name, drift=drift, write=False),
-        read_many(SENSORS, drift),
+        read_many(command, SENSORS, drift),
         command.actor.dli.report_lamps(command, write=False),
     ]
     data = await asyncio.gather(*tasks)

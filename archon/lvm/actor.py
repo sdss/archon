@@ -128,7 +128,7 @@ class LVMActor(ArchonActor):
 
         with open(credentials["google"]) as fd:
             conf = json.load(fd)
-
+        print(conf)
         token_uri = conf["token_uri"]
         header = {"alg": "RS256"}
         key_id = conf.get("private_key_id")
@@ -235,7 +235,7 @@ class LVMActor(ArchonActor):
             "majorDimension": "ROWS",
             "values": [data],
         }
-
+        print(google_data)
         spreadsheet_id = self.config["exposure_list_sheet"]
         r = await self.google_client.post(
             f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
