@@ -8,6 +8,8 @@
 
 import asyncio
 
+from typing import Any
+
 import click
 from drift import Drift, Relay
 
@@ -38,7 +40,7 @@ async def status(command, controller):
     for module in drift.modules.values():
         for device in module.devices.values():
             if device.category in ["temperature", "humidity"]:
-                SENSORS.append(device.name)
+                SENSORS.append(device.name.lower())
 
     # Run most tasks concurrently.
     tasks = [
@@ -46,7 +48,7 @@ async def status(command, controller):
         read_many(command, SENSORS, drift),
         command.actor.dli.report_lamps(command, write=False),
     ]
-    data = await asyncio.gather(*tasks)
+    data: Any = await asyncio.gather(*tasks)
 
     lvm_status = {}
 
@@ -57,8 +59,8 @@ async def status(command, controller):
     # Temperatures and RH
     sensor_data = data[1]
     environmental = {}
-    for ii, sensor in enumerate(SENSORS):
-        environmental[sensor] = sensor_data[ii]
+    for sensor in SENSORS:
+        environmental[sensor] = round(sensor_data.get(sensor, -999.0), 2)
 
     lvm_status["environmental"] = {controller.name: environmental}
 
