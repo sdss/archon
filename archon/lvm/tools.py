@@ -56,7 +56,7 @@ async def read_govee() -> Tuple[float, float]:
     return temp, hum
 
 
-async def read_pressure(host: str, port: int, id: int) -> bool | float:
+async def read_pressure(host: str, port: int, id: int, read_timeout=5) -> bool | float:
     """Reads pressure from a SENS4 device."""
 
     try:
@@ -68,7 +68,7 @@ async def read_pressure(host: str, port: int, id: int) -> bool | float:
     await w.drain()
 
     try:
-        reply = await asyncio.wait_for(r.readuntil(b"\\"), 1)
+        reply = await asyncio.wait_for(r.readuntil(b"\\"), read_timeout)
         match = re.search(r"@[0-9]{1,3}ACK([0-9.E+-]+)\\$".encode(), reply)
 
         if not match:
