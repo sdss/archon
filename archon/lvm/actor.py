@@ -241,7 +241,7 @@ class LVMActor(ArchonActor):
             "majorDimension": "ROWS",
             "values": [data],
         }
-        print(google_data)
+
         spreadsheet_id = self.config["exposure_list_sheet"]
         r = await self.google_client.post(
             f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
