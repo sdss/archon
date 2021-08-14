@@ -34,7 +34,6 @@ click = "^8.0.0"
 numpy = "^1.19.5"
 sdss-clu = "^1.2.0"
 click-default-group = "^1.2.2"
-daemonocle = "^1.1.1"
 astropy = "^4.2"
 
 # LVM-only
