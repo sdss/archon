@@ -67,16 +67,20 @@ async def status(command, controller):
     # Lamps
     lvm_status["lamps"] = data[2]
 
-    # Pressure (syncrhonous for now).
+    # Pressure.
+    pressure_tasks = []
     if "pressure" in config["devices"]:
+        for _, data in config["devices"]["pressure"].items():
+            pressure_tasks.append(read_pressure(**data))
+        presure_results = await asyncio.gather(*pressure_tasks)
+
         pressure = {}
-        for ccd, data in config["devices"]["pressure"].items():
-            value = await read_pressure(**data)
+        for ii, ccd in enumerate(config["devices"]["pressure"]):
+            value = presure_results[ii]
             if value is False:
                 value = -999.0
             pressure[ccd] = value
-        if len(pressure) > 0:
-            lvm_status["pressure"] = pressure
+        lvm_status["pressure"] = pressure
 
     lvm_status = {key: value for key, value in lvm_status.items() if value != {}}
 
