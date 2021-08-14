@@ -57,6 +57,8 @@ class LVMActor(ArchonActor):
         self._log_lock = asyncio.Lock()
         self._log_values = {}
 
+        assert self.model
+
         # Merge LVM schema with base schema.
         lvm_schema = os.path.join(FILE_PATH, "config/schema.json")
         lvm_schema = json.loads(open(lvm_schema, "r").read())
@@ -171,7 +173,11 @@ class LVMActor(ArchonActor):
         header = fits.getheader(path)
 
         filename = os.path.basename(path)
-        exp_no = int(re.match(r".+-([0-9]+)\.fits(?:\.gz)$", filename).group(1))
+
+        match = re.match(r".+-([0-9]+)\.fits(?:\.gz)$", filename)
+        assert match
+
+        exp_no = int(match.group(1))
 
         obsdate = Time(header["OBSTIME"], format="isot")
         mjd = int(obsdate.mjd)
