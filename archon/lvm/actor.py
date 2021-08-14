@@ -130,7 +130,7 @@ class LVMActor(ArchonActor):
 
         with open(credentials["google"]) as fd:
             conf = json.load(fd)
-        print(conf)
+
         token_uri = conf["token_uri"]
         header = {"alg": "RS256"}
         key_id = conf.get("private_key_id")
