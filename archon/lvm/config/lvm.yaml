@@ -40,6 +40,9 @@ devices:
     M625L4:
       host: 10.7.45.22
       outlet: 7
+    FFS:
+      host: 10.7.45.29
+      outlet: 7
   pressure:
     r1:
       host: 10.7.45.30
