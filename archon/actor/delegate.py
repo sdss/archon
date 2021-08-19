@@ -18,6 +18,7 @@ from functools import reduce
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
 import astropy.time
+import numpy
 from astropy.io import fits
 
 from archon.controller.controller import ArchonController
@@ -347,6 +348,43 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return header
 
+    def _get_ccd_data(
+        self,
+        data: numpy.ndarray,
+        ccd_name: str,
+        ccd_info: Dict[str, Any],
+    ) -> numpy.ndarray:
+        """Retrieves the CCD data from the buffer frame."""
+
+        # Because the archon can order the output taplines in different ways in the
+        # frame, we allow to define the CCD area as a list of ranges and then we
+        # provide options to reorder them.
+
+        areas = ccd_info["areas"]
+        ccd_parts = []
+        for area in areas:
+            ccd_parts.append(data[area[1] : area[3], area[0] : area[2]])
+
+        # Concatenate the different areas.
+        if len(areas) > 1:
+            ccd_data = numpy.concatenate(
+                ccd_parts,
+                axis=ccd_info.get("concatenate_axis", 0),
+            )
+        else:
+            ccd_data = ccd_parts[0]
+
+        if ccd_info.get("framemode", None):
+            if ccd_info["framemode"] == "top":
+                # This is useful if FRAMEMODE="TOP" (first read rows are always the
+                # first rows in the buffer array).
+                splits = numpy.split(ccd_data, 2, axis=1)
+                splits[0] = splits[0][::-1, :]
+                splits[1] = splits[1][:, ::-1]
+                ccd_data = numpy.vstack(splits[::-1])
+
+        return ccd_data
+
     async def fetch_hdus(self, controller: ArchonController) -> List[fits.PrimaryHDU]:
         """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
 
@@ -360,13 +398,13 @@ class ExposureDelegate(Generic[Actor_co]):
         # Fetch buffer
         self.command.debug(text=f"Fetching {controller.name} buffer.")
         data = await controller.fetch()
-
+        # x = fits.PrimaryHDU(data=data)
+        # x.writeto("test3.fits")
         ccd_info = config["controllers"][controller.name]["detectors"]
         hdus = []
         for ccd_name in ccd_info:
-            area = ccd_info[ccd_name]["area"]
             header = await self.build_base_header(controller, ccd_name)
-            ccd_data = data[area[1] : area[3], area[0] : area[2]]
+            ccd_data = self._get_ccd_data(data, ccd_name, ccd_info[ccd_name])
             hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
 
         return hdus

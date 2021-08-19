@@ -9,13 +9,16 @@ controllers:
     port: 4242
     detectors:
       r1:
-        area: [0, 0, 4120, 4080]
+        areas: [[0, 0, 8240, 2040]]
+        framemode: top
         sensor: A
       b1:
-        area: [4120, 0, 8240, 4080]
+        areas: [[8240, 0, 16480, 2040]]
+        framemode: top
         sensor: B
       z1:
-        area: [8240, 0, 12360, 4080]
+        areas: [[16480, 0, 24720, 2040]]
+        framemode: top
         sensor: C
 
 devices:
