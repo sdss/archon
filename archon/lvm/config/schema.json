@@ -63,7 +63,11 @@
         "HgAr": { "type": "boolean" },
         "MI150": { "type": "boolean" },
         "M625L4": { "type": "boolean" },
-        "LED": { "type": "boolean" }
+        "LED": { "type": "boolean" },
+        "Argon": { "type": "boolean" },
+        "Neon": { "type": "boolean" },
+        "Krypton": { "type": "boolean" },
+        "LDLS": { "type": "boolean" }
       }
     }
   }

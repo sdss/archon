@@ -46,6 +46,18 @@ devices:
     FFS:
       host: 10.7.45.29
       outlet: 7
+    Argon:
+      host: 10.7.45.31
+      outlet: 1
+    LDLS:
+      host: 10.7.45.31
+      outlet: 4
+    Krypton:
+      host: 10.7.45.31
+      outlet: 5
+    Neon:
+      host: 10.7.45.31
+      outlet: 6
   pressure:
     r1:
       host: 10.7.45.30
