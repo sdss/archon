@@ -66,7 +66,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         return True
 
-    async def shutter(self, open):
+    async def shutter(self, open, retry=False):
         """Operate the shutter."""
 
         if not self.use_shutter:
@@ -79,22 +79,16 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         action = "open" if open else "close"
 
-        self.command.debug(text=f'Moving shutters to "{action}".')
+        self.command.debug(text=f"Moving shutters to {action}.")
 
         jobs = []
         for controller in self.expose_data.controllers:
             jobs.append(move_motor(controller.name, "shutter", action))
-        results = await asyncio.gather(*jobs, return_exceptions=True)
+        results = await asyncio.gather(*jobs)
 
         if not all(results):
-            if action == "close" and retry is False:
-                self.command.warning(text="Some shutters failed to close. Retrying.")
-                return await self.shutter(False, retry=True)
-            else:
-                return self.fail("Some shutters failed to move.")
-
-        if retry is True:
-            return self.fail("Closed all shutters but failing now.")
+            self.fail("Some shutters failed to move.")
+            return False
 
         return True
 
