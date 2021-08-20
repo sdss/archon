@@ -494,11 +494,11 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 0)
         await self.set_param("WaitCount", 0)
 
-        cmd = await self.send_command("RELEASETIMING", timeout=1)
+        cmd = await self.send_command("RESETTIMING", timeout=1)
         if not cmd.succeeded():
             self.status = ControllerStatus.ERROR
             raise ArchonControllerError(
-                f"Failed sending RELEASETIMING ({cmd.status.name})"
+                f"Failed sending RESETTIMING ({cmd.status.name})"
             )
 
         self._status = ControllerStatus.IDLE
@@ -543,7 +543,7 @@ class ArchonController(Device):
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
 
-        await self.send_command("RELEASETIMING")
+        await self.send_command("RESETTIMING")
 
         self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
 
@@ -590,7 +590,7 @@ class ArchonController(Device):
         await self.send_command("HOLDTIMING")
         await self.set_param("FlushCount", int(count))
         await self.set_param("DoFlush", 1)
-        await self.send_command("RELEASETIMING")
+        await self.send_command("RESETTIMING")
 
         self.status = ControllerStatus.FLUSHING
 
@@ -629,7 +629,7 @@ class ArchonController(Device):
         if delay > 0:
             await self.set_param("WaitCount", delay)
 
-        await self.send_command("RELEASETIMING")
+        await self.send_command("RESETTIMING")
 
         self.status = ControllerStatus.READING
 
