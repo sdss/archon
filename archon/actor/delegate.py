@@ -398,8 +398,7 @@ class ExposureDelegate(Generic[Actor_co]):
         # Fetch buffer
         self.command.debug(text=f"Fetching {controller.name} buffer.")
         data = await controller.fetch()
-        # x = fits.PrimaryHDU(data=data)
-        # x.writeto("test3.fits")
+
         ccd_info = config["controllers"][controller.name]["detectors"]
         hdus = []
         for ccd_name in ccd_info:
