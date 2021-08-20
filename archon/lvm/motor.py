@@ -157,7 +157,7 @@ async def move_motor(
             config["devices"]["motor_controllers"][controller][motor]["host"],
             config["devices"]["motor_controllers"][controller][motor]["port"],
         ),
-        2,
+        5,
     )
 
     if action == "open":
