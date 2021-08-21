@@ -55,6 +55,7 @@ class ArchonController(Device):
         self._status: ControllerStatus = ControllerStatus.UNKNOWN
         self.__status_event = asyncio.Event()
 
+        self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
@@ -485,23 +486,31 @@ class ArchonController(Device):
 
         return
 
-    async def reset(self):
+    async def set_autoflush(self, mode: bool):
+        """Enables or disables autoflushing."""
+
+        await self.set_param("AutoFlush", int(mode))
+        self.auto_flush = mode
+
+    async def reset(self, autoflush=True):
         """Resets timing and discards current exposures."""
 
         await self.send_command("HOLDTIMING")
 
+        await self.set_autoflush(autoflush)
         await self.set_param("Exposures", 0)
         await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
         await self.set_param("DoFlush", 0)
         await self.set_param("WaitCount", 0)
 
-        cmd = await self.send_command("RELEASETIMING", timeout=1)
-        if not cmd.succeeded():
-            self.status = ControllerStatus.ERROR
-            raise ArchonControllerError(
-                f"Failed sending RELEASETIMING ({cmd.status.name})"
-            )
+        for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
+            cmd = await self.send_command(cmd_str, timeout=1)
+            if not cmd.succeeded():
+                self.status = ControllerStatus.ERROR
+                raise ArchonControllerError(
+                    f"Failed sending {cmd_str} ({cmd.status.name})"
+                )
 
         self._status = ControllerStatus.IDLE
         await self.get_device_status()  # Sets power and other bits.
@@ -534,7 +543,7 @@ class ArchonController(Device):
                 "Controller has a readout pending. Read the device or flush."
             )
 
-        await self.reset()
+        await self.reset(autoflush=False)
         await self.send_command("HOLDTIMING")
 
         if readout is False:
@@ -657,6 +666,8 @@ class ArchonController(Device):
             frame = await self.get_frame()
             if frame[f"buf{wbuf}complete"] == 1:
                 self.status = ControllerStatus.IDLE
+                # Reset autoflushing.
+                await self.set_autoflush(True)
                 return
             waited += 1.0
             await asyncio.sleep(1.0)
