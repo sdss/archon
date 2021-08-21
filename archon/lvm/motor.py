@@ -177,19 +177,13 @@ async def move_motor(
     while True:
         try:
             reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
-        except asyncio.TimeoutError:
+            if b"ERR" in reply:
+                return False
+            elif b"DONE" in reply:
+                return True
+        finally:
             w.close()
             await w.wait_closed()
-            raise
-
-        if b"ERR" in reply:
-            w.close()
-            await w.wait_closed()
-            return False
-        elif b"DONE" in reply:
-            w.close()
-            await w.wait_closed()
-            return True
 
 
 async def report_motors(
