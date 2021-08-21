@@ -316,7 +316,9 @@ class ArchonController(Device):
         key_value_re = re.compile("^(.+?)=(.*)$")
 
         def parse_line(line):
-            k, v = key_value_re.match(line).groups()
+            match = key_value_re.match(line)
+            assert match
+            k, v = match.groups()
             # It seems the GUI replaces / with \ even if that doesn't seem
             # necessary in the INI format.
             k = k.replace("/", "\\")
@@ -352,7 +354,7 @@ class ArchonController(Device):
         system = await self.get_system()
 
         c = configparser.ConfigParser()
-        c.optionxform = str  # Make it case-sensitive
+        c.optionxform = str  # type: ignore  Make it case-sensitive
         c.add_section("SYSTEM")
         for sk, sv in system.items():
             if "_name" in sk.lower():
@@ -751,6 +753,8 @@ class ArchonController(Device):
 
         if not self._client:  # pragma: no cover
             raise RuntimeError("Connection is not open.")
+
+        assert self._client and self._client.reader
 
         n_binary = 0
         while True:
