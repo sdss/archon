@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0 - August 22, 2021
+
+### 🚀 New
+
+* Added `--count` flag to `lvm expose` to support multiple consecutive exposures.
+* Support for the three LVM CCDs.
+
+### ✨ Improved
+
+* Always close connections to remote TCP services to prevent leaving unclosed file descriptors.
+* Read pressure sensors concurrently.
+* Update LVM lamps.
+
+### 🔧 Fixed
+
+* Improve how auto-flushing is implemented. In its previous mode, `FlusOne` would often be called once between exposing and reading out, introducing an offset in the lines that manifested as a lines overscan of ~90 lines. The new implementation allows to disable auto-flushing before an exposure begins.
+
+
 ## 0.3.0 - June 20, 2021
 
 ### 🚀 New
