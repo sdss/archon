@@ -79,7 +79,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         action = "open" if open else "close"
 
-        self.command.debug(text=f'Moving shutters to {action}.')
+        self.command.debug(text=f"Moving shutters to {action}.")
 
         jobs = []
         for controller in self.expose_data.controllers:
