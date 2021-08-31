@@ -627,6 +627,7 @@ class ArchonController(Device):
         force: bool = False,
         block: bool = True,
         delay: int = 0,
+        wait_for: float | None = None,
     ):
         """Reads the detector into a buffer.
 
@@ -662,6 +663,11 @@ class ArchonController(Device):
         wbuf = frame["wbuf"]
 
         waited = 0.0
+
+        if wait_for is not None:
+            await asyncio.sleep(wait_for)
+            waited += wait_for
+
         while True:
             if waited > max_wait:
                 self.status = ControllerStatus.ERROR
