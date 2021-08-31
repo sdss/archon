@@ -42,6 +42,8 @@ def _output(
 async def init(command: Command, controller: ArchonController):
     """Initialises a controller."""
 
+    assert command.actor
+
     if not check_controller(command, controller):
         return
 
