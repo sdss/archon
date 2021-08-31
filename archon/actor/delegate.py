@@ -92,6 +92,7 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float = 1.0,
         readout: bool = True,
+        expose_parameters: Dict[str, Any] = {},
         **readout_params,
     ):
 
@@ -136,7 +137,13 @@ class ExposureDelegate(Generic[Actor_co]):
             etime = exposure_time + config["timeouts"]["expose_timeout"]
 
         jobs = [
-            asyncio.create_task(controller.expose(etime, readout=False))
+            asyncio.create_task(
+                controller.expose(
+                    etime,
+                    extra_parameters=expose_parameters,
+                    readout=False,
+                )
+            )
             for controller in controllers
         ]
 
