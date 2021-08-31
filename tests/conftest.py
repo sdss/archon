@@ -15,8 +15,12 @@ from typing import Iterable, Tuple, Union
 
 import pytest
 
+from archon import config
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
+
+
+config["archon"]["default_parameters"]["Exposures"] = 0
 
 
 CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
