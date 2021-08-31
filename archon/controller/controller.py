@@ -15,7 +15,7 @@ import re
 import warnings
 from collections.abc import AsyncIterator
 
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 
 import numpy
 from clu.device import Device
@@ -535,6 +535,7 @@ class ArchonController(Device):
         self,
         exposure_time: float = 1,
         readout: bool = True,
+        extra_parameters: Dict[str, Any] = {},
     ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
 
@@ -559,6 +560,9 @@ class ArchonController(Device):
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
+
+        for parameter in extra_parameters:
+            await self.set_param(parameter, extra_parameters[parameter])
 
         await self.send_command("RELEASETIMING")
 
@@ -623,7 +627,6 @@ class ArchonController(Device):
         force: bool = False,
         block: bool = True,
         delay: int = 0,
-        wait_for: Optional[float] = None,
     ):
         """Reads the detector into a buffer.
 
@@ -653,11 +656,7 @@ class ArchonController(Device):
         if not block:
             return
 
-        wait_for = wait_for or config["timeouts"]["readout_expected"]
         max_wait = config["timeouts"]["readout_max"]
-
-        assert wait_for
-        await asyncio.sleep(wait_for + delay)
 
         frame = await self.get_frame()
         wbuf = frame["wbuf"]
