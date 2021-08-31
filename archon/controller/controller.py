@@ -504,6 +504,12 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 0)
         await self.set_param("WaitCount", 0)
 
+        # Reset parameters to their default values.
+        if "default_parameters" in config["archon"]:
+            default_parameters = config["archon"]["default_parameters"]
+            for param in default_parameters:
+                await self.set_param(param, default_parameters[param])
+
         for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
             cmd = await self.send_command(cmd_str, timeout=1)
             if not cmd.succeeded():

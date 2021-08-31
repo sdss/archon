@@ -50,7 +50,7 @@ async def init(command: Command, controller: ArchonController):
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config", "i")
 
-    configuration_file: str = command.actor.config["archon_config_file"]
+    configuration_file: str = command.actor.config["archon"]["config_file"]
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
     configuration_file = configuration_file.format(archon_etc=archon_etc)
     if not os.path.isabs(configuration_file):
