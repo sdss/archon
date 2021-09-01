@@ -13,7 +13,6 @@ from typing import Any
 import click
 from drift import Drift, Relay
 
-from archon import config
 from archon.controller.controller import ArchonController
 
 from ..actor.commands import parser
