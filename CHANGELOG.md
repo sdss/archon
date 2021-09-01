@@ -1,5 +1,12 @@
 # Changelog
 
+## Next release
+
+### ✨ Improved
+
+* `archon init` accepts an optional parameters to define the ACF script to load.
+
+
 ## 0.4.0 - August 22, 2021
 
 ### 🚀 New
