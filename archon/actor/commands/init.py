@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import os
 
+import click
 from clu.command import Command
 
 import archon
@@ -38,8 +39,13 @@ def _output(
 
 
 @parser.command()
+@click.argument("CONFIG-FILE", type=str, required=False)
 @parallel_controllers()
-async def init(command: Command, controller: ArchonController):
+async def init(
+    command: Command,
+    controller: ArchonController,
+    config_file: str | None = None,
+):
     """Initialises a controller."""
 
     assert command.actor
@@ -50,15 +56,18 @@ async def init(command: Command, controller: ArchonController):
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config", "i")
 
-    configuration_file: str = command.actor.config["archon"]["config_file"]
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
-    configuration_file = configuration_file.format(archon_etc=archon_etc)
-    if not os.path.isabs(configuration_file):
+
+    if config_file is None:
+        default_config: str = command.actor.config["archon"]["config_file"]
+        config_file = default_config.format(archon_etc=archon_etc)
+
+    if not os.path.isabs(config_file):
         archon_root = os.path.dirname(os.path.realpath(archon.__file__))
-        configuration_file = os.path.join(archon_root, configuration_file)
+        config_file = os.path.join(archon_root, config_file)
 
     try:
-        await controller.write_config(configuration_file, applyall=True, poweron=False)
+        await controller.write_config(config_file, applyall=True, poweron=False)
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 
