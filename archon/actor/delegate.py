@@ -92,7 +92,7 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float = 1.0,
         readout: bool = True,
-        expose_parameters: Dict[str, Any] = {},
+        binning: int = 1,
         **readout_params,
     ):
 
@@ -111,6 +111,7 @@ class ExposureDelegate(Generic[Actor_co]):
             exposure_time=exposure_time,
             flavour=flavour,
             controllers=controllers,
+            binning=binning,
         )
 
         if not (await self.check_expose()):
@@ -137,7 +138,13 @@ class ExposureDelegate(Generic[Actor_co]):
             etime = exposure_time + config["timeouts"]["expose_timeout"]
 
         jobs = [
-            asyncio.create_task(controller.expose(etime, readout=False))
+            asyncio.create_task(
+                controller.expose(
+                    etime,
+                    readout=False,
+                    binning=binning,
+                )
+            )
             for controller in controllers
         ]
 
@@ -293,6 +300,7 @@ class ExposureDelegate(Generic[Actor_co]):
         header["IMAGETYP"] = expose_data.flavour
         header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
         header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
+        header["BINNING"] = (expose_data.binning, "Horizontal and vertical binning")
 
         header["CCD"] = ccd_name
 
@@ -361,10 +369,14 @@ class ExposureDelegate(Generic[Actor_co]):
         # frame, we allow to define the CCD area as a list of ranges and then we
         # provide options to reorder them.
 
+        bin = self.expose_data.binning
+
         areas = ccd_info["areas"]
         ccd_parts = []
         for area in areas:
-            ccd_parts.append(data[area[1] : area[3], area[0] : area[2]])
+            ccd_parts.append(
+                data[area[1] // bin : area[3] // bin, area[0] // bin : area[2] // bin]
+            )
 
         # Concatenate the different areas.
         if len(areas) > 1:
@@ -469,6 +481,7 @@ class ExposeData:
     exposure_no: int = 0
     header: Dict[str, Any] = field(default_factory=dict)
     delay_readout: int = 0
+    binning: int = 1
 
 
 def dict_get(d, k: str | list):

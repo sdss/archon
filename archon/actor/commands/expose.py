@@ -67,6 +67,13 @@ def expose(*args):
     help="Take an object frame",
 )
 @click.option(
+    "-b",
+    "--binning",
+    type=int,
+    default=1,
+    help="Binning factor",
+)
+@click.option(
     "--finish",
     "-f",
     "do_finish",
@@ -80,8 +87,11 @@ async def start(
     controller_list: tuple[str, ...],
     flavour: str,
     do_finish: bool,
+    binning: int = 1,
 ):
     """Exposes the cameras."""
+
+    assert command.actor
 
     selected_controllers: list[ArchonController]
 
@@ -106,6 +116,7 @@ async def start(
         selected_controllers,
         flavour=flavour,
         exposure_time=exposure_time,
+        binning=binning,
         readout=do_finish,
     )
 
@@ -138,6 +149,8 @@ async def finish(
 ):
     """Finishes the ongoing exposure."""
 
+    assert command.actor
+
     delegate = command.actor.expose_delegate
     if delegate is None:
         return command.fail(error="Cannot find expose delegate.")
@@ -168,6 +181,8 @@ async def abort(
     all_: bool,
 ):
     """Aborts the exposure."""
+
+    assert command.actor
 
     if all_:
         force = True

@@ -534,6 +534,7 @@ class ArchonController(Device):
     async def expose(
         self,
         exposure_time: float = 1,
+        binning: int = 1,
         readout: bool = True,
     ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
@@ -559,6 +560,9 @@ class ArchonController(Device):
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
+
+        await self.set_param("HorizontalBinning", binning)
+        await self.set_param("VerticalBinning", binning)
 
         await self.send_command("RELEASETIMING")
 
