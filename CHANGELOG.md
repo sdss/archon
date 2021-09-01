@@ -22,7 +22,7 @@
 
 ### 🔧 Fixed
 
-* Improve how auto-flushing is implemented. In its previous mode, `FlusOne` would often be called once between exposing and reading out, introducing an offset in the lines that manifested as a lines overscan of ~90 lines. The new implementation allows to disable auto-flushing before an exposure begins.
+* Improve how auto-flushing is implemented. In its previous mode, `FlushOne` would often be called once between exposing and reading out, introducing an offset in the lines that manifested as a lines overscan of ~90 lines. The new implementation allows to disable auto-flushing before an exposure begins.
 
 
 ## 0.3.0 - June 20, 2021
