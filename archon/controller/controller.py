@@ -504,6 +504,12 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 0)
         await self.set_param("WaitCount", 0)
 
+        # Reset parameters to their default values.
+        if "default_parameters" in config["archon"]:
+            default_parameters = config["archon"]["default_parameters"]
+            for param in default_parameters:
+                await self.set_param(param, default_parameters[param])
+
         for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
             cmd = await self.send_command(cmd_str, timeout=1)
             if not cmd.succeeded():
@@ -617,7 +623,7 @@ class ArchonController(Device):
         force: bool = False,
         block: bool = True,
         delay: int = 0,
-        wait_for: Optional[float] = None,
+        wait_for: float | None = None,
     ):
         """Reads the detector into a buffer.
 
@@ -647,16 +653,15 @@ class ArchonController(Device):
         if not block:
             return
 
-        wait_for = wait_for or config["timeouts"]["readout_expected"]
         max_wait = config["timeouts"]["readout_max"]
 
-        assert wait_for
-        await asyncio.sleep(wait_for + delay)
+        wait_for = wait_for or 3  # Min delay to ensure the new frame starts filling.
+        await asyncio.sleep(wait_for)
+        waited = wait_for
 
         frame = await self.get_frame()
         wbuf = frame["wbuf"]
 
-        waited = 0.0
         while True:
             if waited > max_wait:
                 self.status = ControllerStatus.ERROR

@@ -92,6 +92,7 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float = 1.0,
         readout: bool = True,
+        expose_parameters: Dict[str, Any] = {},
         **readout_params,
     ):
 

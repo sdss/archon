@@ -166,7 +166,8 @@ devices:
 # timing script. {archon_etc} gets completed with the path of the etc directory once
 # installed. If the path is not absolute, the root of the package is used as working
 # directory.
-archon_config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
+archon:
+  config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
 
 # Write a log for each exposure (requires files.lab_log to be set).
 write_log: true
