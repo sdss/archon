@@ -337,11 +337,6 @@ async def lamps(command, controllers, lamp, state, list_):
     default=0,
     help="Slow down the readout by this many seconds.",
 )
-@click.option(
-    "--fast-readout",
-    type=int,
-    help="Fast readout factor.",
-)
 @click.option("--lamp-current", type=str)
 @click.option("--test-no", type=str)
 @click.option("--test-iteration", type=str)
@@ -355,7 +350,6 @@ async def expose(
     flavour,
     count,
     delay_readout,
-    fast_readout,
     lamp_current,
     test_no,
     test_iteration,
@@ -377,10 +371,6 @@ async def expose(
 
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
-
-    pixel_clock = config["archon"]["default_parameters"]["PIXEL_CLOCK"]
-    if fast_readout:
-        pixel_clock /= fast_readout
 
     for __ in range(count):
 
@@ -404,7 +394,6 @@ async def expose(
             exposure_time=exposure_time,
             readout=True,
             delay_readout=delay_readout,
-            expose_parameters={"PIXEL_CLOCK": pixel_clock},
         )
 
         if not result:

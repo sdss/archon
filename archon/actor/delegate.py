@@ -137,13 +137,7 @@ class ExposureDelegate(Generic[Actor_co]):
             etime = exposure_time + config["timeouts"]["expose_timeout"]
 
         jobs = [
-            asyncio.create_task(
-                controller.expose(
-                    etime,
-                    extra_parameters=expose_parameters,
-                    readout=False,
-                )
-            )
+            asyncio.create_task(controller.expose(etime, readout=False))
             for controller in controllers
         ]
 

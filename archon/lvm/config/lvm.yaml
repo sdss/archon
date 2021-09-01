@@ -168,8 +168,6 @@ devices:
 # directory.
 archon:
   config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
-  default_parameters:
-    PIXEL_CLOCK: 440
 
 # Write a log for each exposure (requires files.lab_log to be set).
 write_log: true
