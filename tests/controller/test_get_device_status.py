@@ -22,7 +22,7 @@ async def test_get_device_status(controller: ArchonController):
     assert len(status) == 3
     assert status["key1"] == 1
     assert status["key2"] == -2.1
-    assert controller.status & ControllerStatus.POWERON
+    assert controller.status
 
 
 @pytest.mark.commands([["STATUS", ["<{cid}POWERGOOD=0"]]])

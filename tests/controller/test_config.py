@@ -152,6 +152,15 @@ async def test_write_config(
     send_command_mock.assert_any_call("WCONFIG0000CONFIG/1=1", timeout=2)
 
 
+async def test_write_config_string(
+    controller: ArchonController,
+    send_command_mock,
+    config_file,
+):
+    await controller.write_config(open(config_file).read())
+    send_command_mock.assert_any_call("WCONFIG0000CONFIG/1=1", timeout=2)
+
+
 async def test_write_config_applyall_poweron(
     controller: ArchonController,
     send_command_mock,
