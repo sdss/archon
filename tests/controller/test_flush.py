@@ -23,7 +23,7 @@ async def test_flush(controller: ArchonController, mocker):
         "set_param",
         wraps=controller.set_param,
     )
-    controller.status = ControllerStatus.EXPOSING
+    controller.update_status(ControllerStatus.EXPOSING)
 
     await controller.flush(wait_for=0.01)
 

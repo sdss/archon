@@ -37,7 +37,7 @@ async def test_expose(controller: ArchonController, mocker):
 
 
 async def test_expose_not_idle(controller: ArchonController):
-    controller.status = ControllerStatus.READOUT_PENDING
+    controller.update_status(ControllerStatus.READOUT_PENDING)
     with pytest.raises(ArchonControllerError):
         await controller.expose(2)
 
@@ -77,7 +77,7 @@ async def test_abort_no_readout(controller: ArchonController, mocker):
 
 
 async def test_abort_no_exposing(controller: ArchonController):
-    controller.status = ControllerStatus.IDLE
+    controller.update_status(ControllerStatus.IDLE)
 
     with pytest.raises(ArchonControllerError):
         await controller.abort()

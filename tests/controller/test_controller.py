@@ -92,9 +92,9 @@ async def test_controller_reset(controller: ArchonController):
 
 async def test_yield_status(controller: ArchonController):
     async def set_status():
-        controller.status = ControllerStatus.IDLE
+        controller.update_status(ControllerStatus.IDLE)
         await asyncio.sleep(0.01)
-        controller.status = ControllerStatus.EXPOSING
+        controller.update_status(ControllerStatus.EXPOSING)
 
     asyncio.create_task(set_status())
 
@@ -103,7 +103,7 @@ async def test_yield_status(controller: ArchonController):
         if status.name == "EXPOSING":
             break
 
-    assert status.name == "EXPOSING"
+    assert status and status.name == "EXPOSING"
 
 
 async def test_start_with_reset(controller: ArchonController):

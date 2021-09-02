@@ -71,7 +71,7 @@ async def test_fetch_buffer_not_complete(controller: ArchonController):
 
 
 async def test_fetch_already_fetching(controller: ArchonController):
-    controller.status = ControllerStatus.FETCHING
+    controller.update_status(ControllerStatus.FETCHING)
 
     with pytest.raises(ArchonControllerError):
         await controller.fetch()

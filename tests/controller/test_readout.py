@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.asyncio]
 
 
 async def test_readout_bad_state(controller: ArchonController):
-    controller.status = ControllerStatus.EXPOSING
+    controller.update_status(ControllerStatus.EXPOSING)
 
     with pytest.raises(ArchonControllerError):
         await controller.readout()
@@ -33,7 +33,7 @@ async def test_readout(controller: ArchonController, mocker):
         "set_param",
         wraps=controller.set_param,
     )
-    controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    controller.update_status([ControllerStatus.IDLE, ControllerStatus.READOUT_PENDING])
 
     await controller.readout(wait_for=0.01)
 
@@ -42,7 +42,7 @@ async def test_readout(controller: ArchonController, mocker):
 
 
 async def test_readout_no_block(controller: ArchonController):
-    controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    controller.update_status([ControllerStatus.IDLE, ControllerStatus.READOUT_PENDING])
 
     await controller.readout(block=False)
 
@@ -55,7 +55,7 @@ async def test_readout_delay(controller: ArchonController, mocker):
         "set_param",
         wraps=controller.set_param,
     )
-    controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    controller.update_status([ControllerStatus.IDLE, ControllerStatus.READOUT_PENDING])
 
     await controller.readout(delay=60, block=False)
 
@@ -65,7 +65,7 @@ async def test_readout_delay(controller: ArchonController, mocker):
 
 @pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=0"]]])
 async def test_readout_max_wait(controller: ArchonController):
-    controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    controller.update_status([ControllerStatus.IDLE, ControllerStatus.READOUT_PENDING])
 
     config["timeouts"]["readout_max"] = 0.01
 
@@ -75,7 +75,7 @@ async def test_readout_max_wait(controller: ArchonController):
 
 @pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=0"]]])
 async def test_readout_max_wait_one_loop(controller: ArchonController):
-    controller.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+    controller.update_status([ControllerStatus.IDLE, ControllerStatus.READOUT_PENDING])
 
     config["timeouts"]["readout_max"] = 1
 
