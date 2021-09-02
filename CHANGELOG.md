@@ -6,7 +6,7 @@
 ### 🚀 New
 
 * [#29](https://github.com/sdss/archon/pull/29) Support binning.
-* [#30](https://github.com/sdss/archon/pull/30) HDR (32-bit sampling) mode can be enabled when loading the script by running `archon lvm init --hdr [<script>]`.
+* [#30](https://github.com/sdss/archon/pull/30) HDR (32-bit sampling) mode can be enabled when loading the script by running `archon init --hdr [<script>]`.
 
 ### ✨ Improved
 
