@@ -405,7 +405,7 @@ class ArchonController(Device):
 
     async def write_config(
         self,
-        path: str | os.PathLike[str],
+        input: str | os.PathLike[str],
         applyall: bool = False,
         poweron: bool = False,
         timeout: float = None,
@@ -415,9 +415,10 @@ class ArchonController(Device):
 
         Parameters
         ----------
-        path
+        input
             The path to the configuration file to load. It must be in INI format with
-            a section called ``[CONFIG]``.
+            a section called ``[CONFIG]``. It can also be a string containing the
+            configuration itself.
         applyall
             Whether to run ``APPLYALL`` after successfully sending the configuration.
         poweron
@@ -440,11 +441,14 @@ class ArchonController(Device):
         timeout = timeout or config["timeouts"]["write_config_timeout"]
         delay: float = config["timeouts"]["write_config_delay"]
 
-        if not os.path.exists(path):
-            raise ArchonControllerError(f"File {path} does not exist.")
-
         c = configparser.ConfigParser()
-        c.read(path)
+
+        input = str(input)
+        if os.path.exists(input):
+            c.read(input)
+        else:
+            c.read_string(input)
+
         if not c.has_section("CONFIG"):
             raise ArchonControllerError(
                 "The config file does not have a CONFIG section."

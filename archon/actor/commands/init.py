@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 
 import click
 from clu.command import Command
@@ -40,11 +41,13 @@ def _output(
 
 @parser.command()
 @click.argument("CONFIG-FILE", type=str, required=False)
+@click.option("--hdr", is_flag=True, help="Set HDR mode.")
 @parallel_controllers()
 async def init(
     command: Command,
     controller: ArchonController,
     config_file: str | None = None,
+    hdr=False,
 ):
     """Initialises a controller."""
 
@@ -66,8 +69,15 @@ async def init(
         archon_root = os.path.dirname(os.path.realpath(archon.__file__))
         config_file = os.path.join(archon_root, config_file)
 
+    if not os.path.exists(config_file):
+        return command.fail(error=f"Cannot find file {config_file}")
+
+    data = open(config_file).read()
+    if hdr:
+        data = re.sub("(SAMPLEMODE)=[01]", "\\1=1", data)
+
     try:
-        await controller.write_config(config_file, applyall=True, poweron=False)
+        await controller.write_config(data, applyall=True, poweron=False)
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 
