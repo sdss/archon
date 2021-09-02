@@ -303,7 +303,7 @@ class ArchonController(Device):
 
         return frame
 
-    async def read_config(self, save: str | bool = False) -> dict[str, Any]:
+    async def read_config(self, save: str | bool = False) -> list[str]:
         """Reads the configuration from the controller.
 
         Parameters
@@ -348,7 +348,6 @@ class ArchonController(Device):
 
         # Trim possible empty lines at the end.
         config_lines = "\n".join(lines).strip().splitlines()
-        config_dict = {}
 
         # The GUI ACF file includes the system information, so we get it.
         system = await self.get_system()
@@ -366,7 +365,6 @@ class ArchonController(Device):
         for cl in config_lines:
             k, v = parse_line(cl)
             c.set("CONFIG", k, v)
-            config_dict[k] = v
 
         if save is not False and save is not None:
             if isinstance(save, str):
@@ -376,7 +374,7 @@ class ArchonController(Device):
             with open(path, "w") as f:
                 c.write(f, space_around_delimiters=False)
 
-        return config_dict
+        return config_lines
 
     async def write_config(
         self,
