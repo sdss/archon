@@ -132,7 +132,7 @@ class ExposureDelegate(Generic[Actor_co]):
         # If the exposure is a bias or dark we don't open the shutter, but
         # otherwise we add an extra timeout to allow for the code that handles
         # the shutter to open and close it and control the exposure time that way.
-        if exposure_time == 0.0 or flavour in ["bias", "dark"]:
+        if exposure_time == 0.0 or flavour == "bias":
             etime = 0.0
         else:
             etime = exposure_time + config["timeouts"]["expose_timeout"]
@@ -150,7 +150,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         try:
             c_list = ", ".join([controller.name for controller in controllers])
-            self.command.debug(text=f"Starting exposure in controllers {c_list}.")
+            self.command.debug(text=f"Starting exposure in controllers: {c_list}.")
             await asyncio.gather(*jobs)
         except BaseException as err:
             self.command.error(error=str(err))
@@ -361,40 +361,42 @@ class ExposureDelegate(Generic[Actor_co]):
         self,
         data: numpy.ndarray,
         ccd_name: str,
-        ccd_info: Dict[str, Any],
+        controller_info: Dict[str, Any],
     ) -> numpy.ndarray:
         """Retrieves the CCD data from the buffer frame."""
 
-        # Because the archon can order the output taplines in different ways in the
-        # frame, we allow to define the CCD area as a list of ranges and then we
-        # provide options to reorder them.
+        binning = self.expose_data.binning
 
-        bin = self.expose_data.binning
+        parameters = controller_info["parameters"]
 
-        areas = ccd_info["areas"]
-        ccd_parts = []
-        for area in areas:
-            ccd_parts.append(
-                data[area[1] // bin : area[3] // bin, area[0] // bin : area[2] // bin]
-            )
+        pixels = parameters["pixels"]
+        lines = parameters["lines"]
+        taps = parameters["taps_per_detector"]
 
-        # Concatenate the different areas.
-        if len(areas) > 1:
-            ccd_data = numpy.concatenate(
-                ccd_parts,
-                axis=ccd_info.get("concatenate_axis", 0),
-            )
-        else:
-            ccd_data = ccd_parts[0]
+        framemode = parameters.get("framemode", "top")
+        if framemode != "top":
+            raise ValueError("Only framemode top is supported at this time.")
 
-        if ccd_info.get("framemode", None):
-            if ccd_info["framemode"] == "top":
-                # This is useful if FRAMEMODE="TOP" (first read rows are always the
-                # first rows in the buffer array).
-                splits = numpy.split(ccd_data, 2, axis=1)
-                splits[0] = splits[0][::-1, :]
-                splits[1] = splits[1][:, ::-1]
-                ccd_data = numpy.vstack(splits[::-1])
+        ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
+        x0_base = ccd_index * pixels * taps
+
+        ccd_taps = []
+        for tap in range(taps):
+            y0 = 0
+            y1 = lines // binning
+
+            if tap % 2 == 0:  # L tap
+                x0 = x0_base + tap * pixels
+                x1 = x0 + pixels // binning
+            else:  # R tap
+                x0 = x0_base + (tap + 1) * pixels - pixels // binning
+                x1 = x0 + pixels // binning
+
+            ccd_taps.append(data[y0:y1, x0:x1])
+
+        bottom = numpy.hstack(ccd_taps[0 : len(ccd_taps) // 2])
+        top = numpy.hstack(ccd_taps[len(ccd_taps) // 2 :])
+        ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
 
         return ccd_data
 
@@ -412,11 +414,11 @@ class ExposureDelegate(Generic[Actor_co]):
         self.command.debug(text=f"Fetching {controller.name} buffer.")
         data = await controller.fetch()
 
-        ccd_info = config["controllers"][controller.name]["detectors"]
+        controller_info = config["controllers"][controller.name]
         hdus = []
-        for ccd_name in ccd_info:
+        for ccd_name in controller_info["detectors"]:
             header = await self.build_base_header(controller, ccd_name)
-            ccd_data = self._get_ccd_data(data, ccd_name, ccd_info[ccd_name])
+            ccd_data = self._get_ccd_data(data, ccd_name, controller_info)
             hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
 
         return hdus

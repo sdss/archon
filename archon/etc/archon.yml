@@ -4,9 +4,9 @@
 # configuration.
 
 timeouts:
-  controller_connect: 1
+  controller_connect: 5
   write_config_timeout: 2
-  write_config_delay: 0.001
+  write_config_delay: 0.0001
   expose_timeout: 2
   readout_expected: 40
   readout_max: 60
