@@ -46,10 +46,14 @@ class ControllerStatus(enum.Flag):
     FETCHING = 0x20
     FLUSHING = 0x40
     ERROR = 0x80
-    POWERON = 0x100
-    POWERBAD = 0x200
+    POWERBAD = 0x100
+
+    ACTIVE = EXPOSING | READING | FETCHING | FLUSHING
+    ERRORED = ERROR | POWERBAD
 
     def get_flags(self):
         """Returns the the flags that compose the bit."""
 
-        return [bit for bit in ControllerStatus if bit & self]
+        skip = ["ACTIVE", "ERRORED"]
+
+        return [b for b in ControllerStatus if b & self and b.name not in skip]

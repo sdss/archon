@@ -82,12 +82,47 @@ class ArchonController(Device):
 
         return self._status
 
-    @status.setter
-    def status(self, value: ControllerStatus):
-        """Sets the controller status."""
+    def update_status(
+        self,
+        bits: ControllerStatus | list[ControllerStatus],
+        mode="on",
+        notify=True,
+    ):
+        """Updates the status bitmask, allowing to turn on, off, or toggle a bit."""
 
-        self._status = value
-        self.__status_event.set()
+        if not isinstance(bits, (list, tuple)):
+            bits = [bits]
+
+        # Check that we don't get IDLE and ACTIVE at the same time
+        all_bits = ControllerStatus(0)
+        for bit in bits:
+            all_bits |= bit
+
+        if (ControllerStatus.ACTIVE & all_bits) and (ControllerStatus.IDLE & all_bits):
+            raise ValueError("Cannot set IDLE and ACTIVE bits at the same time.")
+
+        status = self.status
+
+        for bit in bits:
+            if mode == "on":
+                status |= bit
+            elif mode == "off":
+                status &= ~bit
+            elif mode == "toggle":
+                status ^= bit
+            else:
+                raise ValueError(f"Invalid mode '{mode}'.")
+
+        # Make sure that we don't have IDLE and ACTIVE states at the same time.
+        if ControllerStatus.IDLE in bits:
+            status &= ~ControllerStatus.ACTIVE
+        elif status & ControllerStatus.ACTIVE:
+            status &= ~ControllerStatus.IDLE
+
+        self._status = status
+
+        if notify:
+            self.__status_event.set()
 
     async def yield_status(self) -> AsyncIterator[ControllerStatus]:
         """Asynchronous generator yield the status of the controller."""
@@ -267,18 +302,10 @@ class ArchonController(Device):
             for (key, value) in map(lambda k: k.split("="), keywords)
         }
 
-        # Set power bit.
-        bits = self._status.value
-        bits &= ~(ControllerStatus.POWERON | ControllerStatus.POWERBAD).value
-
-        power_bits: int = 0
         if status["powergood"] != 1:
-            power_bits |= ControllerStatus.POWERBAD.value
+            self.update_status(ControllerStatus.POWERBAD)
         else:
-            power_bits |= ControllerStatus.POWERON.value
-
-        bits |= power_bits
-        self.status = ControllerStatus(bits)
+            self.update_status(ControllerStatus.POWERBAD, "off")
 
         return status
 
@@ -434,7 +461,7 @@ class ArchonController(Device):
 
         notifier("Clearing previous configuration")
         if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
-            self.status = ControllerStatus.ERROR
+            self.update_status(ControllerStatus.ERROR)
             raise ArchonControllerError("Failed running CLEARCONFIG.")
 
         notifier("Sending configuration lines")
@@ -450,7 +477,7 @@ class ArchonController(Device):
                 cmd.status == ArchonCommandStatus.FAILED
                 or cmd.status == ArchonCommandStatus.TIMEDOUT
             ):
-                self.status = ControllerStatus.ERROR
+                self.update_status(ControllerStatus.ERROR)
                 await self.send_command("POLLON")
                 raise ArchonControllerError(
                     f"Failed sending line {cmd.raw!r} ({cmd.status.name})"
@@ -466,7 +493,7 @@ class ArchonController(Device):
             notifier("Sending APPLYALL")
             cmd = await self.send_command("APPLYALL", timeout=5)
             if not cmd.succeeded():
-                self.status = ControllerStatus.ERROR
+                self.update_status(ControllerStatus.ERROR)
                 raise ArchonControllerError(
                     f"Failed sending APPLYALL ({cmd.status.name})"
                 )
@@ -475,7 +502,7 @@ class ArchonController(Device):
                 notifier("Sending POWERON")
                 cmd = await self.send_command("POWERON", timeout=timeout)
                 if not cmd.succeeded():
-                    self.status = ControllerStatus.ERROR
+                    self.update_status(ControllerStatus.ERROR)
                     raise ArchonControllerError(
                         f"Failed sending POWERON ({cmd.status.name})"
                     )
@@ -511,13 +538,13 @@ class ArchonController(Device):
         for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
             cmd = await self.send_command(cmd_str, timeout=1)
             if not cmd.succeeded():
-                self.status = ControllerStatus.ERROR
+                self.update_status(ControllerStatus.ERROR)
                 raise ArchonControllerError(
                     f"Failed sending {cmd_str} ({cmd.status.name})"
                 )
 
         self._status = ControllerStatus.IDLE
-        await self.get_device_status()  # Sets power and other bits.
+        await self.get_device_status()  # Sets power bit.
 
     async def set_param(self, param: str, value: int) -> ArchonCommand:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
@@ -543,7 +570,9 @@ class ArchonController(Device):
         that the readout has started.
         """
 
-        if ControllerStatus.READOUT_PENDING & self.status:
+        CS = ControllerStatus
+
+        if CS.READOUT_PENDING & self.status:
             raise ArchonControllerError(
                 "Controller has a readout pending. Read the device or flush."
             )
@@ -564,19 +593,24 @@ class ArchonController(Device):
 
         await self.send_command("RELEASETIMING")
 
-        self.status = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
+        self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
 
         async def update_state():
             await asyncio.sleep(exposure_time + 0.5)
-            if not self.status & ControllerStatus.EXPOSING:  # Must have been aborted.
+            if not self.status & CS.EXPOSING:  # Must have been aborted.
                 return
             if readout is False:
-                self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+                self.update_status([CS.IDLE, CS.READOUT_PENDING])
                 return
             frame = await self.get_frame()
             wbuf = frame["wbuf"]
             if frame[f"buf{wbuf}complete"] == 0:
-                self.status = ControllerStatus.READING
+                self.update_status(
+                    [CS.EXPOSING, CS.READOUT_PENDING],
+                    "off",
+                    notify=False,
+                )
+                self.update_status(CS.READING)
             else:
                 raise ArchonControllerError("Controller is not reading.")
 
@@ -589,6 +623,8 @@ class ArchonController(Device):
         Aborting does not flush the charge.
         """
 
+        CS = ControllerStatus
+
         if not self.status & ControllerStatus.EXPOSING:
             raise ArchonControllerError("Controller is not exposing.")
 
@@ -596,9 +632,10 @@ class ArchonController(Device):
         await self.set_param("AbortExposure", 1)
 
         if readout:
-            self.status = ControllerStatus.READING
+            self.update_status([CS.EXPOSING, CS.READOUT_PENDING], "off", notify=False)
+            self.update_status(CS.READING)
         else:
-            self.status = ControllerStatus.IDLE | ControllerStatus.READOUT_PENDING
+            self.update_status([CS.IDLE, CS.READOUT_PENDING])
 
         return
 
@@ -611,14 +648,14 @@ class ArchonController(Device):
         await self.set_param("DoFlush", 1)
         await self.send_command("RELEASETIMING")
 
-        self.status = ControllerStatus.FLUSHING
+        self.update_status(ControllerStatus.FLUSHING)
 
         wait_for = wait_for or config["timeouts"]["flushing"]
         assert wait_for
 
         await asyncio.sleep(wait_for * count)
 
-        self.status = ControllerStatus.IDLE
+        self.update_status(ControllerStatus.IDLE)
 
     async def readout(
         self,
@@ -650,7 +687,8 @@ class ArchonController(Device):
 
         await self.send_command("RELEASETIMING")
 
-        self.status = ControllerStatus.READING
+        self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)
+        self.update_status(ControllerStatus.READING)
 
         if not block:
             return
@@ -666,13 +704,13 @@ class ArchonController(Device):
 
         while True:
             if waited > max_wait:
-                self.status = ControllerStatus.ERROR
+                self.update_status(ControllerStatus.ERROR)
                 raise ArchonControllerError(
                     "Timed out waiting for controller to finish reading."
                 )
             frame = await self.get_frame()
             if frame[f"buf{wbuf}complete"] == 1:
-                self.status = ControllerStatus.IDLE
+                self.update_status(ControllerStatus.IDLE)
                 # Reset autoflushing.
                 await self.set_autoflush(True)
                 return
@@ -719,7 +757,7 @@ class ArchonController(Device):
             if frame_info[f"buf{buffer_no}complete"] == 0:
                 raise ArchonControllerError(f"Buffer frame {buffer_no} cannot be read.")
 
-        self.status |= ControllerStatus.FETCHING
+        self.update_status(ControllerStatus.FETCHING)
 
         # Lock for reading
         notifier(f"Locking buffer {buffer_no}")
@@ -757,7 +795,7 @@ class ArchonController(Device):
         arr = arr.reshape(height, width)
 
         # Turn off FETCHING bit
-        self.status &= ~ControllerStatus.FETCHING
+        self.update_status(ControllerStatus.IDLE)
 
         return arr
 
