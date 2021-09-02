@@ -303,7 +303,7 @@ class ArchonController(Device):
 
         return frame
 
-    async def read_config(self, save: str | bool = False) -> list[str]:
+    async def read_config(self, save: str | bool = False) -> dict[str, Any]:
         """Reads the configuration from the controller.
 
         Parameters
@@ -330,7 +330,7 @@ class ArchonController(Device):
         await self.send_command("POLLOFF")
 
         cmd_strs = [f"RCONFIG{n_line:04X}" for n_line in range(MAX_CONFIG_LINES)]
-        done, failed = await self.send_many(cmd_strs, max_chunk=50, timeout=0.5)
+        done, failed = await self.send_many(cmd_strs, max_chunk=100, timeout=0.5)
 
         await self.send_command("POLLON")
 
@@ -347,9 +347,8 @@ class ArchonController(Device):
         lines = [str(cmd.replies[0]) for cmd in done]
 
         # Trim possible empty lines at the end.
-        config = "\n".join(lines).strip().splitlines()
-        if not save:
-            return config
+        config_lines = "\n".join(lines).strip().splitlines()
+        config_dict = {}
 
         # The GUI ACF file includes the system information, so we get it.
         system = await self.get_system()
@@ -364,18 +363,20 @@ class ArchonController(Device):
             k, v = parse_line(sl)
             c.set("SYSTEM", k, v)
         c.add_section("CONFIG")
-        for cl in config:
+        for cl in config_lines:
             k, v = parse_line(cl)
             c.set("CONFIG", k, v)
+            config_dict[k] = v
 
-        if isinstance(save, str):
-            path = save
-        else:
-            path = os.path.expanduser(f"~/archon_{self.name}.acf")
-        with open(path, "w") as f:
-            c.write(f, space_around_delimiters=False)
+        if save is not False and save is not None:
+            if isinstance(save, str):
+                path = save
+            else:
+                path = os.path.expanduser(f"~/archon_{self.name}.acf")
+            with open(path, "w") as f:
+                c.write(f, space_around_delimiters=False)
 
-        return config
+        return config_dict
 
     async def write_config(
         self,
@@ -445,7 +446,6 @@ class ArchonController(Device):
         await self.send_command("POLLOFF")
 
         cmd_strs = [f"WCONFIG{n_line:04X}{line}" for n_line, line in enumerate(lines)]
-        # done, failed = await self.send_many(cmd_strs, max_chunk=200, timeout=timeout)
         for line in cmd_strs:
             cmd = await self.send_command(line, timeout=timeout)
             if (
