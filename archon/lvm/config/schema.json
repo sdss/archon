@@ -61,9 +61,11 @@
       "type": "object",
       "properties": {
         "HgAr": { "type": "boolean" },
+        "HgNe": { "type": "boolean" },
         "MI150": { "type": "boolean" },
-        "LED": { "type": "boolean" },
+        "FFS": { "type": "boolean" },
         "Argon": { "type": "boolean" },
+        "Xenon": { "type": "boolean" },
         "Neon": { "type": "boolean" },
         "Krypton": { "type": "boolean" },
         "LDLS": { "type": "boolean" }

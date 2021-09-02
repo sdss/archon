@@ -32,9 +32,6 @@ devices:
         host: 10.7.45.28
         port: 7778
   lamps:
-    HgAr:
-      host: 10.7.45.22
-      outlet: 3
     MI150:
       host: 10.7.45.22
       outlet: 4
@@ -44,6 +41,12 @@ devices:
     Argon:
       host: 10.7.45.31
       outlet: 1
+    Xenon:
+      host: 10.7.45.31
+      outlet: 2
+    HgAr:
+      host: 10.7.45.31
+      outlet: 3
     LDLS:
       host: 10.7.45.31
       outlet: 4
@@ -53,6 +56,9 @@ devices:
     Neon:
       host: 10.7.45.31
       outlet: 6
+    HgNe:
+      host: 10.7.45.31
+      outlet: 7
   pressure:
     r1:
       host: 10.7.45.30
