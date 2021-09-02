@@ -90,6 +90,7 @@ class LVMActor(ArchonActor):
             self.google_client = None
 
         # Model callbacks
+        self._log_lock = asyncio.Lock()
         self.model["filename"].register_callback(self.fill_log)
 
         # Timed commands
@@ -242,12 +243,13 @@ class LVMActor(ArchonActor):
             "values": [data],
         }
 
-        spreadsheet_id = self.config["exposure_list_sheet"]
-        r = await self.google_client.post(
-            f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
-            "values/Sheet1!A1:A1:append?valueInputOption=USER_ENTERED",
-            json=google_data,
-        )
+        async with self._log_lock:
+            spreadsheet_id = self.config["exposure_list_sheet"]
+            r = await self.google_client.post(
+                f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
+                "values/Sheet1!A1:A1:append?valueInputOption=USER_ENTERED",
+                json=google_data,
+            )
 
-        if not r.status_code == 200:
-            warnings.warn("Failed writing exposure to spreadsheet.", ArchonWarning)
+            if not r.status_code == 200:
+                warnings.warn("Failed writing exposure to spreadsheet.", ArchonWarning)
