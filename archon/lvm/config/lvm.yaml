@@ -1,24 +1,22 @@
 ---
-# A dictionary of controller name to Archon controller connection parameters. The
-# detectors key determines the names and areas of each CCD in the buffer in the format
-# [x0, y0, x1, y1]. The sensor key indicates the identifier (A, B, C) assigned by the
-# Archon constroller to that detector.
+# A dictionary of controller name to Archon controller connection parameters. The sensor
+# key indicates the identifier (A, B, C) assigned by the Archon constroller to that
+# detector.
 controllers:
   sp1:
     host: 10.7.45.26
     port: 4242
+    parameters:
+      pixels: 2060
+      lines: 2040
+      taps_per_detector: 4
+      framemode: top
     detectors:
       r1:
-        areas: [[0, 0, 8240, 2040]]
-        framemode: top
         sensor: A
       b1:
-        areas: [[8240, 0, 16480, 2040]]
-        framemode: top
         sensor: B
       z1:
-        areas: [[16480, 0, 24720, 2040]]
-        framemode: top
         sensor: C
 
 devices:

@@ -2,6 +2,11 @@
 
 ## Next release
 
+
+### 🚀 New
+
+* [#29](https://github.com/sdss/archon/pull/29) Support binning.
+
 ### ✨ Improved
 
 * `archon init` accepts an optional parameters to define the ACF script to load.
