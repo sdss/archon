@@ -12,6 +12,10 @@
 
 * `archon init` accepts an optional parameters to define the ACF script to load.
 
+### 🔧 Fixed
+
+* Fixed error when moving shutter or hartmann doors manually.
+
 
 ## 0.4.0 - August 22, 2021
 

@@ -174,16 +174,16 @@ async def move_motor(
     w.write(b"\00\07" + sequence.encode() + b"\r")
     await w.drain()
 
-    while True:
-        try:
+    try:
+        while True:
             reply = await asyncio.wait_for(r.readuntil(b"\r"), 3)
             if b"ERR" in reply:
                 return False
             elif b"DONE" in reply:
                 return True
-        finally:
-            w.close()
-            await w.wait_closed()
+    finally:
+        w.close()
+        await w.wait_closed()
 
 
 async def report_motors(
