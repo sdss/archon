@@ -96,7 +96,6 @@ omit = [
     "*/__init__.py",
     "archon/__main__.py",
     "archon/actor/*",
-    "archon/scripts/*",
     "archon/lvm/*",
     "archon/boss/*"
 ]
