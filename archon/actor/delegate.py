@@ -170,7 +170,7 @@ class ExposureDelegate(Generic[Actor_co]):
             fd.write(str(next_exp_no + 1))
 
         if readout:
-            await asyncio.sleep(exposure_time)
+            await asyncio.sleep(etime)
             return await self.readout(self.command, **readout_params)
 
         return True
