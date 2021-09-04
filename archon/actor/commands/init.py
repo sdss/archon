@@ -53,9 +53,6 @@ async def init(
 
     assert command.actor
 
-    if not check_controller(command, controller):
-        return
-
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config", "i")
 
@@ -110,7 +107,6 @@ async def init(
             f"Failed while powering on ({acmd.status.name})",
         )
 
-    await asyncio.sleep(1)
     await controller.reset()
 
     return True

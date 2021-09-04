@@ -48,7 +48,11 @@ async def controller(request, unused_tcp_port: int):
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         while True:
-            data = await reader.readuntil()
+            try:
+                data = await reader.readuntil()
+            except (asyncio.IncompleteReadError, ConnectionResetError):
+                break
+
             data = data.decode()
 
             matched = re.match(

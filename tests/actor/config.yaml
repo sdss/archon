@@ -1,0 +1,30 @@
+---
+controllers:
+  sp1:
+    host: 10.7.45.26
+    port: 4242
+    parameters:
+      pixels: 2060
+      lines: 2040
+      taps_per_detector: 4
+      framemode: top
+    detectors:
+      r1:
+        sensor: A
+      b1:
+        sensor: B
+      z1:
+        sensor: C
+
+archon:
+  config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
+
+files:
+  data_dir: '/data/spectro/lvm'
+  split: true
+  template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
+
+actor:
+  name: archon
+  host: localhost
+  port: 5672

@@ -95,14 +95,13 @@ include = ["archon/*"]
 omit = [
     "*/__init__.py",
     "archon/__main__.py",
-    "archon/actor/*",
     "archon/lvm/*",
     "archon/boss/*"
 ]
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
+    "# pragma: no cover",
     "def __repr__"
 ]
 
