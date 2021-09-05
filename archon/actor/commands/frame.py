@@ -86,7 +86,7 @@ async def fetch(
     controller_name: str,
     buffer: str,
     file,
-):
+):  # pragma: no cover
     """Low-level command to fetch a buffer and write it to disk."""
 
     if controller_name not in controllers:
