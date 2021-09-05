@@ -8,6 +8,9 @@
 
 import pytest
 
+from archon.actor.actor import ArchonActor
+from archon.exceptions import ArchonError
+
 
 pytestmark = [pytest.mark.asyncio]
 
@@ -52,6 +55,34 @@ BIGBUF=0
 async def test_init_bad_filename(actor):
 
     command = await actor.invoke_mock_command("init dir/badfile.acf")
+    await command
+
+    assert command.status.did_fail
+
+
+async def test_init_write_fails(actor: ArchonActor, mocker):
+
+    mocker.patch.object(
+        actor.controllers["sp1"],
+        "write_config",
+        side_effect=ArchonError,
+    )
+
+    command = await actor.invoke_mock_command("init")
+    await command
+
+    assert command.status.did_fail
+
+
+async def test_init_set_param_fails(actor: ArchonActor, mocker):
+
+    mocker.patch.object(
+        actor.controllers["sp1"],
+        "set_param",
+        side_effect=ArchonError,
+    )
+
+    command = await actor.invoke_mock_command("init")
     await command
 
     assert command.status.did_fail
