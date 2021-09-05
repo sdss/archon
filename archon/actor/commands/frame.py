@@ -49,9 +49,9 @@ async def status(
         frame = await controller.get_frame()
     except ArchonError as err:
         return command.fail(
-            text={
+            error={
                 "controller": controller.name,
-                "text": err,
+                "error": err,
             }
         )
 
@@ -109,7 +109,9 @@ async def fetch(
             nfile = 1
         else:
             last = sorted(existing)[-1]
-            nfile = int(re.search(r"([0-9]{4})\.fits$", last)[1]) + 1
+            search = re.search(r"([0-9]{4})\.fits$", last)
+            assert search is not None
+            nfile = int(search[1]) + 1
         path = os.path.expanduser(f"~/archon_{controller.name}_{nfile:04d}.fits")
     else:
         path: str = os.path.relpath(str(file))

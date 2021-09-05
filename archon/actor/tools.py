@@ -113,9 +113,9 @@ def error_controller(command: Command, controller: ArchonController, message: st
     """Issues a ``error_controller`` message."""
 
     command.error(
-        text={
+        error={
             "controller": controller.name,
-            "text": message,
+            "error": message,
         }
     )
 

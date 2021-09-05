@@ -62,7 +62,7 @@ async def read(
         return command.fail(
             error={
                 "controller": controller.name,
-                "text": str(err),
+                "error": str(err),
             }
         )
 
@@ -134,7 +134,7 @@ async def write(
         return command.fail(
             error={
                 "controller": controller.name,
-                "text": str(err),
+                "error": str(err),
             }
         )
 
