@@ -30,7 +30,7 @@ async def test_expose_start(delegate, actor: ArchonActor):
 
 async def test_expose_start_controller_list(delegate, actor: ArchonActor):
 
-    command = await actor.invoke_mock_command("expose start sp1 0.01")
+    command = await actor.invoke_mock_command("expose start --controller sp1 0.01")
     await command
 
     assert command.status.did_succeed
@@ -38,7 +38,7 @@ async def test_expose_start_controller_list(delegate, actor: ArchonActor):
 
 async def test_expose_start_controller_list_bad_name(delegate, actor: ArchonActor):
 
-    command = await actor.invoke_mock_command("expose start sp5 0.01")
+    command = await actor.invoke_mock_command("expose start --controller sp5 0.01")
     await command
 
     assert command.status.did_fail
@@ -48,7 +48,7 @@ async def test_expose_start_bad_controller(delegate, actor: ArchonActor):
 
     await actor.controllers["sp1"].stop()
 
-    command = await actor.invoke_mock_command("expose start sp1 0.01")
+    command = await actor.invoke_mock_command("expose start --controller sp1 0.01")
     await command
 
     assert command.status.did_fail
@@ -58,7 +58,7 @@ async def test_expose_start_no_delegate(delegate, actor: ArchonActor):
 
     actor.expose_delegate = None  # type: ignore
 
-    command = await actor.invoke_mock_command("expose start sp1 0.01")
+    command = await actor.invoke_mock_command("expose start --controller sp1 0.01")
     await command
 
     assert command.status.did_fail

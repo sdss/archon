@@ -27,15 +27,15 @@ __all__ = [
     "error_controller",
     "check_controller",
     "open_with_lock",
+    "controller",
 ]
 
 
-controller_list = click.argument(
-    "controller_list",
-    metavar="CONTROLLERS",
+controller = click.option(
+    "--controller",
     type=str,
-    nargs=-1,
-    required=False,
+    nargs=1,
+    help="Controller to command",
 )
 
 
@@ -68,15 +68,18 @@ def parallel_controllers(check=True):
 
     def decorator(f):
         @functools.wraps(f)
-        @controller_list
+        @controller
         async def wrapper(
             command: BaseCommand,
             controllers: dict[str, ArchonController],
-            controller_list: Tuple[str, ...],
+            controller: str | None,
             **kwargs,
         ):
-            if not controller_list:
+
+            if not controller:
                 controller_list = tuple(controllers.keys())
+            else:
+                controller_list = (controller,)
 
             if len(controller_list) == 0:
                 return command.fail("No controllers are available.")
@@ -94,7 +97,7 @@ def parallel_controllers(check=True):
                 tasks, return_when=asyncio.FIRST_EXCEPTION
             )
 
-            if len(pending) > 0:
+            if len(pending) > 0:  # pragma: no cover
                 for p in pending:
                     p.cancel()
                 return command.fail("Some tasks raised exceptions.")

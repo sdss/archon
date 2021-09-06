@@ -16,7 +16,7 @@ from drift import Drift, Relay
 from archon.controller.controller import ArchonController
 
 from ..actor.commands import parser
-from ..actor.tools import check_controller, controller_list, parallel_controllers
+from ..actor.tools import check_controller, controller, parallel_controllers
 from .motor import get_motor_status, is_device_powered, move_motor, report_motors
 from .tools import read_pressure
 from .wago import read_many
@@ -291,7 +291,7 @@ async def lamps(command, controllers, lamp, state, list_):
 
 
 @lvm.command()
-@controller_list
+@controller
 @click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
 @click.option(
     "--bias",
@@ -352,7 +352,7 @@ async def expose(
     command,
     controllers,
     exposure_time,
-    controller_list,
+    controller,
     flavour,
     count,
     delay_readout,
@@ -367,14 +367,12 @@ async def expose(
 
     selected_controllers: list[ArchonController]
 
-    if len(controller_list) == 0:
+    if controller is None:
         selected_controllers = list(controllers.values())
     else:
-        selected_controllers = []
-        for cname in controller_list:
-            if cname not in controllers:
-                return command.fail(error=f"Controller {cname!r} not found.")
-            selected_controllers.append(controllers[cname])
+        if controller not in controllers:
+            return command.fail(error=f"Controller {controller!r} not found.")
+        selected_controllers = [controllers[controller]]
 
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()

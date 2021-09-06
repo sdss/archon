@@ -94,3 +94,21 @@ async def test_init_set_param_fails(actor: ArchonActor, mocker):
     await command
 
     assert command.status.did_fail
+
+
+async def test_init_empty_controllers(actor: ArchonActor):
+
+    del actor.controllers["sp1"]
+
+    command = await actor.invoke_mock_command("init")
+    await command
+
+    assert command.status.did_fail
+
+
+async def test_init_invalid_controllers(actor: ArchonActor):
+
+    command = await actor.invoke_mock_command("init --controller sp5")
+    await command
+
+    assert command.status.did_fail
