@@ -14,7 +14,7 @@ from clu.command import Command
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonControllerError, ArchonError
 
-from ..tools import check_controller, error_controller, parallel_controllers
+from ..tools import error_controller, parallel_controllers
 from . import parser
 
 
@@ -24,8 +24,7 @@ from . import parser
 async def flush(command: Command, controller: ArchonController, count: int):
     """Flushes controllers."""
 
-    if not check_controller(command, controller):
-        return False
+    assert command.actor
 
     try:
         await controller.reset()
