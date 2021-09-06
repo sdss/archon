@@ -13,7 +13,7 @@ from clu.command import Command
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, error_controller, parallel_controllers
+from ..tools import error_controller, parallel_controllers
 from . import parser
 
 
@@ -21,9 +21,6 @@ from . import parser
 @parallel_controllers()
 async def system(command: Command, controller: ArchonController):
     """Reports the status of the controller backplane."""
-
-    if not check_controller(command, controller):
-        return
 
     try:
         system = await controller.get_system()
