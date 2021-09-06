@@ -261,7 +261,6 @@ class ExposureDelegate(Generic[Actor_co]):
             await asyncio.gather(*jobs)
             hdus = await asyncio.gather(*[self.fetch_hdus(c) for c in controllers])
         except Exception as err:
-            raise
             return self.fail(f"Failed reading out: {err}")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
