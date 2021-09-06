@@ -42,7 +42,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.actor = actor
 
-        self.exposure_data: ExposeData | None = None
+        self.expose_data: ExposeData | None = None
         self.next_exp_file: pathlib.Path | None = None
 
         self.lock = asyncio.Lock()
@@ -67,7 +67,7 @@ class ExposureDelegate(Generic[Actor_co]):
     def reset(self):
         """Resets the exposure delegate."""
 
-        self.exposure_data = None
+        self.expose_data = None
         self.command = None
 
         if self.lock.locked():
