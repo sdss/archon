@@ -34,6 +34,9 @@ header:
       r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
       b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)']
       z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+    BADKEY: 'Invalid'
+    BADDICT:
+      not_a_ccd: ['key1', 'value1']
 
 actor:
   name: archon

@@ -6,7 +6,12 @@
 # @Filename: test_command_expose.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+import os
+
+from typing import Any
+
 import pytest
+from astropy.io import fits
 
 from archon.actor.actor import ArchonActor
 from archon.exceptions import ArchonError
@@ -81,6 +86,28 @@ async def test_expose_finish(delegate, actor: ArchonActor):
     await finish
 
     assert finish.status.did_succeed
+
+
+async def test_expose_finish_header(delegate, actor: ArchonActor):
+
+    start = await actor.invoke_mock_command("expose start 0.01")
+    await start
+
+    finish = await actor.invoke_mock_command(
+        'expose finish --header \'{"key1": 666, "key2": ["hi", "Greetings"]}\''
+    )
+    await finish
+
+    assert finish.status.did_succeed
+
+    filename = delegate.actor.model["filename"].value
+    assert os.path.exists(filename)
+
+    hdu: Any = fits.open(filename)
+    assert hdu[0].data.shape == (2048, 2048)
+    assert hdu[0].header["CCDTEMP1"] == -110
+    assert hdu[0].header["KEY1"] == 666
+    assert hdu[0].header["KEY2"] == "hi"
 
 
 async def test_expose_finish_no_delegate(delegate, actor: ArchonActor):

@@ -43,6 +43,53 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
 
     hdu: Any = fits.open(filename)
     assert hdu[0].data.shape == (2048, 2048)
+    assert hdu[0].header["CCDTEMP1"] == -110
+
+
+async def test_delegate_expose_locked(delegate: ExposureDelegate):
+
+    await delegate.lock.acquire()
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is False
+
+
+async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
+
+    mocker.patch.object(delegate, "shutter", return_value=False)
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is False
+
+
+async def test_delegate_expose_no_exptime(delegate: ExposureDelegate):
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=None,
+        readout=True,
+    )
+
+    assert result is False
 
 
 @pytest.mark.parametrize("status", [CS.EXPOSING, CS.READOUT_PENDING, CS.ERROR])
