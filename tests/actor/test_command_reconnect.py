@@ -55,7 +55,9 @@ async def test_reconnect_not_running(actor: ArchonActor, mocker):
 async def test_reconnect_start_timesout(actor: ArchonActor, mocker):
 
     mocker.patch.object(
-        actor.controllers["sp1"], "start", side_effect=asyncio.TimeoutError
+        actor.controllers["sp1"],
+        "start",
+        side_effect=asyncio.TimeoutError,
     )
 
     command = await actor.invoke_mock_command("reconnect")
