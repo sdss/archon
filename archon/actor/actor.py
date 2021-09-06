@@ -157,7 +157,7 @@ class ArchonBaseActor(BaseActor):
                 continue
             cmd: ArchonCommand = await controller.send_command("FETCHLOG")
             if cmd.succeeded() and len(cmd.replies) == 1:
-                if str(cmd.replies[0].reply) != "(null)":
+                if str(cmd.replies[0].reply) not in ["(null)", ""]:
                     self.write(
                         log=dict(
                             controller=controller.name,

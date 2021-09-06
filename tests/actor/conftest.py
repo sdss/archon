@@ -7,8 +7,10 @@
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
 import os
+import pathlib
 
 import clu.testing
+import numpy
 import pytest
 from clu.actor import AMQPBaseActor
 
@@ -46,3 +48,32 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
 
     _actor.mock_replies.clear()
     await _actor.stop()
+
+
+@pytest.fixture()
+def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
+
+    mocker.patch.object(actor.controllers["sp1"], "readout")
+
+    mocker.patch.object(
+        actor.controllers["sp1"],
+        "fetch",
+        return_value=numpy.ones((1024, 12288)),
+    )
+
+    assert actor.model
+    actor.model["status"].value = {
+        "controller": "sp1",
+        "mod2/tempa": -110,
+        "mod2/tempb": -110,
+        "mod2/tempc": -110,
+        "mod12/tempa": -110,
+        "mod12/tempb": -110,
+        "mod12/tempc": -110,
+    }
+
+    files_data_dir = tmp_path / "archon"
+
+    monkeypatch.setitem(actor.config["files"], "data_dir", str(files_data_dir))
+
+    yield actor.expose_delegate

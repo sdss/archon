@@ -26,7 +26,7 @@ from archon.controller.maskbits import ControllerStatus
 from archon.tools import gzip_async
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from clu import Command
 
     from .actor import ArchonActor
@@ -257,6 +257,7 @@ class ExposureDelegate(Generic[Actor_co]):
             await asyncio.gather(*jobs)
             hdus = await asyncio.gather(*[self.fetch_hdus(c) for c in controllers])
         except Exception as err:
+            raise
             return self.fail(f"Failed reading out: {err}")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
@@ -280,7 +281,7 @@ class ExposureDelegate(Generic[Actor_co]):
     ):
         """Custom post-processing."""
 
-        return
+        return (controller, hdus)
 
     async def build_base_header(self, controller: ArchonController, ccd_name: str):
         """Returns the basic header of the FITS file."""
@@ -328,9 +329,7 @@ class ExposureDelegate(Generic[Actor_co]):
                     elif isinstance(kconfig, list):
                         kpath, comment = kconfig
                     else:
-                        self.command.warning(
-                            text=f"Invalid keyword format for {kname}."
-                        )
+                        self.command.warning(text=f"Invalid keyword format: {kname}.")
                         header[kname] = "N/A"
                         continue
                     kpath = kpath.format(sensor=sensor).lower()
@@ -393,6 +392,9 @@ class ExposureDelegate(Generic[Actor_co]):
                 x1 = x0 + pixels // binning
 
             ccd_taps.append(data[y0:y1, x0:x1])
+
+        if len(ccd_taps) == 1:
+            return ccd_taps[0]
 
         bottom = numpy.hstack(ccd_taps[0 : len(ccd_taps) // 2])
         top = numpy.hstack(ccd_taps[len(ccd_taps) // 2 :])
