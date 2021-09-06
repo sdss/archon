@@ -9,7 +9,6 @@
 import pytest
 
 from archon.actor import ArchonActor
-from archon.exceptions import ArchonError
 
 
 pytestmark = [pytest.mark.asyncio]
