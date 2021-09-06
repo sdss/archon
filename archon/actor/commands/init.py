@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import os
 import re
 
@@ -20,7 +19,7 @@ from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, error_controller, parallel_controllers
+from ..tools import error_controller, parallel_controllers
 from . import parser
 
 
@@ -53,9 +52,6 @@ async def init(
 
     assert command.actor
 
-    if not check_controller(command, controller):
-        return
-
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
     _output(command, controller, "Loading and applying config", "i")
 
@@ -70,7 +66,7 @@ async def init(
         config_file = os.path.join(archon_root, config_file)
 
     if not os.path.exists(config_file):
-        return command.fail(error=f"Cannot find file {config_file}")
+        return error_controller(command, controller, f"Cannot find file {config_file}")
 
     data = open(config_file).read()
     if hdr:
@@ -110,7 +106,6 @@ async def init(
             f"Failed while powering on ({acmd.status.name})",
         )
 
-    await asyncio.sleep(1)
     await controller.reset()
 
     return True

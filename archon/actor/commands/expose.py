@@ -20,7 +20,7 @@ import archon.actor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, controller_list
+from ..tools import check_controller, controller
 from . import parser
 
 
@@ -35,7 +35,7 @@ def expose(*args):
 
 
 @expose.command()
-@controller_list
+@controller
 @click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
 @click.option(
     "--bias",
@@ -84,7 +84,7 @@ async def start(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float,
-    controller_list: tuple[str, ...],
+    controller: str | None,
     flavour: str,
     do_finish: bool,
     binning: int = 1,
@@ -95,14 +95,12 @@ async def start(
 
     selected_controllers: list[ArchonController]
 
-    if len(controller_list) == 0:
+    if not controller:
         selected_controllers = list(controllers.values())
     else:
-        selected_controllers = []
-        for cname in controller_list:
-            if cname not in controllers:
-                return command.fail(error=f"Controller {cname!r} not found.")
-            selected_controllers.append(controllers[cname])
+        if controller not in controllers:
+            return command.fail(error=f"Controller {controller!r} not found.")
+        selected_controllers = [controllers[controller]]
 
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
@@ -187,19 +185,19 @@ async def abort(
     if all_:
         force = True
 
-    exposure_data = command.actor.expose_delegate.exposure_data
+    expose_data = command.actor.expose_delegate.expose_data
 
-    if exposure_data is None:
+    if expose_data is None:
         if force:
             command.warning(error="No exposure found.")
         else:
             return command.fail(error="No exposure found.")
 
     scontr: list[ArchonController]
-    if all_ or not exposure_data:
+    if all_ or not expose_data:
         scontr = list(controllers.values())
     else:
-        scontr = exposure_data.controllers
+        scontr = expose_data.controllers
 
     command.debug(text="Aborting exposures")
     try:

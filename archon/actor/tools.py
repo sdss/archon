@@ -14,7 +14,7 @@ import functools
 from contextlib import contextmanager
 from os import PathLike
 
-from typing import IO, Any, Generator, Tuple
+from typing import IO, Any, Generator
 
 import click
 from clu.command import BaseCommand, Command
@@ -27,15 +27,15 @@ __all__ = [
     "error_controller",
     "check_controller",
     "open_with_lock",
+    "controller",
 ]
 
 
-controller_list = click.argument(
-    "controller_list",
-    metavar="CONTROLLERS",
+controller = click.option(
+    "--controller",
     type=str,
-    nargs=-1,
-    required=False,
+    nargs=1,
+    help="Controller to command",
 )
 
 
@@ -68,15 +68,18 @@ def parallel_controllers(check=True):
 
     def decorator(f):
         @functools.wraps(f)
-        @controller_list
+        @controller
         async def wrapper(
             command: BaseCommand,
             controllers: dict[str, ArchonController],
-            controller_list: Tuple[str, ...],
+            controller: str | None,
             **kwargs,
         ):
-            if not controller_list:
+
+            if not controller:
                 controller_list = tuple(controllers.keys())
+            else:
+                controller_list = (controller,)
 
             if len(controller_list) == 0:
                 return command.fail("No controllers are available.")
@@ -94,7 +97,7 @@ def parallel_controllers(check=True):
                 tasks, return_when=asyncio.FIRST_EXCEPTION
             )
 
-            if len(pending) > 0:
+            if len(pending) > 0:  # pragma: no cover
                 for p in pending:
                     p.cancel()
                 return command.fail("Some tasks raised exceptions.")
@@ -113,9 +116,9 @@ def error_controller(command: Command, controller: ArchonController, message: st
     """Issues a ``error_controller`` message."""
 
     command.error(
-        text={
+        error={
             "controller": controller.name,
-            "text": message,
+            "error": message,
         }
     )
 
@@ -139,7 +142,7 @@ def check_controller(command: Command, controller: ArchonController) -> bool:
 @contextmanager
 def open_with_lock(
     filename: PathLike, mode: str = "r"
-) -> Generator[IO[Any], None, None]:
+) -> Generator[IO[Any], None, None]:  # pragma: no cover
     """Opens a file and adds an advisory lock on it.
 
     Parameters

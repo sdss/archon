@@ -22,6 +22,8 @@ from archon.controller.controller import ArchonController
 async def reconnect(command: Command, controller: ArchonController, timeout: float):
     """Restarts the socket connection to the controller(s)."""
 
+    assert command.actor
+
     name = controller.name
     connect_timeout = timeout or command.actor.config["timeouts"]["controller_connect"]
 

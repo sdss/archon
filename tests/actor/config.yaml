@@ -1,0 +1,44 @@
+---
+controllers:
+  sp1:
+    host: 10.7.45.26
+    port: 4242
+    parameters:
+      pixels: 1024
+      lines: 1024
+      taps_per_detector: 4
+      framemode: top
+    detectors:
+      r1:
+        sensor: A
+      b1:
+        sensor: B
+      z1:
+        sensor: C
+
+archon:
+  config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
+
+files:
+  data_dir: '/var/tmp'
+  split: true
+  template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
+
+header:
+  status:
+    CCDTEMP1:
+      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
+      b1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
+      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
+    CCDTEMP2:
+      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
+      b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)']
+      z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+    BADKEY: 'Invalid'
+    BADDICT:
+      not_a_ccd: ['key1', 'value1']
+
+actor:
+  name: archon
+  host: localhost
+  port: 5672

@@ -143,7 +143,7 @@ class ArchonBaseActor(BaseActor):
 
         return instance
 
-    async def _fetch_log(self, controller: ArchonController):
+    async def _fetch_log(self, controller: ArchonController):  # pragma: no cover
         """Fetches the log and outputs new messages.
 
         This is not implemented as a timed command because we don't want a new command
@@ -157,7 +157,7 @@ class ArchonBaseActor(BaseActor):
                 continue
             cmd: ArchonCommand = await controller.send_command("FETCHLOG")
             if cmd.succeeded() and len(cmd.replies) == 1:
-                if str(cmd.replies[0].reply) != "(null)":
+                if str(cmd.replies[0].reply) not in ["(null)", ""]:
                     self.write(
                         log=dict(
                             controller=controller.name,

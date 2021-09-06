@@ -60,9 +60,9 @@ async def read(
         config = await controller.read_config(save=path)
     except ArchonError as err:
         return command.fail(
-            text={
+            error={
                 "controller": controller.name,
-                "text": str(err),
+                "error": str(err),
             }
         )
 
@@ -132,9 +132,9 @@ async def write(
         )
     except ArchonError as err:
         return command.fail(
-            text={
+            error={
                 "controller": controller.name,
-                "text": str(err),
+                "error": str(err),
             }
         )
 

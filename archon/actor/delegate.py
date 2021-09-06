@@ -26,7 +26,7 @@ from archon.controller.maskbits import ControllerStatus
 from archon.tools import gzip_async
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from clu import Command
 
     from .actor import ArchonActor
@@ -42,7 +42,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.actor = actor
 
-        self.exposure_data: ExposeData | None = None
+        self.expose_data: ExposeData | None = None
         self.next_exp_file: pathlib.Path | None = None
 
         self.lock = asyncio.Lock()
@@ -67,7 +67,7 @@ class ExposureDelegate(Generic[Actor_co]):
     def reset(self):
         """Resets the exposure delegate."""
 
-        self.exposure_data = None
+        self.expose_data = None
         self.command = None
 
         if self.lock.locked():
@@ -90,7 +90,7 @@ class ExposureDelegate(Generic[Actor_co]):
         command: Command[Actor_co],
         controllers: List[ArchonController],
         flavour: str = "object",
-        exposure_time: float = 1.0,
+        exposure_time: float | None = 1.0,
         readout: bool = True,
         binning: int = 1,
         **readout_params,
@@ -156,7 +156,7 @@ class ExposureDelegate(Generic[Actor_co]):
             self.command.error(error=str(err))
             self.command.error("One controller failed. Cancelling remaining tasks.")
             for job in jobs:
-                if not job.done():
+                if not job.done():  # pragma: no cover
                     with suppress(asyncio.CancelledError):
                         job.cancel()
                         await job
@@ -164,7 +164,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         # Operate the shutter
         if not (await self.shutter(True)):
-            return False
+            return self.fail("Shutter failed to open.")
 
         with open(next_exp_file, "w") as fd:
             fd.write(str(next_exp_no + 1))
@@ -177,6 +177,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
     async def check_expose(self) -> bool:
         """Performs a series of checks to confirm we can expose."""
+
+        assert self.expose_data
 
         for controller in self.expose_data.controllers:
             cname = controller.name
@@ -191,6 +193,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
     def _prepare_directories(self) -> pathlib.Path:
         """Prepares directories."""
+
+        assert self.expose_data
 
         config = self.actor.config
 
@@ -236,11 +240,11 @@ class ExposureDelegate(Generic[Actor_co]):
             return self.fail("Expose delegator is not locked.")
 
         if self.expose_data is None:
-            return self.fail("No exposure found.")
+            return self.fail("No exposure data found.")
 
         # Close shutter.
         if not (await self.shutter(False)):
-            return False
+            return self.fail("Shutter failed to close.")
 
         controllers = self.expose_data.controllers
 
@@ -280,12 +284,12 @@ class ExposureDelegate(Generic[Actor_co]):
     ):
         """Custom post-processing."""
 
-        return
+        return (controller, hdus)
 
     async def build_base_header(self, controller: ArchonController, ccd_name: str):
         """Returns the basic header of the FITS file."""
 
-        assert self.command.actor
+        assert self.command.actor and self.expose_data
 
         expose_data = self.expose_data
         assert expose_data.end_time
@@ -328,14 +332,12 @@ class ExposureDelegate(Generic[Actor_co]):
                     elif isinstance(kconfig, list):
                         kpath, comment = kconfig
                     else:
-                        self.command.warning(
-                            text=f"Invalid keyword format for {kname}."
-                        )
+                        self.command.warning(text=f"Invalid keyword format: {kname}.")
                         header[kname] = "N/A"
                         continue
                     kpath = kpath.format(sensor=sensor).lower()
                     value = dict_get(model, kpath)
-                    if not value:
+                    if not value:  # pragma: no cover (needs fix from CLU)
                         self.command.warning(
                             text=f"Cannot find header value {kpath} for {kname}. "
                             f"Issuing command {hcommand!r}"
@@ -364,6 +366,8 @@ class ExposureDelegate(Generic[Actor_co]):
         controller_info: Dict[str, Any],
     ) -> numpy.ndarray:
         """Retrieves the CCD data from the buffer frame."""
+
+        assert self.expose_data
 
         binning = self.expose_data.binning
 
@@ -394,6 +398,9 @@ class ExposureDelegate(Generic[Actor_co]):
 
             ccd_taps.append(data[y0:y1, x0:x1])
 
+        if len(ccd_taps) == 1:
+            return ccd_taps[0]
+
         bottom = numpy.hstack(ccd_taps[0 : len(ccd_taps) // 2])
         top = numpy.hstack(ccd_taps[len(ccd_taps) // 2 :])
         ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
@@ -402,6 +409,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
     async def fetch_hdus(self, controller: ArchonController) -> List[fits.PrimaryHDU]:
         """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
+
+        assert self.expose_data
 
         config = self.actor.config
         expose_data = self.expose_data
@@ -429,6 +438,8 @@ class ExposureDelegate(Generic[Actor_co]):
         hdus: List[fits.PrimaryHDU],
     ):
         """Writes HDUs to disk."""
+
+        assert self.expose_data
 
         loop = asyncio.get_running_loop()
 

@@ -14,7 +14,7 @@ import archon.actor
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
-from ..tools import check_controller, error_controller, parallel_controllers
+from ..tools import error_controller, parallel_controllers
 from . import parser
 
 
@@ -26,21 +26,10 @@ async def status(
 ):
     """Reports the status of the controller."""
 
-    if not check_controller(command, controller):
-        return
-
     try:
         status = await controller.get_device_status()
     except ArchonError as ee:
         return error_controller(command, controller, str(ee))
-
-    # Polling for status too often during an exposure seems to affect the timing script.
-    # if command.actor.expose_data:
-    #     return error_controller(
-    #         command,
-    #         controller,
-    #         "Cannot report status during an exposure.",
-    #     )
 
     command.info(
         status={
