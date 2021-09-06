@@ -23,6 +23,14 @@ async def test_init(actor):
     assert command.status.did_succeed
 
 
+async def test_init_hdr(actor):
+
+    command = await actor.invoke_mock_command("init --hdr")
+    await command
+
+    assert command.status.did_succeed
+
+
 async def test_init_controller_fails(actor):
 
     await actor.controllers["sp1"].stop()
