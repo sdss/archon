@@ -13,7 +13,7 @@ from clu.command import Command
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonControllerError, ArchonError
 
-from ..tools import check_controller, error_controller, parallel_controllers
+from ..tools import error_controller, parallel_controllers
 from . import parser
 
 
@@ -23,9 +23,6 @@ async def reset(command: Command, controller: ArchonController):
     """Resets the controllers and discards ongoing exposures."""
 
     assert command.actor
-
-    if not check_controller(command, controller):
-        return False
 
     try:
         await controller.reset()
