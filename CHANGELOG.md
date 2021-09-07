@@ -1,6 +1,6 @@
 # Changelog
 
-## Next release
+## 0.5.0 - September 6, 2021
 
 ### 🚀 New
 
@@ -9,7 +9,7 @@
 
 ### ✨ Improved
 
-* `archon init` accepts an optional parameters to define the ACF script to load.
+* `archon init` accepts an optional parameter to define the ACF script to load.
 * [#31](https://github.com/sdss/archon/pull/31) Tests for the actor.
 
 ### 🔧 Fixed
