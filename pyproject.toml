@@ -25,7 +25,6 @@ packages = [
 
 [tool.poetry.scripts]
 archon = "archon.__main__:archon"
-lvm-lab = "archon.scripts.lvm_lab:lvm_lab"
 
 [tool.poetry.dependencies]
 python = "^3.8"
