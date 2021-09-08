@@ -377,33 +377,43 @@ class ExposureDelegate(Generic[Actor_co]):
         lines = parameters["lines"]
         taps = parameters["taps_per_detector"]
 
-        framemode = parameters.get("framemode", "top")
-        if framemode != "top":
-            raise ValueError("Only framemode top is supported at this time.")
+        framemode = parameters.get("framemode", "split")
 
         ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
-        x0_base = ccd_index * pixels * taps
 
-        ccd_taps = []
-        for tap in range(taps):
+        if framemode == "top":
+            x0_base = ccd_index * pixels * taps
+
+            ccd_taps = []
+            for tap in range(taps):
+                y0 = 0
+                y1 = lines // binning
+
+                if tap % 2 == 0:  # L tap
+                    x0 = x0_base + tap * pixels
+                    x1 = x0 + pixels // binning
+                else:  # R tap
+                    x0 = x0_base + (tap + 1) * pixels - pixels // binning
+                    x1 = x0 + pixels // binning
+
+                ccd_taps.append(data[y0:y1, x0:x1])
+
+            if len(ccd_taps) == 1:
+                return ccd_taps[0]
+
+            bottom = numpy.hstack(ccd_taps[0 : len(ccd_taps) // 2])
+            top = numpy.hstack(ccd_taps[len(ccd_taps) // 2 :])
+            ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
+
+        elif framemode == "split":
+            x0 = ccd_index * pixels * (taps // 2)
+            x1 = x0 + pixels * (taps // 2)
             y0 = 0
-            y1 = lines // binning
+            y1 = lines * (taps // 2)
+            ccd_data = data[y0:y1, x0:x1]
 
-            if tap % 2 == 0:  # L tap
-                x0 = x0_base + tap * pixels
-                x1 = x0 + pixels // binning
-            else:  # R tap
-                x0 = x0_base + (tap + 1) * pixels - pixels // binning
-                x1 = x0 + pixels // binning
-
-            ccd_taps.append(data[y0:y1, x0:x1])
-
-        if len(ccd_taps) == 1:
-            return ccd_taps[0]
-
-        bottom = numpy.hstack(ccd_taps[0 : len(ccd_taps) // 2])
-        top = numpy.hstack(ccd_taps[len(ccd_taps) // 2 :])
-        ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
+        else:
+            raise ValueError(f"Framemode {framemode} is supported at this time.")
 
         return ccd_data
 
