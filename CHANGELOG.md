@@ -1,5 +1,13 @@
 # Changelog
 
+## Next release
+
+### ✨ Improved
+
+* Added script for ~800MHz readout.
+* Use `framemode=split` and rearrange taplines to allow proper display in the GUI.
+
+
 ## 0.5.0 - September 6, 2021
 
 ### 🚀 New
