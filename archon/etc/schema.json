@@ -11,6 +11,19 @@
       "additionalProperties": true,
       "required": ["controller"]
     },
+    "error": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "controller": { "type": "string" },
+            "error": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "status": {
       "type": "object",
       "properties": {
