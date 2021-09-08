@@ -10,7 +10,7 @@ controllers:
       pixels: 2060
       lines: 2040
       taps_per_detector: 4
-      framemode: top
+      framemode: split
     detectors:
       r1:
         sensor: A
