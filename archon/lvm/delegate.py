@@ -46,6 +46,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             return False
 
         if self.use_shutter:
+            assert self.expose_data
             controllers = self.expose_data.controllers
             jobs_power = []
             jobs_status = []
@@ -72,6 +73,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         if not self.use_shutter:
             return True
 
+        assert self.expose_data
         expose_data = self.expose_data
 
         if expose_data.exposure_time == 0 or expose_data.flavour in ["bias", "dark"]:
