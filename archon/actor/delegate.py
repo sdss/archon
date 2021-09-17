@@ -297,23 +297,88 @@ class ExposureDelegate(Generic[Actor_co]):
         header = fits.Header()
 
         # Basic header
-        header["SPEC"] = controller.name
-        header["OBSERVAT"] = self.command.actor.observatory
+        header["FILENAME"] = ("", "File basename")  # Will be filled out later
+        header["SPEC"] = (controller.name, "Spectrograph name")
+        header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
         header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
-        header["EXPTIME"] = expose_data.exposure_time
-        header["IMAGETYP"] = expose_data.flavour
+        header["MJD"] = (int(expose_data.start_time.mjd), "Modified Julian Date")
+        header["EXPTIME"] = (expose_data.exposure_time, "Exposure time")
+        header["DARKTIME"] = (expose_data.exposure_time, "Dark time")
+        header["IMAGETYP"] = (expose_data.flavour, "Image type")
         header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
         header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
-        header["BINNING"] = (expose_data.binning, "Horizontal and vertical binning")
 
-        header["CCD"] = ccd_name
+        header["CCD"] = (ccd_name, "CCD name")
+
+        config = self.actor.config
+        if "controllers" not in config or controller.name not in config["controllers"]:
+            self.command.warning(text="Cannot retrieve controller information.")
+            controller_config = {"detectors": {ccd_name: {}}, "parameters": {}}
+        else:
+            controller_config = config["controllers"][controller.name]
+        ccd_config = controller_config["detectors"][ccd_name]
+
+        ccdid = ccd_config.get("serial", "?")
+        ccdtype = ccd_config.get("type", "?")
+        gain = ccd_config.get("gain", "?")
+        readnoise = ccd_config.get("readnoise", "?")
+
+        header["CCDID"] = (ccdid, "Unique identifier of the CCD")
+        header["CCDTYPE"] = (ccdtype, "CCD type")
+        header["GAIN"] = (gain, "CCD gain (e-/ADU)")
+        header["RDNOISE"] = (readnoise, "CCD read noise (e-)")
+
+        binning = int(expose_data.binning)
+        header["BINNING"] = (binning, "Horizontal and vertical binning")
+        header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
+
+        if controller_config["parameters"] == {}:
+            detsize = ""
+            ccdsec = ""
+            biassec = ""
+            trimsec = ""
+            channels = ""
+        else:
+            parameters = controller_config["parameters"]
+            pixels = controller_config["pixels"]
+            lines = controller_config["lines"]
+            overscan_lines = controller_config.get("overscan_lines", 0)
+            overscan_pixels = controller_config.get("overscan_pixels", 0)
+
+            channels = int(parameters["taps_per_detector"])
+
+            p1 = pixels * channels // 2
+            l1 = lines * channels // 2
+
+            detsize = ccdsec = trimsec = f"[1:{p1}, 1:{l1}]"
+            ccdsec = trimsec = detsize
+
+            if overscan_lines == 0 and overscan_pixels == 0:
+                biassec = ""
+            else:
+                p0 = pixels - overscan_pixels + 1
+                p1 = p0 + overscan_pixels * channels // 2
+                l0 = lines - overscan_lines + 1
+                l1 = l1 + overscan_lines * channels // 2
+                biassec = f"[{p0}:{p1}, {l0}:{l1}]"
+
+        header["DETSIZE"] = (detsize, "Detector size (1-index)")
+        header["CCDSEC"] = (ccdsec, "Region of CCD read (1-index)")
+        header["BIASSEC"] = (biassec, "Bias section (1-index)")
+        header["TRIMSEC"] = (trimsec, "Section of useful data (1-index)")
+
+        if controller.acf_loaded:
+            acf = os.path.basename(controller.acf_loaded)
+        else:
+            acf = "?"
+        header["ARCHACF"] = (acf, "Archon ACF file loaded")
 
         actor = self.actor
         model = actor.model
         config = actor.config
 
         # Add keywords specified in the configuration file.
-        sensor = config["controllers"][controller.name]["detectors"][ccd_name]["sensor"]
+        sensor = ccd_config.get("sensor", "")
         if hconfig := config.get("header"):
             for hcommand in hconfig:
                 for kname in hconfig[hcommand]:

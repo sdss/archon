@@ -9,15 +9,25 @@ controllers:
     parameters:
       pixels: 2060
       lines: 2040
+      overscan_pixels: 20
       taps_per_detector: 4
       framemode: split
     detectors:
       r1:
         sensor: A
+        serial: STA29687
+        gain: 2.82
+        type: STA4850
       b1:
         sensor: B
+        serial: STA29602
+        gain: 2.81
+        type: STA4850
       z1:
         sensor: C
+        serial: STA27875
+        gain: 2.88
+        type: STA4850
 
 devices:
   motor_controllers:
