@@ -340,10 +340,10 @@ class ExposureDelegate(Generic[Actor_co]):
             channels = ""
         else:
             parameters = controller_config["parameters"]
-            pixels = controller_config["pixels"]
-            lines = controller_config["lines"]
-            overscan_lines = controller_config.get("overscan_lines", 0)
-            overscan_pixels = controller_config.get("overscan_pixels", 0)
+            pixels = parameters["pixels"]
+            lines = parameters["lines"]
+            overscan_lines = parameters.get("overscan_lines", 0)
+            overscan_pixels = parameters.get("overscan_pixels", 0)
 
             channels = int(parameters["taps_per_detector"])
 
