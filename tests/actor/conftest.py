@@ -40,6 +40,7 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
     test_config["controllers"]["sp1"]["port"] = controller.port
 
     _actor = ArchonActor.from_config(test_config)
+    _actor.controllers["sp1"].acf_loaded = test_config["archon"]["config_file"]
     await _actor.start()
 
     _actor = await clu.testing.setup_test_actor(_actor)  # type: ignore
@@ -55,10 +56,11 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
 
     mocker.patch.object(actor.controllers["sp1"], "readout")
 
+    # For framemode=top
     mocker.patch.object(
         actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((1024, 12288)),
+        return_value=numpy.ones((1024, 12408)),
     )
 
     assert actor.model

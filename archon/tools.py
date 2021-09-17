@@ -109,7 +109,7 @@ def get_profile_name() -> str:  # pragma: no cover
 
     fqdn = socket.getfqdn()
 
-    if fqdn == "obsvld01":
+    if fqdn.startswith("obsvld01"):
         return "lvm"
     elif fqdn.endswith("sdss5-boss-icc.lco.cl"):
         return "boss"

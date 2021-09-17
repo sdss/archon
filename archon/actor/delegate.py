@@ -119,8 +119,6 @@ class ExposureDelegate(Generic[Actor_co]):
 
         next_exp_file = self._prepare_directories()
 
-        config = self.actor.config
-
         # Lock until the exposure is done.
         await self.lock.acquire()
 
@@ -133,14 +131,12 @@ class ExposureDelegate(Generic[Actor_co]):
         # otherwise we add an extra timeout to allow for the code that handles
         # the shutter to open and close it and control the exposure time that way.
         if exposure_time == 0.0 or flavour == "bias":
-            etime = 0.0
-        else:
-            etime = exposure_time + config["timeouts"]["expose_timeout"]
+            exposure_time = 0.0
 
         jobs = [
             asyncio.create_task(
                 controller.expose(
-                    etime,
+                    exposure_time,
                     readout=False,
                     binning=binning,
                 )
@@ -170,7 +166,7 @@ class ExposureDelegate(Generic[Actor_co]):
             fd.write(str(next_exp_no + 1))
 
         if readout:
-            await asyncio.sleep(etime)
+            await asyncio.sleep(exposure_time)
             return await self.readout(self.command, **readout_params)
 
         return True
@@ -297,23 +293,92 @@ class ExposureDelegate(Generic[Actor_co]):
         header = fits.Header()
 
         # Basic header
-        header["SPEC"] = controller.name
-        header["OBSERVAT"] = self.command.actor.observatory
+        header["FILENAME"] = ("", "File basename")  # Will be filled out later
+        header["SPEC"] = (controller.name, "Spectrograph name")
+        header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
         header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
-        header["EXPTIME"] = expose_data.exposure_time
-        header["IMAGETYP"] = expose_data.flavour
+        header["MJD"] = (int(expose_data.start_time.mjd), "Modified Julian Date")
+        header["EXPTIME"] = (expose_data.exposure_time, "Exposure time")
+        header["DARKTIME"] = (expose_data.exposure_time, "Dark time")
+        header["IMAGETYP"] = (expose_data.flavour, "Image type")
         header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
         header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
-        header["BINNING"] = (expose_data.binning, "Horizontal and vertical binning")
 
-        header["CCD"] = ccd_name
+        header["CCD"] = (ccd_name, "CCD name")
+
+        config = self.actor.config
+        if (
+            "controllers" not in config or controller.name not in config["controllers"]
+        ):  # pragma: no cover
+            self.command.warning(text="Cannot retrieve controller information.")
+            controller_config = {"detectors": {ccd_name: {}}, "parameters": {}}
+        else:
+            controller_config = config["controllers"][controller.name]
+        ccd_config = controller_config["detectors"][ccd_name]
+
+        ccdid = ccd_config.get("serial", "?")
+        ccdtype = ccd_config.get("type", "?")
+        gain = ccd_config.get("gain", "?")
+        readnoise = ccd_config.get("readnoise", "?")
+
+        header["CCDID"] = (ccdid, "Unique identifier of the CCD")
+        header["CCDTYPE"] = (ccdtype, "CCD type")
+        header["GAIN"] = (gain, "CCD gain (e-/ADU)")
+        header["RDNOISE"] = (readnoise, "CCD read noise (e-)")
+
+        binning = int(expose_data.binning)
+        header["BINNING"] = (binning, "Horizontal and vertical binning")
+        header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
+
+        if controller_config["parameters"] == {}:  # pragma: no cover
+            # This is just for extra safety, but it should never happen
+            # because we need parameters to read out.
+            detsize = ""
+            ccdsec = ""
+            biassec = ""
+            trimsec = ""
+            channels = ""
+        else:
+            parameters = controller_config["parameters"]
+            pixels = parameters["pixels"]
+            lines = parameters["lines"]
+            overscan_lines = parameters.get("overscan_lines", 0)
+            overscan_pixels = parameters.get("overscan_pixels", 0)
+
+            channels = int(parameters["taps_per_detector"])
+
+            p1 = pixels * channels // 2
+            l1 = lines * channels // 2
+
+            detsize = ccdsec = trimsec = f"[1:{p1}, 1:{l1}]"
+            ccdsec = trimsec = detsize
+
+            if overscan_lines == 0 and overscan_pixels == 0:
+                biassec = ""
+            else:
+                p0 = pixels - overscan_pixels + 1
+                p1 = p0 + overscan_pixels * channels // 2 - 1
+                l0 = 1
+                l1 = lines * channels // 2
+                biassec = f"[{p0}:{p1}, {l0}:{l1}]"
+
+        header["DETSIZE"] = (detsize, "Detector size (1-index)")
+        header["CCDSEC"] = (ccdsec, "Region of CCD read (1-index)")
+        header["BIASSEC"] = (biassec, "Bias section (1-index)")
+        header["TRIMSEC"] = (trimsec, "Section of useful data (1-index)")
+
+        if controller.acf_loaded:
+            acf = os.path.basename(controller.acf_loaded)
+        else:
+            acf = "?"
+        header["ARCHACF"] = (acf, "Archon ACF file loaded")
 
         actor = self.actor
         model = actor.model
         config = actor.config
 
         # Add keywords specified in the configuration file.
-        sensor = config["controllers"][controller.name]["detectors"][ccd_name]["sensor"]
+        sensor = ccd_config.get("sensor", "")
         if hconfig := config.get("header"):
             for hcommand in hconfig:
                 for kname in hconfig[hcommand]:
@@ -378,25 +443,24 @@ class ExposureDelegate(Generic[Actor_co]):
         taps = parameters["taps_per_detector"]
 
         framemode = parameters.get("framemode", "split")
+        overscan_pixels = parameters.get("overscan_pixels", 0)
 
         ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
 
         if framemode == "top":
-            x0_base = ccd_index * pixels * taps
+            x0_base = ccd_index * (pixels + overscan_pixels) * taps
+            x0 = x0_base
 
             ccd_taps = []
             for tap in range(taps):
                 y0 = 0
                 y1 = lines // binning
 
-                if tap % 2 == 0:  # L tap
-                    x0 = x0_base + tap * pixels
-                    x1 = x0 + pixels // binning
-                else:  # R tap
-                    x0 = x0_base + (tap + 1) * pixels - pixels // binning
-                    x1 = x0 + pixels // binning
+                x1 = x0 + (pixels + overscan_pixels) // binning
 
                 ccd_taps.append(data[y0:y1, x0:x1])
+
+                x0 = x1
 
             if len(ccd_taps) == 1:
                 return ccd_taps[0]
@@ -406,8 +470,8 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
 
         elif framemode == "split":
-            x0 = ccd_index * pixels * (taps // 2)
-            x1 = x0 + pixels * (taps // 2)
+            x0 = ccd_index * (pixels + overscan_pixels) * (taps // 2)
+            x1 = x0 + (pixels + overscan_pixels) * (taps // 2)
             y0 = 0
             y1 = lines * (taps // 2)
             ccd_data = data[y0:y1, x0:x1]
@@ -473,6 +537,8 @@ class ExposureDelegate(Generic[Actor_co]):
                 hemisphere=hemisphere,
                 ccd=ccd,
             )
+
+            hdu.header["filename"] = os.path.basename(file_path)
 
             if file_path.endswith(".gz"):
                 # Astropy compresses with gzip -9 which takes forever.

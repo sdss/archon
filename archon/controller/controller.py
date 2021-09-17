@@ -58,6 +58,8 @@ class ArchonController(Device):
         self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
+        self.acf_loaded: str | None = None
+
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
@@ -442,9 +444,11 @@ class ArchonController(Device):
         delay: float = config["timeouts"]["write_config_delay"]
 
         c = configparser.ConfigParser()
+        is_file = False
 
         input = str(input)
         if os.path.exists(input):
+            is_file = True
             c.read(input)
         else:
             c.read_string(input)
@@ -490,6 +494,9 @@ class ArchonController(Device):
 
         notifier("Sucessfully sent config lines")
 
+        if is_file:
+            self.acf_loaded = os.path.realpath(input)
+
         # Restore polling
         await self.send_command("POLLON")
 
@@ -521,7 +528,7 @@ class ArchonController(Device):
         await self.set_param("AutoFlush", int(mode))
         self.auto_flush = mode
 
-    async def reset(self, autoflush=True):
+    async def reset(self, autoflush=True, restart_timing=True):
         """Resets timing and discards current exposures."""
 
         await self.send_command("HOLDTIMING")
@@ -539,13 +546,14 @@ class ArchonController(Device):
             for param in default_parameters:
                 await self.set_param(param, default_parameters[param])
 
-        for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
-            cmd = await self.send_command(cmd_str, timeout=1)
-            if not cmd.succeeded():
-                self.update_status(ControllerStatus.ERROR)
-                raise ArchonControllerError(
-                    f"Failed sending {cmd_str} ({cmd.status.name})"
-                )
+        if restart_timing:
+            for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
+                cmd = await self.send_command(cmd_str, timeout=1)
+                if not cmd.succeeded():
+                    self.update_status(ControllerStatus.ERROR)
+                    raise ArchonControllerError(
+                        f"Failed sending {cmd_str} ({cmd.status.name})"
+                    )
 
         self._status = ControllerStatus.IDLE
         await self.get_device_status()  # Sets power bit.
@@ -581,8 +589,7 @@ class ArchonController(Device):
                 "Controller has a readout pending. Read the device or flush."
             )
 
-        await self.reset(autoflush=False)
-        await self.send_command("HOLDTIMING")
+        await self.reset(autoflush=False, restart_timing=False)
 
         if readout is False:
             await self.set_param("ReadOut", 0)
@@ -595,12 +602,13 @@ class ArchonController(Device):
         await self.set_param("HorizontalBinning", binning)
         await self.set_param("VerticalBinning", binning)
 
+        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
 
         async def update_state():
-            await asyncio.sleep(exposure_time + 0.5)
+            await asyncio.sleep(exposure_time)
             if not self.status & CS.EXPOSING:  # Must have been aborted.
                 return
             if readout is False:
@@ -689,6 +697,7 @@ class ArchonController(Device):
         if delay > 0:
             await self.set_param("WaitCount", delay)
 
+        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)

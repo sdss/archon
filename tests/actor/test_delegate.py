@@ -10,6 +10,7 @@ import os
 
 from typing import Any
 
+import numpy
 import pytest
 from astropy.io import fits
 from clu import Command
@@ -43,7 +44,37 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
-    assert hdu[0].data.shape == (2048, 2048)
+    assert hdu[0].data.shape == (2048, 2068)
+    assert hdu[0].header["CCDTEMP1"] == -110
+
+
+async def test_delegate_expose_split_mode(delegate: ExposureDelegate, mocker):
+
+    # For framemode=top
+    mocker.patch.object(
+        delegate.actor.controllers["sp1"],
+        "fetch",
+        return_value=numpy.ones((2048 * 2, 2068 * 3)),
+    )
+
+    delegate.actor.config["controllers"]["sp1"]["parameters"]["framemode"] = "split"
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result
+
+    filename = delegate.actor.model["filename"].value
+    assert os.path.exists(filename)
+
+    hdu: Any = fits.open(filename)
+    assert hdu[0].data.shape == (2048, 2068)
     assert hdu[0].header["CCDTEMP1"] == -110
 
 
@@ -200,3 +231,26 @@ async def test_delegate_readout_shutter_fails(delegate: ExposureDelegate, mocker
 
     result = await delegate.readout(command)
     assert result is False
+
+
+async def test_delegate_expose_no_overscan(delegate: ExposureDelegate):
+
+    delegate.actor.config["controllers"]["sp1"]["parameters"]["overscan_pixels"] = 0
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="obkect",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result
+
+    filename = delegate.actor.model["filename"].value
+    assert os.path.exists(filename)
+
+    hdu: Any = fits.open(filename)
+    assert hdu[0].header["BIASSEC"] == ""
+    assert hdu[0].header["CCDSEC"] != ""

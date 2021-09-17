@@ -6,6 +6,7 @@ controllers:
     parameters:
       pixels: 1024
       lines: 1024
+      overscan_pixels: 10
       taps_per_detector: 4
       framemode: top
     detectors:
@@ -17,7 +18,7 @@ controllers:
         sensor: C
 
 archon:
-  config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
+  config_file: 'lvm/config/archon/LVM_100MHz.acf'
 
 files:
   data_dir: '/var/tmp'

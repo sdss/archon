@@ -13,6 +13,7 @@ import json
 import os
 import re
 import warnings
+from socket import getfqdn
 
 from typing import TYPE_CHECKING, Dict
 
@@ -183,7 +184,7 @@ class LVMActor(ArchonActor):
         obsdate = Time(header["OBSTIME"], format="isot")
         mjd = int(obsdate.mjd)
         date_str = obsdate.strftime("%d/%m/%Y")
-        location = "SBS"
+        location = "SBS" if "carnegiescience" in getfqdn() else "?"
         spec = header["SPEC"]
         channel = header["CCD"]
         exptime = header["EXPTIME"]
@@ -206,8 +207,8 @@ class LVMActor(ArchonActor):
                 hartmanns = ""
 
         lamp_current = self._log_values.get("lamp_current", "")
-        lab_temp = header["LABTEMP"]
-        ccd_temp = header["CCDTEMP1"]
+        lab_temp = header.get("LABTEMP", -999)
+        ccd_temp = header.get("CCDTEMP1", -999)
 
         purpose = self._log_values.get("purpose", "")
         notes = self._log_values.get("notes", "")

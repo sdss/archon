@@ -46,6 +46,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             return False
 
         if self.use_shutter:
+            assert self.expose_data
             controllers = self.expose_data.controllers
             jobs_power = []
             jobs_status = []
@@ -72,6 +73,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         if not self.use_shutter:
             return True
 
+        assert self.expose_data
         expose_data = self.expose_data
 
         if expose_data.exposure_time == 0 or expose_data.flavour in ["bias", "dark"]:
@@ -104,6 +106,11 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         hdus: List[fits.PrimaryHDU],
     ) -> Tuple[ArchonController, List[fits.PrimaryHDU]]:
         """Post-process images."""
+
+        # lvmscp will add these header keywords, so add them here only if
+        # this is archon's own lvm expose command.
+        if not self.command.raw_command_string.startswith("lvm expose"):
+            return (controller, hdus)
 
         self.command.debug(text="Running exposure post-process.")
 
