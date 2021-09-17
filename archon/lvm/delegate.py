@@ -107,6 +107,11 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
     ) -> Tuple[ArchonController, List[fits.PrimaryHDU]]:
         """Post-process images."""
 
+        # lvmscp will add these header keywords, so add them here only if
+        # this is archon's own lvm expose command.
+        if not self.command.raw_command_string.startswith("lvm expose"):
+            return (controller, hdus)
+
         self.command.debug(text="Running exposure post-process.")
 
         # Govee lab temperature and RH.
