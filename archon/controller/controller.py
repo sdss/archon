@@ -58,6 +58,8 @@ class ArchonController(Device):
         self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
+        self.acf_loaded: str | None = None
+
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
@@ -442,9 +444,11 @@ class ArchonController(Device):
         delay: float = config["timeouts"]["write_config_delay"]
 
         c = configparser.ConfigParser()
+        is_file = False
 
         input = str(input)
         if os.path.exists(input):
+            is_file = True
             c.read(input)
         else:
             c.read_string(input)
@@ -489,6 +493,9 @@ class ArchonController(Device):
             await asyncio.sleep(delay)
 
         notifier("Sucessfully sent config lines")
+
+        if is_file:
+            self.acf_loaded = os.path.realpath(input)
 
         # Restore polling
         await self.send_command("POLLON")
