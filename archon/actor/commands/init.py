@@ -74,6 +74,7 @@ async def init(
 
     try:
         await controller.write_config(data, applyall=True, poweron=False)
+        controller.acf_loaded = config_file
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 
