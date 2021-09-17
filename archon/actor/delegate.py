@@ -119,8 +119,6 @@ class ExposureDelegate(Generic[Actor_co]):
 
         next_exp_file = self._prepare_directories()
 
-        config = self.actor.config
-
         # Lock until the exposure is done.
         await self.lock.acquire()
 
@@ -133,14 +131,12 @@ class ExposureDelegate(Generic[Actor_co]):
         # otherwise we add an extra timeout to allow for the code that handles
         # the shutter to open and close it and control the exposure time that way.
         if exposure_time == 0.0 or flavour == "bias":
-            etime = 0.0
-        else:
-            etime = exposure_time + config["timeouts"]["expose_timeout"]
+            exposure_time = 0.0
 
         jobs = [
             asyncio.create_task(
                 controller.expose(
-                    etime,
+                    exposure_time,
                     readout=False,
                     binning=binning,
                 )
@@ -170,7 +166,7 @@ class ExposureDelegate(Generic[Actor_co]):
             fd.write(str(next_exp_no + 1))
 
         if readout:
-            await asyncio.sleep(etime)
+            await asyncio.sleep(exposure_time)
             return await self.readout(self.command, **readout_params)
 
         return True
