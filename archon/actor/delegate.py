@@ -328,7 +328,9 @@ class ExposureDelegate(Generic[Actor_co]):
         header["BINNING"] = (binning, "Horizontal and vertical binning")
         header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
 
-        if controller_config["parameters"] == {}:
+        if controller_config["parameters"] == {}:  # pragma: no cover
+            # This is just for extra safety, but it should never happen
+            # because we need parameters to read out.
             detsize = ""
             ccdsec = ""
             biassec = ""

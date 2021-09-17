@@ -200,3 +200,26 @@ async def test_delegate_readout_shutter_fails(delegate: ExposureDelegate, mocker
 
     result = await delegate.readout(command)
     assert result is False
+
+
+async def test_delegate_expose_no_overscan(delegate: ExposureDelegate):
+
+    delegate.actor.config["controllers"]["sp1"]["parameters"]["overscan_pixels"] = 0
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="obkect",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result
+
+    filename = delegate.actor.model["filename"].value
+    assert os.path.exists(filename)
+
+    hdu: Any = fits.open(filename)
+    assert hdu[0].header["BIASSEC"] == ""
+    assert hdu[0].header["CCDSEC"] != ""

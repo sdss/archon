@@ -6,6 +6,7 @@ controllers:
     parameters:
       pixels: 1024
       lines: 1024
+      overscan_pixels: 10
       taps_per_detector: 4
       framemode: top
     detectors:
