@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 import re
 
+from typing import TYPE_CHECKING
+
 import click
 from clu.command import Command
 
@@ -21,6 +23,10 @@ from archon.exceptions import ArchonError
 
 from ..tools import error_controller, parallel_controllers
 from . import parser
+
+
+if TYPE_CHECKING:
+    from ..actor import ArchonActor
 
 
 def _output(
@@ -43,7 +49,7 @@ def _output(
 @click.option("--hdr", is_flag=True, help="Set HDR mode.")
 @parallel_controllers()
 async def init(
-    command: Command,
+    command: Command[ArchonActor],
     controller: ArchonController,
     config_file: str | None = None,
     hdr=False,
@@ -71,6 +77,9 @@ async def init(
     data = open(config_file).read()
     if hdr:
         data = re.sub("(SAMPLEMODE)=[01]", "\\1=1", data)
+
+    # Stop timed commands since they may fail while writing data or power is off
+    await command.actor.timed_commands.stop()
 
     try:
         await controller.write_config(data, applyall=True, poweron=False)
@@ -108,5 +117,6 @@ async def init(
         )
 
     await controller.reset()
+    command.actor.timed_commands.start()
 
     return True
