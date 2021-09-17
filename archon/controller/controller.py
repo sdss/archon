@@ -528,7 +528,7 @@ class ArchonController(Device):
         await self.set_param("AutoFlush", int(mode))
         self.auto_flush = mode
 
-    async def reset(self, autoflush=True):
+    async def reset(self, autoflush=True, restart_timing=True):
         """Resets timing and discards current exposures."""
 
         await self.send_command("HOLDTIMING")
@@ -546,13 +546,14 @@ class ArchonController(Device):
             for param in default_parameters:
                 await self.set_param(param, default_parameters[param])
 
-        for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
-            cmd = await self.send_command(cmd_str, timeout=1)
-            if not cmd.succeeded():
-                self.update_status(ControllerStatus.ERROR)
-                raise ArchonControllerError(
-                    f"Failed sending {cmd_str} ({cmd.status.name})"
-                )
+        if restart_timing:
+            for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
+                cmd = await self.send_command(cmd_str, timeout=1)
+                if not cmd.succeeded():
+                    self.update_status(ControllerStatus.ERROR)
+                    raise ArchonControllerError(
+                        f"Failed sending {cmd_str} ({cmd.status.name})"
+                    )
 
         self._status = ControllerStatus.IDLE
         await self.get_device_status()  # Sets power bit.
@@ -588,8 +589,7 @@ class ArchonController(Device):
                 "Controller has a readout pending. Read the device or flush."
             )
 
-        await self.reset(autoflush=False)
-        await self.send_command("HOLDTIMING")
+        await self.reset(autoflush=False, restart_timing=False)
 
         if readout is False:
             await self.set_param("ReadOut", 0)
@@ -602,6 +602,7 @@ class ArchonController(Device):
         await self.set_param("HorizontalBinning", binning)
         await self.set_param("VerticalBinning", binning)
 
+        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
@@ -696,6 +697,7 @@ class ArchonController(Device):
         if delay > 0:
             await self.set_param("WaitCount", delay)
 
+        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)
