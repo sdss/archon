@@ -56,10 +56,11 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
 
     mocker.patch.object(actor.controllers["sp1"], "readout")
 
+    # For framemode=top
     mocker.patch.object(
         actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((1024, 12288)),
+        return_value=numpy.ones((1024, 12408)),
     )
 
     assert actor.model
