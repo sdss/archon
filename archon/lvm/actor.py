@@ -13,6 +13,7 @@ import json
 import os
 import re
 import warnings
+from socket import getfqdn
 
 from typing import TYPE_CHECKING, Dict
 
@@ -183,7 +184,7 @@ class LVMActor(ArchonActor):
         obsdate = Time(header["OBSTIME"], format="isot")
         mjd = int(obsdate.mjd)
         date_str = obsdate.strftime("%d/%m/%Y")
-        location = "SBS"
+        location = "SBS" if "carnegiescience" in getfqdn() else "?"
         spec = header["SPEC"]
         channel = header["CCD"]
         exptime = header["EXPTIME"]
