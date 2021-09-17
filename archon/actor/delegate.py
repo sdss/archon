@@ -353,9 +353,9 @@ class ExposureDelegate(Generic[Actor_co]):
                 biassec = ""
             else:
                 p0 = pixels - overscan_pixels + 1
-                p1 = p0 + overscan_pixels * channels // 2
-                l0 = lines - overscan_lines + 1
-                l1 = l1 + overscan_lines * channels // 2
+                p1 = p0 + overscan_pixels * channels // 2 - 1
+                l0 = 1
+                l1 = lines * channels // 2
                 biassec = f"[{p0}:{p1}, {l0}:{l1}]"
 
         header["DETSIZE"] = (detsize, "Detector size (1-index)")
@@ -534,6 +534,8 @@ class ExposureDelegate(Generic[Actor_co]):
                 hemisphere=hemisphere,
                 ccd=ccd,
             )
+
+            hdu.header["filename"] = os.path.basename(file_path)
 
             if file_path.endswith(".gz"):
                 # Astropy compresses with gzip -9 which takes forever.
