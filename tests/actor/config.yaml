@@ -17,7 +17,7 @@ controllers:
         sensor: C
 
 archon:
-  config_file: 'lvm/config/archon/LVM_slow_all_extra.acf'
+  config_file: 'lvm/config/archon/LVM_100MHz.acf'
 
 files:
   data_dir: '/var/tmp'
