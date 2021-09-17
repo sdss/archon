@@ -7,7 +7,7 @@ controllers:
     host: 10.7.45.26
     port: 4242
     parameters:
-      pixels: 2060
+      pixels: 2040
       lines: 2040
       overscan_pixels: 20
       taps_per_detector: 4
