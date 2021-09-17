@@ -608,7 +608,7 @@ class ArchonController(Device):
         self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
 
         async def update_state():
-            await asyncio.sleep(exposure_time + 0.5)
+            await asyncio.sleep(exposure_time)
             if not self.status & CS.EXPOSING:  # Must have been aborted.
                 return
             if readout is False:
