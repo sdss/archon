@@ -4,6 +4,7 @@
 
 ### ✨ Improved
 
+* [#32](https://github.com/sdss/archon/issues/32) Expand the default header with information about gain, readout noise, bias section, etc.
 * [#24](https://github.com/sdss/archon/issues/24) Added `ExposureDelegate.readout_cotasks()` that can be overridden to execute tasks concurrently during readout. The LVM delegate now reads temperatures and IEB data at this point.
 * Added script for ~800MHz readout.
 * Use `framemode=split` and rearrange taplines to allow proper display in the GUI.
