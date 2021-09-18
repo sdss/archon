@@ -32,9 +32,15 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         super().__init__(actor)
 
+        # By default we don't manage the shutter in the delegate since
+        # lvmscp will do that. This is here for the archon lvm expose command.
         self.use_shutter = False
 
+        # Additional data from the IEB and environmental sensors.
+        self.extra_data = {}
+
     def reset(self):
+        self.extra_data = {}
         self.use_shutter = False
         return super().reset()
 
@@ -100,6 +106,74 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         return True
 
+    async def readout_cotasks(self):
+        """Grab sensor data during CCD readout to save time."""
+
+        command = self.command
+
+        # lvmscp will add these header keywords, so add them here only if
+        # this is archon's own lvm expose command.
+        if not command.raw_command_string.startswith("lvm expose"):
+            return
+
+        assert self.expose_data
+        controllers = self.expose_data.controllers
+
+        # Govee lab temperature and RH.
+        try:
+            temp, hum = await read_govee()
+        except BaseException as err:
+            command.warning(text=f"Failed retriving H5179 data: {err}")
+            temp = -999.0
+            hum = -999.0
+        self.extra_data["govee"] = {"temp": temp, "hum": hum}
+
+        # Hartmanns status
+        self.extra_data["hartmanns"] = {}
+        for controller in controllers:
+            name = controller.name
+            try:
+                hartmann = await get_motor_status(
+                    name,
+                    ["hartmann_left", "hartmann_right"],
+                    drift=self.actor.drift[name],
+                )
+            except Exception as err:
+                command.warning(text=f"Failed retrieving hartmann door status: {err}")
+                hartmann = {
+                    "hartmann_left": {"status": "?"},
+                    "hartmann_right": {"status": "?"},
+                }
+            self.extra_data["hartmanns"][name] = hartmann
+
+        # Lamp status.
+        self.extra_data["lamps"] = {}
+        for lamp_name, lamp_config in self.actor.lamps.items():
+            try:
+                value = await self.actor.dli.get_outlet_state(**lamp_config)
+                value = "ON" if value is True else "OFF"
+            except Exception as err:
+                command.warning(
+                    text=f"Failed retrieving status of lamp {lamp_name}: {err}"
+                )
+                value = "?"
+            self.extra_data["lamps"][lamp_name] = value
+
+        # Pressure from SENS4
+        self.extra_data["pressure"] = {}
+        for controller in controllers:
+            for ccd in self.actor.config["controllers"][controller.name]["detectors"]:
+                value = -999.0
+                if "pressure" in self.actor.config["devices"]:
+                    if ccd in self.actor.config["devices"]["pressure"]:
+                        data = self.actor.config["devices"]["pressure"][ccd]
+                        pressure = await read_pressure(**data)
+                        if value is not None:
+                            value = pressure
+                self.extra_data["pressure"][ccd] = value
+
+        return
+
     async def post_process(
         self,
         controller: ArchonController,
@@ -115,64 +189,30 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
         self.command.debug(text="Running exposure post-process.")
 
         # Govee lab temperature and RH.
-        try:
-            temp, hum = await read_govee()
-        except BaseException as err:
-            self.command.warning(text=f"Failed retriving H5179 data: {err}")
-            temp = -999.0
-            hum = -999.0
+        govee = self.extra_data.get("govee", {})
+        temp = govee.get("temp", -999.0)
+        hum = govee.get("hum", -999.0)
+
+        # Hartmanns
+        hartmann = self.extra_data["hartmanns"][controller.name]
+        for door in ["left", "right"]:
+            if hartmann[f"hartmann_{door}"]["status"] == "open":
+                hartmann[f"hartmann_{door}"]["status"] = "0"
+            elif hartmann[f"hartmann_{door}"]["status"] == "closed":
+                hartmann[f"hartmann_{door}"]["status"] = "1"
+        left = hartmann["hartmann_left"]["status"]
+        right = hartmann["hartmann_right"]["status"]
 
         for hdu in hdus:
             hdu.header["LABTEMP"] = (temp, "Govee H5179 lab temperature [C]")
             hdu.header["LABHUMID"] = (hum, "Govee H5179 lab humidity [%]")
-
-        # Record hartmann status
-        try:
-            hartmann = await get_motor_status(
-                controller.name,
-                ["hartmann_left", "hartmann_right"],
-                drift=self.actor.drift[controller.name],
-            )
-        except Exception as err:
-            self.command.warning(text=f"Failed retrieving hartmann door status: {err}")
-            hartmann = {
-                "hartmann_left": {"status": "?"},
-                "hartmann_right": {"status": "?"},
-            }
-
-        for hdu in hdus:
-            for door in ["left", "right"]:
-                if hartmann[f"hartmann_{door}"]["status"] == "open":
-                    hartmann[f"hartmann_{door}"]["status"] = "0"
-                elif hartmann[f"hartmann_{door}"]["status"] == "closed":
-                    hartmann[f"hartmann_{door}"]["status"] = "1"
-            left = hartmann["hartmann_left"]["status"]
-            right = hartmann["hartmann_right"]["status"]
             hdu.header["HARTMANN"] = (f"{left} {right}", "Left/right. 0=open 1=closed")
 
-        # Record lamp status.
-        for lamp_name, lamp_config in self.actor.lamps.items():
-            try:
-                value = await self.actor.dli.get_outlet_state(**lamp_config)
-                value = "ON" if value is True else "OFF"
-            except Exception as err:
-                self.command.warning(
-                    text=f"Failed retrieving status of lamp {lamp_name}: {err}"
-                )
-                value = "?"
-            for hdu in hdus:
+            for lamp_name, value in self.extra_data.get("lamps", {}).items():
                 hdu.header[lamp_name.upper()] = (value, f"Status of lamp {lamp_name}")
 
-        # Record pressure
-        for hdu in hdus:
             ccd = hdu.header["CCD"]
-            value = -999.0
-            if "pressure" in self.actor.config["devices"]:
-                if ccd in self.actor.config["devices"]["pressure"]:
-                    data = self.actor.config["devices"]["pressure"][ccd]
-                    pressure = await read_pressure(**data)
-                    if value is not None:
-                        value = pressure
-            hdu.header["PRESSURE"] = (value, "Cryostat pressure [torr]")
+            pressure = self.extra_data.get("pressure", {}).get(ccd, -999.0)
+            hdu.header["PRESSURE"] = (pressure, "Cryostat pressure [torr]")
 
         return (controller, hdus)
