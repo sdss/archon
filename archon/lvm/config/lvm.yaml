@@ -213,17 +213,18 @@ sensors:
 # Additional header keywords to be obtained from the SYSTEM and STATUS commands.
 # The {sensor} placeholder will be filled out with the sensor value for the detector.
 # If the value of the header keyword is a list, it must be [value, comment]. It can
-# also be a mapping of detector name to [value, comment].
+# also be a mapping of detector name to [value, comment]. If a third element is used
+# it will be considered the floating point precision.
 header:
   status:
     CCDTEMP1:
-      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)']
-      b1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)']
-      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)']
+      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
     CCDTEMP2:
-      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
-      b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)']
-      z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)', 2]
+      b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)', 2]
+      z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)', 2]
 
 # Actor congiguration for the LVMActor class
 actor:
