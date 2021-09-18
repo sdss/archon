@@ -8,10 +8,14 @@ on:
     branches: [main]
     paths-ignore:
       - 'docs/**'
+      - '**.md'
+      - '**.rst'
   pull_request:
     branches: [main]
     paths-ignore:
       - 'docs/**'
+      - '**.md'
+      - '**.rst'
 
 jobs:
   build:
