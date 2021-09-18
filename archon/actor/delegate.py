@@ -15,7 +15,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import reduce
 
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
 
 import astropy.time
 import numpy
@@ -255,23 +255,124 @@ class ExposureDelegate(Generic[Actor_co]):
                 if c.status & ControllerStatus.EXPOSING
             ]
             await asyncio.gather(*jobs)
+
+            command.debug(text="Reading out CCDs.")
+            readout_tasks = [
+                controller.readout(delay=self.expose_data.delay_readout)
+                for controller in controllers
+            ]
+            await asyncio.gather(*readout_tasks, self.readout_cotasks())
+
+            command.debug(text="Fetching HDUs.")
             hdus = await asyncio.gather(*[self.fetch_hdus(c) for c in controllers])
+
         except Exception as err:
             return self.fail(f"Failed reading out: {err}")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
-        jobs = []
+        post_process_jobs = []
         for controller, hdus in c_to_hdus.items():
-            jobs.append(self.post_process(controller, hdus))
+            post_process_jobs.append(self.post_process(controller, hdus))
 
-        c_to_hdus = dict(await asyncio.gather(*jobs))
-
-        command.debug(text="Saving HDUs.")
+        c_to_hdus = dict(await asyncio.gather(*post_process_jobs))
+        self.command.debug(text="Writing HDUs to file.")
         await asyncio.gather(*[self.write_hdus(c, h) for c, h in c_to_hdus.items()])
 
         self.reset()
         return True
+
+    async def readout_cotasks(self):
+        """Tasks that will be executed concurrently with readout.
+
+        This routine can be overridden to run processes that do not need to
+        wait until `.post_process`. For example, reading out sensors and
+        telescope data can happen here to save time.
+
+        """
+
+        return
+
+    async def fetch_hdus(self, controller: ArchonController) -> List[fits.PrimaryHDU]:
+        """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
+
+        config = self.actor.config
+
+        # Fetch buffer
+        self.command.debug(text=f"Fetching {controller.name} buffer.")
+        data = await controller.fetch()
+
+        controller_info = config["controllers"][controller.name]
+        hdus = []
+        for ccd_name in controller_info["detectors"]:
+            header = await self.build_base_header(controller, ccd_name)
+            ccd_data = self._get_ccd_data(data, ccd_name, controller_info)
+            hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
+
+        return hdus
+
+    async def write_hdus(
+        self,
+        controller: ArchonController,
+        hdus: List[fits.PrimaryHDU],
+    ):
+        """Writes HDUs to disk."""
+
+        assert self.expose_data
+
+        expose_data = self.expose_data
+        config = self.actor.config
+
+        data_dir = pathlib.Path(config["files"]["data_dir"])
+        mjd_dir = data_dir / str(expose_data.mjd)
+
+        path: pathlib.Path = mjd_dir / config["files"]["template"]
+
+        write_tasks = []
+        for hdu in hdus:
+            ccd = hdu.header["ccd"]
+            observatory = str(hdu.header["OBSERVAT"]).lower()
+            hemisphere = "n" if observatory == "apo" else "s"
+
+            file_path = str(path.absolute()).format(
+                exposure_no=expose_data.exposure_no,
+                controller=controller.name,
+                observatory=observatory,
+                hemisphere=hemisphere,
+                ccd=ccd,
+            )
+
+            hdu.header["filename"] = os.path.basename(file_path)
+            hdu.header.insert(
+                "filename",
+                ("EXPNO", expose_data.exposure_no, "Exposure number"),
+                after=True,
+            )
+
+            write_tasks.append(self._write_to_file(hdu, file_path))
+
+        await asyncio.gather(*write_tasks)
+
+        return
+
+    async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
+        """Writes the HDU to file using an executor."""
+
+        loop = asyncio.get_running_loop()
+
+        if file_path.endswith(".gz"):
+            # Astropy compresses with gzip -9 which takes forever.
+            # Instead we compress manually with -1, which is still pretty good.
+            await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
+            await gzip_async(file_path[:-3], complevel=1)
+        else:
+            await loop.run_in_executor(None, hdu.writeto, file_path)
+
+        assert os.path.exists(file_path), "Failed writing image to disk."
+
+        basename = os.path.basename(file_path)
+        self.command.info(text=f"File {basename} written to disk.")
+        self.command.debug(filename=file_path)
 
     async def post_process(
         self,
@@ -482,81 +583,6 @@ class ExposureDelegate(Generic[Actor_co]):
             raise ValueError(f"Framemode {framemode} is supported at this time.")
 
         return ccd_data
-
-    async def fetch_hdus(self, controller: ArchonController) -> List[fits.PrimaryHDU]:
-        """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
-
-        assert self.expose_data
-
-        config = self.actor.config
-        expose_data = self.expose_data
-
-        # Read device
-        self.command.debug(text=f"Reading out {controller.name}.")
-        await controller.readout(delay=expose_data.delay_readout)
-
-        # Fetch buffer
-        self.command.debug(text=f"Fetching {controller.name} buffer.")
-        data = await controller.fetch()
-
-        controller_info = config["controllers"][controller.name]
-        hdus = []
-        for ccd_name in controller_info["detectors"]:
-            header = await self.build_base_header(controller, ccd_name)
-            ccd_data = self._get_ccd_data(data, ccd_name, controller_info)
-            hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
-
-        return hdus
-
-    async def write_hdus(
-        self,
-        controller: ArchonController,
-        hdus: List[fits.PrimaryHDU],
-    ):
-        """Writes HDUs to disk."""
-
-        assert self.expose_data
-
-        loop = asyncio.get_running_loop()
-
-        expose_data = self.expose_data
-        config = self.actor.config
-
-        data_dir = pathlib.Path(config["files"]["data_dir"])
-        mjd_dir = data_dir / str(expose_data.mjd)
-
-        path: pathlib.Path = mjd_dir / config["files"]["template"]
-
-        for hdu in hdus:
-            ccd = hdu.header["ccd"]
-            observatory = str(hdu.header["OBSERVAT"]).lower()
-            hemisphere = "n" if observatory == "apo" else "s"
-
-            file_path = str(path.absolute()).format(
-                exposure_no=expose_data.exposure_no,
-                controller=controller.name,
-                observatory=observatory,
-                hemisphere=hemisphere,
-                ccd=ccd,
-            )
-
-            hdu.header["filename"] = os.path.basename(file_path)
-
-            if file_path.endswith(".gz"):
-                # Astropy compresses with gzip -9 which takes forever.
-                # Instead we compress manually with -1, which is still pretty good.
-                await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
-                await gzip_async(file_path[:-3], complevel=1)
-            else:
-                await loop.run_in_executor(None, hdu.writeto, file_path)
-
-            assert os.path.exists(file_path), "Failed writing image to disk."
-
-            basename = os.path.basename(file_path)
-            self.command.info(text=f"File {basename} written to disk.")
-            self.command.debug(filename=file_path)
-
-        return
 
 
 @dataclass
