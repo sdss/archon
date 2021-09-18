@@ -95,7 +95,7 @@ class LVMActor(ArchonActor):
         self.model["filename"].register_callback(self.fill_log)
 
         # Timed commands
-        self.timed_commands.add_command("lvm status", delay=30, first_silent=True)
+        self.timed_commands.add_command("lvm status", delay=60, first_silent=True)
 
     def add_lamps(self):
         """Adds the lamps."""
