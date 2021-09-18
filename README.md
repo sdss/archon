@@ -10,7 +10,6 @@
 
 A library and actor to communicate with an STA Archon controller.
 
-
 ## Installation
 
 In general you should be able to install ``archon`` by doing
@@ -27,7 +26,6 @@ cd archon
 pip install .
 ```
 
-
 ## Docker
 
 The actor can run as a Docker container; new images for ``main`` (pointing to tag ``latest``) and tags are created via a GitHub Action. The images are stored in the GitHub Container Registry. To pull the latest image run
@@ -42,8 +40,7 @@ To run a container
 docker run --name archon --rm --detach --network host ghcr.io/sdss/archon:latest
 ```
 
-This assumes that RabbitMQ is running on the default port in the host computer and that the Archon controller are accessible over the host network.
-
+This assumes that RabbitMQ is running on the default port in the host computer and that the Archon controllers are accessible over the host network.
 
 ## Development
 
@@ -61,13 +58,15 @@ python create_setup.py
 pip install -e .
 ```
 
-Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see `pyproject.toml` `[tool.poetry.dev-dependencies]`).
+Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see `pyproject.toml` `[tool.poetry.dev-dependencies]`). You will also need to return `create_setup.py` anytime the dependencies or metadata parameters in `pyproject.toml` change.
 
 ### Style and type checking
 
 This project uses the [black](https://github.com/psf/black) code style with 88-character line lengths for code and docstrings. It is recommended that you run `black` on save. Imports must be sorted using [isort](https://pycqa.github.io/isort/). The GitHub test workflow checks all the Python file to make sure they comply with the black formatting.
 
-Configuration files for [flake8](https://flake8.pycqa.org/en/latest/), [isort](https://pycqa.github.io/isort/), and [black](https://github.com/psf/black) are provided and will be applied by most editors. For Visual Studio Code, the following project file is compatible with the project configuration:
+Configuration files for [flake8](https://flake8.pycqa.org/en/latest/), [isort](https://pycqa.github.io/isort/), and [black](https://github.com/psf/black) are provided and will be applied by most editors.
+
+For Visual Studio Code, the following project file is compatible with the project configuration:
 
 ```json
 {
