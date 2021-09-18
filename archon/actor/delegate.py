@@ -393,15 +393,17 @@ class ExposureDelegate(Generic[Actor_co]):
                             header[kname] = "N/A"
                             continue
                         else:
-                            kpath, comment = kconfig[ccd_name]
+                            kpath, comment, *precision = kconfig[ccd_name]
                     elif isinstance(kconfig, list):
-                        kpath, comment = kconfig
+                        kpath, comment, *precision = kconfig
                     else:
                         self.command.warning(text=f"Invalid keyword format: {kname}.")
                         header[kname] = "N/A"
                         continue
                     kpath = kpath.format(sensor=sensor).lower()
                     value = dict_get(model, kpath)
+                    if len(precision) > 0:
+                        value = round(float(cast(float, value)), precision[0])
                     if not value:  # pragma: no cover (needs fix from CLU)
                         self.command.warning(
                             text=f"Cannot find header value {kpath} for {kname}. "
