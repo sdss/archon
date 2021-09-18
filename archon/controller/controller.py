@@ -834,7 +834,11 @@ class ArchonController(Device):
             # characters without a newline; otherwise, read until the newline which
             # marks the end of this message. In binary, if the response is < 1024
             # bytes, the remaining bytes are filled with NULL (0x00).
-            line = await self._client.reader.readexactly(4)
+            try:
+                line = await self._client.reader.readexactly(4)
+            except asyncio.IncompleteReadError:
+                return
+
             if line[-1] == ord(b"\n"):
                 pass
             elif line[-1] == ord(b":"):
