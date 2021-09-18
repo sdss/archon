@@ -17,16 +17,19 @@ controllers:
         sensor: A
         serial: STA29687
         gain: 2.82
+        readnoise: 3
         type: STA4850
       b1:
         sensor: B
         serial: STA29602
         gain: 2.81
+        readnoise: 3
         type: STA4850
       z1:
         sensor: C
         serial: STA27875
         gain: 2.88
+        readnoise: 3
         type: STA4850
 
 devices:
