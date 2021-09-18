@@ -48,8 +48,8 @@ async def read_govee() -> Tuple[float, float]:
     if temp is None or hum is None or last is None:
         raise ValueError("Did not get a measurement for H5179.")
 
-    temp = float(temp)
-    hum = float(hum)
+    temp = round(float(temp), 2)
+    hum = round(float(hum), 2)
 
     last_seen = astropy.time.Time(last, format="isot")
     delta = astropy.time.Time.now() - last_seen
