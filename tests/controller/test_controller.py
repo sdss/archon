@@ -10,6 +10,7 @@ import asyncio
 
 import pytest
 
+from archon import config
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import (
@@ -126,3 +127,28 @@ async def test_update_status_invalid(controller: ArchonController):
 
     with pytest.raises(ValueError):
         controller.update_status(ControllerStatus.IDLE, "bad_mode")
+
+
+async def test_acf_loaded_config_exists(controller: ArchonController):
+
+    assert controller.acf_loaded is None
+
+    user_config_file = config.CONFIG_FILE
+    assert user_config_file
+
+    with open(user_config_file, "w") as file_:
+        file_.write(
+            """last_acf_loaded:
+                test_controller: /path/to/file.acf
+            """
+        )
+
+    assert controller.acf_loaded == "/path/to/file.acf"
+
+
+async def test_acf_loaded_default_config_file(controller: ArchonController):
+
+    controller.DEFAULT_USER_CONFIG_FILE = "/tmp/test.yaml"
+    config.CONFIG_FILE = None
+
+    assert controller._get_user_config() == ("/tmp/test.yaml", None)

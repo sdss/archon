@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import tempfile
 
 from typing import Iterable, Tuple, Union
 
@@ -20,14 +21,11 @@ from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 
 
-config["archon"]["default_parameters"]["Exposures"] = 0
-
-
 CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 
 @pytest.fixture()
-async def controller(request, unused_tcp_port: int):
+async def controller(request, unused_tcp_port: int, monkeypatch):
     """Mocks a `.ArchonController` that replies to commands with predefined replies.
 
     Tests that use this fixture must be decorated with ``@pytest.mark.commands``. The
@@ -95,6 +93,10 @@ async def controller(request, unused_tcp_port: int):
 
     async with server:
         archon = ArchonController("test_controller", "localhost", unused_tcp_port)
+
+        config["archon"]["default_parameters"]["Exposures"] = 0
+        config.CONFIG_FILE = tempfile.NamedTemporaryFile().name
+
         await archon.start(reset=False)
         archon._status = ControllerStatus.IDLE
 
