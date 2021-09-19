@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import configparser
 import os
+import pathlib
 import re
 import warnings
 from collections.abc import AsyncIterator
@@ -18,7 +19,10 @@ from collections.abc import AsyncIterator
 from typing import Any, Callable, Iterable, Optional
 
 import numpy
+import yaml
 from clu.device import Device
+
+from sdsstools import read_yaml_file
 
 from archon import config
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
@@ -36,19 +40,19 @@ class ArchonController(Device):
 
     Parameters
     ----------
+    name
+        A name identifying this controller.
     host
         The hostname of the Archon.
     port
         The port on which the Archon listens to incoming connections.
         Defaults to 4242.
-    name
-        A name identifying this controller.
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
     _id_pool = set(range(MAX_COMMAND_ID))
 
-    def __init__(self, host: str, port: int = 4242, name: str = ""):
+    def __init__(self, name: str, host: str, port: int = 4242):
         Device.__init__(self, host, port)
 
         self.name = name
@@ -58,7 +62,8 @@ class ArchonController(Device):
         self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
-        self.acf_loaded: str | None = None
+        self.DEFAULT_USER_CONFIG_FILE: str = "~/.config/sdss/archon/archon.yaml"
+        self._acf_loaded: str | None = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
@@ -136,6 +141,61 @@ class ArchonController(Device):
             if self.status != prev_status:
                 yield self.status
             self.__status_event.clear()
+
+    @property
+    def acf_loaded(self):
+        """Returns the last ACF file loaded.
+
+        If no ACF has been loaded since the controller was started, tries to get the
+        last loaded file from the user configuration file.
+
+        """
+
+        if self._acf_loaded:
+            return self._acf_loaded
+
+        _, user_config = self._get_user_config()
+        if user_config is None:
+            return None
+
+        last_acf = user_config.get("last_acf_loaded", {}).get(self.name, None)
+
+        self._acf_loaded = last_acf
+        return self._acf_loaded
+
+    @acf_loaded.setter
+    def acf_loaded(self, value: str | pathlib.Path):
+
+        self._acf_loaded = os.path.abspath(os.path.realpath(str(value)))
+
+        user_config_file, user_config = self._get_user_config()
+
+        user_config = user_config or {}
+        user_config["last_acf_loaded"] = user_config.get("last_acf_loaded", {})
+        user_config["last_acf_loaded"][self.name] = self._acf_loaded
+
+        with open(user_config_file, "w") as file_:
+            yaml.safe_dump(
+                user_config,
+                file_,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+
+        config["last_acf_loaded"] = user_config["last_acf_loaded"].copy()
+
+    def _get_user_config(self):
+        """Returns the user configuration."""
+
+        if not config.CONFIG_FILE or config.CONFIG_FILE == config._BASE_CONFIG_FILE:
+            user_config_file = os.path.expanduser(self.DEFAULT_USER_CONFIG_FILE)
+        else:
+            user_config_file = config.CONFIG_FILE
+
+        if not os.path.exists(user_config_file):
+            return (user_config_file, None)
+
+        return (user_config_file, read_yaml_file(user_config_file))
 
     def send_command(
         self,
