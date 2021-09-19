@@ -14,7 +14,8 @@
         "rtd2": { "type": "number" },
         "rtd3": { "type": "number" },
         "rtd4": { "type": "number" }
-      }
+      },
+      "additionalProperties": false
     },
     "motor_props": {
       "type": "object",
@@ -22,7 +23,8 @@
         "power": { "type": "boolean" },
         "status": { "enum": ["closed", "open", "?"] },
         "bits": { "type": "string" }
-      }
+      },
+      "additionalProperties": false
     }
   },
   "type": "object",
@@ -69,7 +71,8 @@
         "Neon": { "type": "boolean" },
         "Krypton": { "type": "boolean" },
         "LDLS": { "type": "boolean" }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }
