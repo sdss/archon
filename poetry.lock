@@ -1476,7 +1476,7 @@ lvm = ["sdss-drift", "httpx", "Authlib"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b1f7053936d97dbd6860cff95dac4f2553351f425d498dca64add6b012f5fd4c"
+content-hash = "80ef968611e0fd062f60a3211afad7fbc3d0558da23eb6b42d1234d6d548e216"
 
 [metadata.files]
 aio-pika = [
