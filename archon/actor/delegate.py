@@ -479,7 +479,6 @@ class ExposureDelegate(Generic[Actor_co]):
         config = actor.config
 
         # Add keywords specified in the configuration file.
-        sensor = ccd_config.get("sensor", "")
         if hconfig := config.get("header"):
             for hcommand in hconfig:
                 for kname in hconfig[hcommand]:
@@ -501,7 +500,7 @@ class ExposureDelegate(Generic[Actor_co]):
                         self.command.warning(text=f"Invalid keyword format: {kname}.")
                         header[kname] = "N/A"
                         continue
-                    kpath = kpath.format(sensor=sensor).lower()
+                    kpath = kpath.lower()
                     value = dict_get(model, kpath)
                     if len(precision) > 0:
                         value = round(float(cast(float, value)), precision[0])

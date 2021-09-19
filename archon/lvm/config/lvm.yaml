@@ -1,7 +1,5 @@
 ---
-# A dictionary of controller name to Archon controller connection parameters. The sensor
-# key indicates the identifier (A, B, C) assigned by the Archon constroller to that
-# detector.
+# A dictionary of controller name to Archon controller connection parameters.
 controllers:
   sp1:
     host: 10.7.45.26
@@ -14,19 +12,16 @@ controllers:
       framemode: split
     detectors:
       r1:
-        sensor: A
         serial: STA29687
         gain: 2.82
         readnoise: 3
         type: STA4850
       b1:
-        sensor: B
         serial: STA29602
         gain: 2.81
         readnoise: 3
         type: STA4850
       z1:
-        sensor: C
         serial: STA27875
         gain: 2.88
         readnoise: 3
