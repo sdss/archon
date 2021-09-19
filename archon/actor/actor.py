@@ -132,9 +132,9 @@ class ArchonBaseActor(BaseActor):
         if "controllers" in instance.config:
             controllers = (
                 ArchonController(
+                    ctrname,
                     ctr["host"],
                     ctr["port"],
-                    name=ctrname,
                 )
                 for (ctrname, ctr) in instance.config["controllers"].items()
             )

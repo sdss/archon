@@ -36,19 +36,19 @@ class ArchonController(Device):
 
     Parameters
     ----------
+    name
+        A name identifying this controller.
     host
         The hostname of the Archon.
     port
         The port on which the Archon listens to incoming connections.
         Defaults to 4242.
-    name
-        A name identifying this controller.
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
     _id_pool = set(range(MAX_COMMAND_ID))
 
-    def __init__(self, host: str, port: int = 4242, name: str = ""):
+    def __init__(self, name: str, host: str, port: int = 4242):
         Device.__init__(self, host, port)
 
         self.name = name

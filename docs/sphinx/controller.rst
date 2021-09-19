@@ -9,7 +9,7 @@ Controller
 `.ArchonController` provides a mid-level interface to the Archon controller and implements the protocol for communicating with the controller. ::
 
   >>> from archon.controller import ArchonController
-  >>> archon = ArchonController('10.7.45.25', name='my_controller')
+  >>> archon = ArchonController('my_controller', '10.7.45.25')
   >>> archon
   <archon.controller.controller.ArchonController at 0x7f5de43d3ee0>
 
