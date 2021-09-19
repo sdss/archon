@@ -6,6 +6,7 @@
 
 * [#32](https://github.com/sdss/archon/issues/32) Expand the default header with information about gain, readout noise, bias section, etc.
 * [#24](https://github.com/sdss/archon/issues/24) Added `ExposureDelegate.readout_cotasks()` that can be overridden to execute tasks concurrently during readout. The LVM delegate now reads temperatures and IEB data at this point.
+* [#34](https://github.com/sdss/archon/issues/34) The path to the last ACF file written to the controller is stored in the user configuration file (usually at `~/.config/sdss/archon.yaml`) from where it's read when the controller starts. This prevents having to initialise the controller every time `archon` is restarted (with the corresponding power cycling of the CCDs) just to update the ACF path, but it introduces a certain risk that the ACF stored in the configuration file and the one loaded are actually different. In general it's still recommended to do an `archon init` when the daemon is restarted.
 * Added script for ~800MHz readout.
 * Use `framemode=split` and rearrange taplines to allow proper display in the GUI.
 
