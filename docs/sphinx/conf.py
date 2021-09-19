@@ -157,7 +157,7 @@ html_css_files = []
 # a list of builtin themes.
 
 html_theme = "furo"
-html_title = "archon"
+html_title = "archon's documentation"
 html_logo = "_static/sdssv_logo.png"
 html_favicon = "./_static/favicon_sdssv.ico"
 

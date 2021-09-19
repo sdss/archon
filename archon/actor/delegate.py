@@ -74,7 +74,7 @@ class ExposureDelegate(Generic[Actor_co]):
             self.lock.release()
 
     def fail(self, message: str = None):
-        """Fail a command."""
+        """Fails a command."""
 
         if message:
             self.command.fail(error=message)

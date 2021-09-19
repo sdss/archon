@@ -23,6 +23,11 @@ Actor
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: archon.actor.delegate
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: archon.actor.tools
    :members:
    :undoc-members:
