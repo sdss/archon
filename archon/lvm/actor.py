@@ -108,6 +108,7 @@ class LVMActor(ArchonActor):
                 "Credentials for DLI not found. Lamps will not be loaded.",
                 ArchonWarning,
             )
+            return
 
         for lamp in self.config["devices"]["lamps"]:
             host = self.config["devices"]["lamps"][lamp]["host"]
