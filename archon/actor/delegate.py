@@ -591,7 +591,7 @@ class ExposeData:
     exposure_time: float
     flavour: str
     controllers: list[ArchonController]
-    start_time: astropy.time.Time = astropy.time.Time.now()
+    start_time: astropy.time.Time = field(default_factory=astropy.time.Time.now)
     end_time: astropy.time.Time | None = None
     mjd: int = 0
     exposure_no: int = 0
