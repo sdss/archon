@@ -22,6 +22,7 @@ from astropy.time import Time
 from authlib.integrations.httpx_client import AsyncAssertionClient
 
 from archon.exceptions import ArchonWarning
+from archon.lvm.tools import read_depth_probes
 
 from ..actor import ArchonActor
 from . import config
@@ -217,6 +218,12 @@ class LVMActor(ArchonActor):
         test_no = self._log_values.get("test_no", "")
         test_iteration = self._log_values.get("test_iteration", "")
 
+        try:
+            depth_dict = await read_depth_probes(**self.config["devices"]["depth"])
+            depth = f"A={depth_dict['A']}, B={depth_dict['B']}, C={depth_dict['C']}"
+        except ValueError:
+            depth = "?"
+
         data = (
             exp_no,
             filename,
@@ -233,6 +240,7 @@ class LVMActor(ArchonActor):
             exptime,
             lab_temp,
             ccd_temp,
+            depth,
             purpose,
             notes,
         )
