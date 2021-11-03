@@ -16,10 +16,12 @@ from typing import Tuple
 
 import astropy.time
 
+from archon.tools import send_and_receive
+
 from . import config
 
 
-__all__ = ["read_govee"]
+__all__ = ["read_govee", "read_depth_probes"]
 
 
 async def read_govee() -> Tuple[float, float]:
@@ -83,3 +85,20 @@ async def read_pressure(host: str, port: int, id: int, read_timeout=5) -> bool |
         if w is not None:
             w.close()
             await w.wait_closed()
+
+
+async def read_depth_probes(host: str, port: int):
+    """Returns the measured values from the depth probes."""
+
+    depth = {"A": -999.0, "B": -999.0, "C": -999.0}
+    for channel in depth:
+        reply = await send_and_receive(host, port, ("SEND " + channel + "\n").encode())
+        if reply is False:
+            raise ValueError("Failed retrieving data from depth probes.")
+        if match := re.match(f"\r{channel} ([+\\-0-9\\.]+) mm".encode(), reply):
+            if match:
+                depth[channel] = float(match.group(1).decode())
+            else:
+                raise ValueError(f"Failed parting depth probe for channel {channel}")
+
+    return depth
