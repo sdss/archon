@@ -18,7 +18,7 @@ from archon.actor import ExposureDelegate
 from archon.controller.controller import ArchonController
 
 from .motor import get_motor_status, is_device_powered, move_motor
-from .tools import read_govee, read_pressure
+from .tools import read_depth_probes, read_govee, read_pressure
 
 
 if TYPE_CHECKING:
@@ -172,6 +172,14 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
                             value = pressure
                 self.extra_data["pressure"][ccd] = value
 
+        # Read depth probes
+        try:
+            self.extra_data["depth"] = await read_depth_probes(
+                **self.actor.config["devices"]["depth"]
+            )
+        except ValueError as err:
+            command.warning(text=err)
+
         return
 
     async def post_process(
@@ -214,5 +222,11 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             ccd = hdu.header["CCD"]
             pressure = self.extra_data.get("pressure", {}).get(ccd, -999.0)
             hdu.header["PRESSURE"] = (pressure, "Cryostat pressure [torr]")
+
+            for channel in self.extra_data["depth"]:
+                hdu.header[f"DEPTH{channel}"] = (
+                    self.extra_data["depth"][channel],
+                    f"Depth probe {channel} [mm]",
+                )
 
         return (controller, hdus)
