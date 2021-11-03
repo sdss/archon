@@ -15,7 +15,13 @@ import socket
 from subprocess import CalledProcessError
 
 
-__all__ = ["Timer", "gzip_async", "subprocess_run_async", "get_profile_name"]
+__all__ = [
+    "Timer",
+    "gzip_async",
+    "subprocess_run_async",
+    "get_profile_name",
+    "send_and_receive",
+]
 
 
 class Timer:
@@ -117,3 +123,31 @@ def get_profile_name() -> str:  # pragma: no cover
         return "lvm"
 
     raise RuntimeError(f"Cannot infer profile from domain {fqdn!r}.")
+
+
+async def send_and_receive(
+    host: str,
+    port: int,
+    data: bytes,
+    timeout=1,
+    delimiter=b"\n",
+):
+    """Establishes a connection to a server, sends data, and returns the reply."""
+
+    w = None
+
+    try:
+        r, w = await asyncio.wait_for(asyncio.open_connection(host, port), 1)
+
+        w.write(data)
+        await w.drain()
+
+        reply = await asyncio.wait_for(r.readuntil(delimiter), timeout)
+
+        return reply
+    except Exception:
+        return False
+    finally:
+        if w is not None:
+            w.close()
+            await w.wait_closed()
