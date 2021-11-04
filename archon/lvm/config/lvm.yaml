@@ -16,11 +16,11 @@ controllers:
         gain: 2.82
         readnoise: 3
         type: STA4850
-      # b1:
-      #   serial: STA29602
-      #   gain: 2.81
-      #   readnoise: 3
-      #   type: STA4850
+      b1:
+        serial: STA29602
+        gain: 2.81
+        readnoise: 3
+        type: STA4850
       z1:
         serial: STA27875
         gain: 2.88
