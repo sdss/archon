@@ -329,7 +329,7 @@ class ExposureDelegate(Generic[Actor_co]):
         path: pathlib.Path = mjd_dir / config["files"]["template"]
 
         write_tasks = []
-        for hdu in hdus:
+        for i, hdu in enumerate(hdus):
             ccd = hdu.header["ccd"]
             observatory = str(hdu.header["OBSERVAT"]).lower()
             hemisphere = "n" if observatory == "apo" else "s"
@@ -349,14 +349,20 @@ class ExposureDelegate(Generic[Actor_co]):
                 after=True,
             )
 
-            write_tasks.append(self._write_to_file(hdu, file_path))
+            write_tasks.append(self._write_to_file(hdu, file_path, i))
 
         await asyncio.gather(*write_tasks)
 
         return
 
-    async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
+    async def _write_to_file(
+        self, hdu: fits.PrimaryHDU, file_path: str, index: int = 0
+    ):
         """Writes the HDU to file using an executor."""
+
+        # Add an artificial delay in when we save the image to prevent all of them
+        # reporting at the same time. Remove later.
+        await asyncio.sleep(index)
 
         loop = asyncio.get_running_loop()
 
