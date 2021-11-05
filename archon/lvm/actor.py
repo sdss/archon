@@ -219,9 +219,11 @@ class LVMActor(ArchonActor):
         test_iteration = self._log_values.get("test_iteration", "")
 
         try:
-            depth_dict = await read_depth_probes(**self.config["devices"]["depth"])
+            depth_dict = await read_depth_probes(
+                **self.config["devices"]["depth"][channel]
+            )
             depth = f"A={depth_dict['A']}, B={depth_dict['B']}, C={depth_dict['C']}"
-        except ValueError:
+        except (ValueError, KeyError):
             depth = "?"
 
         data = (

@@ -173,12 +173,14 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
                 self.extra_data["pressure"][ccd] = value
 
         # Read depth probes
+        self.extra_data["depth"] = {}
         try:
-            self.extra_data["depth"] = await read_depth_probes(
-                **self.actor.config["devices"]["depth"]
-            )
+            for ccd in self.actor.config["devices"]["depth"]:
+                self.extra_data["depth"][ccd] = await read_depth_probes(
+                    **self.actor.config["devices"]["depth"][ccd]
+                )
         except ValueError as err:
-            command.warning(text=err)
+            command.warning(text=str(err))
 
         return
 
@@ -223,10 +225,17 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             pressure = self.extra_data.get("pressure", {}).get(ccd, -999.0)
             hdu.header["PRESSURE"] = (pressure, "Cryostat pressure [torr]")
 
-            for channel in self.extra_data["depth"]:
-                hdu.header[f"DEPTH{channel}"] = (
-                    self.extra_data["depth"][channel],
-                    f"Depth probe {channel} [mm]",
-                )
+            if ccd in self.extra_data["depth"]:
+                for channel in self.extra_data["depth"][ccd]:
+                    hdu.header[f"DEPTH{channel}"] = (
+                        self.extra_data["depth"][channel],
+                        f"Depth probe {channel} [mm]",
+                    )
+            else:
+                for channel in ["A", "B", "C"]:
+                    hdu.header[f"DEPTH{channel}"] = (
+                        -999.0,
+                        f"Depth probe {channel} [mm]",
+                    )
 
         return (controller, hdus)
