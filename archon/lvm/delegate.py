@@ -174,13 +174,17 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
 
         # Read depth probes
         self.extra_data["depth"] = {}
-        try:
-            for ccd in self.actor.config["devices"]["depth"]:
-                self.extra_data["depth"][ccd] = await read_depth_probes(
-                    **self.actor.config["devices"]["depth"][ccd]
+        if self.actor.config["devices"]["depth"]["channel"] is None:
+            command.warning("Heidenhain channel not set.")
+        else:
+            try:
+                channel = self.actor.config["devices"]["depth"]["channel"]
+                self.extra_data["depth"][channel] = await read_depth_probes(
+                    self.actor.config["devices"]["depth"]["host"],
+                    self.actor.config["devices"]["depth"]["port"],
                 )
-        except ValueError as err:
-            command.warning(text=str(err))
+            except ValueError as err:
+                command.warning(text=str(err))
 
         return
 

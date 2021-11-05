@@ -81,9 +81,9 @@ devices:
       port: 1115
       id: 253
   depth:
-    z1:
-      host: 10.7.45.30
-      port: 1116
+    host: 10.7.45.30
+    port: 1116
+    channel: null
   wago:
     controllers:
       sp1:

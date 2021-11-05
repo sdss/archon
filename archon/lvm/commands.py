@@ -407,3 +407,12 @@ async def expose(
             return
 
     return command.finish()
+
+
+@lvm.command()
+@click.argument("CHANNEL", type=str)
+async def depth(command, controllers, channel):
+    """Sets the Heidenhain channel."""
+
+    command.actor.config["devices"]["depth"]["channel"] = channel
+    command.finish()
