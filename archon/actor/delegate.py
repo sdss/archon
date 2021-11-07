@@ -349,20 +349,14 @@ class ExposureDelegate(Generic[Actor_co]):
                 after=True,
             )
 
-            write_tasks.append(self._write_to_file(hdu, file_path, i))
+            write_tasks.append(self._write_to_file(hdu, file_path))
 
         await asyncio.gather(*write_tasks)
 
         return
 
-    async def _write_to_file(
-        self, hdu: fits.PrimaryHDU, file_path: str, index: int = 0
-    ):
+    async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
         """Writes the HDU to file using an executor."""
-
-        # Add an artificial delay in when we save the image to prevent all of them
-        # reporting at the same time. Remove later.
-        await asyncio.sleep(index)
 
         loop = asyncio.get_running_loop()
 
