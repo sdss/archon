@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* `expose finish --header` now accepts a JSON-like dictionary in which a keyword can be the name of a detector. In that case the contents of that keyword are only added to the detector with that name.
+
+
 ## 0.5.1 - September 18, 2021
 
 ### ✨ Improved

@@ -522,7 +522,18 @@ class ExposureDelegate(Generic[Actor_co]):
             if isinstance(expose_data.header[key], list):
                 expose_data.header[key] = tuple(expose_data.header[key])
 
-        header.update(expose_data.header)
+        # Copy the extra header and loop over potential keys that match
+        # the detector name. If so, add those headers only if the detector
+        # name matches the current ccd_name.
+        detectors = config["controllers"][controller.name]["detectors"]
+        extra_header = expose_data.header.copy()
+        for detector in detectors:
+            detector_header = extra_header.pop(detector, {})
+            if detector == ccd_name:
+                header.update(detector_header)
+
+        # What remains are extra headers to be added to all the detectors.
+        header.update(extra_header)
 
         return header
 
