@@ -22,7 +22,6 @@ from astropy.time import Time
 from authlib.integrations.httpx_client import AsyncAssertionClient
 
 from archon.exceptions import ArchonWarning
-from archon.lvm.tools import read_depth_probes
 
 from ..actor import ArchonActor
 from . import config
