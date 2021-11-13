@@ -70,8 +70,8 @@ class ArchonBaseActor(BaseActor):
         self.version = __version__
 
         # Issue status and system on a loop.
-        self.timed_commands.add_command("status", delay=60)  # type: ignore
-        self.timed_commands.add_command("system", delay=60)  # type: ignore
+        # self.timed_commands.add_command("status", delay=60)  # type: ignore
+        # self.timed_commands.add_command("system", delay=60)  # type: ignore
 
         self.expose_delegate = self.DELEGATE_CLASS(self)
 
