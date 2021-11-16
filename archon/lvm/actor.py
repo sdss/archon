@@ -188,6 +188,7 @@ class LVMActor(ArchonActor):
         location = "SBS" if "carnegiescience" in getfqdn() else "?"
         spec = header["SPEC"]
         channel = header["CCD"]
+        image_type = header["IMAGETYP"]
         exptime = header["EXPTIME"]
 
         lamp_sources = []
@@ -241,6 +242,7 @@ class LVMActor(ArchonActor):
             lamp_sources,
             lamp_current,
             hartmanns,
+            image_type,
             exptime,
             lab_temp,
             ccd_temp,
