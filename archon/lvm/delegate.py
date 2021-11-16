@@ -232,7 +232,7 @@ class LVMExposeDelegate(ExposureDelegate["LVMActor"]):
             if ccd in self.extra_data["depth"]:
                 for channel in self.extra_data["depth"][ccd]:
                     hdu.header[f"DEPTH{channel}"] = (
-                        self.extra_data["depth"][channel],
+                        self.extra_data["depth"][ccd][channel],
                         f"Depth probe {channel} [mm]",
                     )
             else:
