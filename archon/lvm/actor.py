@@ -210,7 +210,10 @@ class LVMActor(ArchonActor):
 
         lamp_current = self._log_values.get("lamp_current", "")
         lab_temp = header.get("LABTEMP", -999)
+
         ccd_temp = header.get("CCDTEMP1", -999)
+        if ccd_temp < -250:
+            ccd_temp = "?"
 
         purpose = self._log_values.get("purpose", "")
         notes = self._log_values.get("notes", "")
