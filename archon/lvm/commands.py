@@ -251,7 +251,7 @@ async def power(command, controllers, controller, device, action):
         await dev.open()
         status["power"] = False
 
-    return command.finish(message={controller: {device: status}})
+    return command.finish(message={device: {controller: status}})
 
 
 @lvm.command()
