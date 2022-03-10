@@ -90,7 +90,8 @@ async def actor(ctx):
     archon_actor = Actor.from_config(config_file)
 
     if ctx.obj["verbose"]:
-        archon_actor.log.fh.setLevel(0)
+        if archon_actor.log.fh:
+            archon_actor.log.fh.setLevel(0)
         archon_actor.log.sh.setLevel(0)
 
     loop = asyncio.get_event_loop()
