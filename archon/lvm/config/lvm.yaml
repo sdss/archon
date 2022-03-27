@@ -97,32 +97,32 @@ devices:
         description: E+E temperature and humidity sensors
         devices:
           RH1:
-            address: 40001
+            address: 0
             category: humidity
             adaptor: rh_dwyer
             units: percent
           T1:
-            address: 40002
+            address: 1
             category: temperature
             adaptor: t_dwyer
             units: degC
           RH2:
-            address: 40003
+            address: 2
             category: humidity
             adaptor: rh_dwyer
             units: percent
           T2:
-            address: 40004
+            address: 3
             category: temperature
             adaptor: t_dwyer
             units: degC
           RH3:
-            address: 40005
+            address: 4
             category: humidity
             adaptor: rh_dwyer
             units: percent
           T3:
-            address: 40006
+            address: 5
             category: temperature
             adaptor: t_dwyer
             units: degC
@@ -133,25 +133,25 @@ devices:
         description: Pt RTD sensors
         devices:
           RTD1:
-            address: 40009
+            address: 8
             category: temperature
             adaptor: rtd
             units: degC
             description: Inside the controller box
           RTD2:
-            address: 40010
+            address: 9
             category: temperature
             adaptor: rtd
             units: degC
             description:
           RTD3:
-            address: 40011
+            address: 10
             category: temperature
             adaptor: rtd
             units: degC
             description:
           RTD4:
-            address: 40012
+            address: 11
             category: temperature
             adaptor: rtd
             units: degC
@@ -163,17 +163,17 @@ devices:
         description: Power relays
         devices:
           shutter:
-            address: 40513
+            address: 512
             type: relay
             category: relays
             relay_type: NC
           hartmann_left:
-            address: 40515
+            address: 514
             type: relay
             category: relays
             relay_type: NO
           hartmann_right:
-            address: 40516
+            address: 515
             type: relay
             category: relays
             relay_type: NO
