@@ -348,6 +348,7 @@ async def lamps(command, controllers, lamp, state, list_):
 @click.option("--test-iteration", type=str)
 @click.option("--purpose", type=str)
 @click.option("--notes", type=str)
+@click.option("--no-shutter", is_flag=True, help="Do not trigger the shutter.")
 async def expose(
     command,
     controllers,
@@ -362,6 +363,7 @@ async def expose(
     test_iteration,
     purpose,
     notes,
+    no_shutter,
 ):
     """Exposes the cameras."""
 
@@ -391,7 +393,7 @@ async def expose(
             notes=notes,
         )
 
-        delegate.use_shutter = True
+        delegate.use_shutter = not no_shutter
         result = await delegate.expose(
             command,
             selected_controllers,
