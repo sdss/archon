@@ -424,8 +424,24 @@ class ExposureDelegate(Generic[Actor_co]):
 
         header["CCDID"] = (ccdid, "Unique identifier of the CCD")
         header["CCDTYPE"] = (ccdtype, "CCD type")
-        header["GAIN"] = (gain, "CCD gain (e-/ADU)")
-        header["RDNOISE"] = (readnoise, "CCD read noise (e-)")
+
+        if isinstance(gain, (list, tuple)):
+            for channel_idx in range(len(gain)):
+                header[f"GAIN{channel_idx+1}"] = (
+                    gain[channel_idx],
+                    f"CCD gain AD{channel_idx+1} [e-/ADU]",
+                )
+        else:
+            header["GAIN"] = (gain, "CCD gain [e-/ADU]")
+
+        if isinstance(readnoise, (list, tuple)):
+            for channel_idx in range(len(readnoise)):
+                header[f"RDNOISE{channel_idx+1}"] = (
+                    readnoise[channel_idx],
+                    f"CCD read noise AD{channel_idx+1} [e-]",
+                )
+        else:
+            header["RDNOISE"] = (readnoise, "CCD read noise [e-]")
 
         binning = int(expose_data.binning)
         header["BINNING"] = (binning, "Horizontal and vertical binning")
