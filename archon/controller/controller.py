@@ -16,7 +16,7 @@ import re
 import warnings
 from collections.abc import AsyncIterator
 
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional, cast
 
 import numpy
 import yaml
@@ -470,7 +470,7 @@ class ArchonController(Device):
         input: str | os.PathLike[str],
         applyall: bool = False,
         poweron: bool = False,
-        timeout: float = None,
+        timeout: float | None = None,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Writes a configuration file to the contoller.
@@ -860,7 +860,7 @@ class ArchonController(Device):
 
         # The full read buffer probably contains some extra bytes to complete the 1024
         # reply. We get only the bytes we know are part of the buffer.
-        frame = cmd.replies[0].reply[0:n_bytes]
+        frame = cast(bytes, cmd.replies[0].reply[0:n_bytes])
 
         # Convert to uint16 array and reshape.
         dtype = f"<u{bytes_per_pixel}"  # Buffer is little-endian
