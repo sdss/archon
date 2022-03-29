@@ -23,8 +23,8 @@ controllers:
         type: STA4850
       z1:
         serial: STA27977
-        gain: [2.88, 2.88, 2.88, 2.88]
-        readnoise: [3.0, 3.0, 3.0, 3.0]
+        gain: [2.60, 2.65, 2.57, 2.72]
+        readnoise: [3.6, 3.6, 3.4, 3.6]
         type: STA4850
 
 devices:
