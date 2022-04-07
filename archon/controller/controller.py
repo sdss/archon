@@ -766,7 +766,7 @@ class ArchonController(Device):
         if not block:
             return
 
-        max_wait = config["timeouts"]["readout_max"]
+        max_wait = config["timeouts"]["readout_max"] + delay
 
         wait_for = wait_for or 3  # Min delay to ensure the new frame starts filling.
         await asyncio.sleep(wait_for)
