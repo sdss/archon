@@ -117,6 +117,7 @@ async def init(
         )
 
     await controller.reset()
-    command.actor.timed_commands.start()
+    if not command.actor.timed_commands.running:
+        command.actor.timed_commands.start()
 
     return True
