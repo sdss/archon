@@ -13,6 +13,7 @@ import json
 import os
 import re
 import warnings
+from copy import deepcopy
 from socket import getfqdn
 
 from typing import TYPE_CHECKING, Dict
@@ -75,7 +76,10 @@ class LVMActor(ArchonActor):
             wago_controllers = self.config["devices"]["wago"]["controllers"]
             modules = self.config["devices"]["wago"]["modules"]
             for controller in wago_controllers:
-                wago_config = {**wago_controllers[controller], "modules": modules}
+                wago_config = {
+                    **wago_controllers[controller].copy(),
+                    "modules": deepcopy(modules),
+                }
                 self.drift[controller] = Drift.from_config(wago_config)
 
         # Add lamps

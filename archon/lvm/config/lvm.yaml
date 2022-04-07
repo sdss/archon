@@ -26,6 +26,31 @@ controllers:
         gain: [2.60, 2.65, 2.57, 2.72]
         readnoise: [3.6, 3.6, 3.4, 3.6]
         type: STA4850
+  sp2:
+    host: 10.7.45.25
+    port: 4242
+    parameters:
+      pixels: 2040
+      lines: 2040
+      overscan_pixels: 20
+      taps_per_detector: 4
+      framemode: split
+    detectors:
+      r2:
+        serial: STA29857
+        gain: [2.63, 2.64, 2.65, 2.71]
+        readnoise: [3.2, 3.3, 3.0, 3.1]
+        type: STA4850
+      b2:
+        serial: STA29925
+        gain: [2.45, 2.46, 2.46, 2.50]
+        readnoise: [3.0, 3.0, 2.8, 2.8]
+        type: STA4850
+      z2:
+        serial: STA27977
+        gain: [2.60, 2.65, 2.57, 2.72]
+        readnoise: [3.6, 3.6, 3.4, 3.6]
+        type: STA4850
 
 devices:
   motor_controllers:
@@ -38,6 +63,16 @@ devices:
         port: 7777
       hartmann_right:
         host: 10.7.45.28
+        port: 7778
+    sp2:
+      shutter:
+        host: 10.7.45.27
+        port: 7776
+      hartmann_left:
+        host: 10.7.45.27
+        port: 7777
+      hartmann_right:
+        host: 10.7.45.27
         port: 7778
   lamps:
     MI150:
@@ -88,6 +123,9 @@ devices:
     controllers:
       sp1:
         address: 10.7.45.28
+        port: 502
+      sp2:
+        address: 10.7.45.27
         port: 502
     modules:
       ANALOG1:
