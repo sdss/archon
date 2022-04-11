@@ -349,6 +349,7 @@ async def lamps(command, controllers, lamp, state, list_):
 @click.option("--purpose", type=str)
 @click.option("--notes", type=str)
 @click.option("--no-shutter", is_flag=True, help="Do not trigger the shutter.")
+@click.option("--with-dark", is_flag=True, help="Take a matching dark exposure.")
 async def expose(
     command,
     controllers,
@@ -364,6 +365,7 @@ async def expose(
     purpose,
     notes,
     no_shutter,
+    with_dark,
 ):
     """Exposes the cameras."""
 
@@ -385,28 +387,31 @@ async def expose(
         if delegate is None:
             return command.fail(error="Cannot find expose delegate.")
 
-        command.actor.set_log_values(
-            lamp_current=lamp_current,
-            test_no=test_no,
-            test_iteration=test_iteration,
-            purpose=purpose,
-            notes=notes,
-        )
+        flavours = [flavour, "dark"] if with_dark else [flavour]
+        for this_flavour in flavours:
 
-        delegate.use_shutter = not no_shutter
-        result = await delegate.expose(
-            command,
-            selected_controllers,
-            flavour=flavour,
-            exposure_time=exposure_time,
-            readout=True,
-            delay_readout=delay_readout,
-            binning=binning,
-        )
+            command.actor.set_log_values(
+                lamp_current=lamp_current,
+                test_no=test_no,
+                test_iteration=test_iteration,
+                purpose=purpose,
+                notes=notes,
+            )
 
-        if not result:
-            # expose will fail the command.
-            return
+            delegate.use_shutter = not no_shutter
+            result = await delegate.expose(
+                command,
+                selected_controllers,
+                flavour=this_flavour,
+                exposure_time=exposure_time,
+                readout=True,
+                delay_readout=delay_readout,
+                binning=binning,
+            )
+
+            if not result:
+                # expose will fail the command.
+                return
 
     return command.finish()
 
