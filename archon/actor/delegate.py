@@ -573,11 +573,12 @@ class ExposureDelegate(Generic[Actor_co]):
 
         framemode = parameters.get("framemode", "split")
         overscan_pixels = parameters.get("overscan_pixels", 0)
+        prescan_pixels = parameters.get("prescan_pixels", 0)
 
         ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
 
         if framemode == "top":
-            x0_base = ccd_index * (pixels + overscan_pixels) * taps
+            x0_base = ccd_index * (prescan_pixels + pixels + overscan_pixels) * taps
             x0 = x0_base
 
             ccd_taps = []
@@ -585,7 +586,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 y0 = 0
                 y1 = lines // binning
 
-                x1 = x0 + (pixels + overscan_pixels) // binning
+                x1 = x0 + (prescan_pixels + pixels + overscan_pixels) // binning
 
                 ccd_taps.append(data[y0:y1, x0:x1])
 
@@ -599,8 +600,8 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
 
         elif framemode == "split":
-            x0 = ccd_index * (pixels + overscan_pixels) * (taps // 2)
-            x1 = x0 + (pixels + overscan_pixels) * (taps // 2)
+            x0 = ccd_index * (prescan_pixels + pixels + overscan_pixels) * (taps // 2)
+            x1 = x0 + (prescan_pixels + pixels + overscan_pixels) * (taps // 2)
             y0 = 0
             y1 = lines * (taps // 2)
             ccd_data = data[y0:y1, x0:x1]
