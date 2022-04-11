@@ -447,42 +447,42 @@ class ExposureDelegate(Generic[Actor_co]):
         header["BINNING"] = (binning, "Horizontal and vertical binning")
         header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
 
-        if controller_config["parameters"] == {}:  # pragma: no cover
-            # This is just for extra safety, but it should never happen
-            # because we need parameters to read out.
-            detsize = ""
-            ccdsec = ""
-            biassec = ""
-            trimsec = ""
-            channels = ""
-        else:
-            parameters = controller_config["parameters"]
-            pixels = parameters["pixels"]
-            lines = parameters["lines"]
-            overscan_lines = parameters.get("overscan_lines", 0)
-            overscan_pixels = parameters.get("overscan_pixels", 0)
+        # TODO: Not working with central overscan regions. Fix.
+        # if controller_config["parameters"] == {}:  # pragma: no cover
+        #     # This is just for extra safety, but it should never happen
+        #     # because we need parameters to read out.
+        #     detsize = ""
+        #     ccdsec = ""
+        #     biassec = ""
+        #     trimsec = ""
+        #     channels = ""
+        # else:
+        #     parameters = controller_config["parameters"]
+        #     pixels = parameters["pixels"]
+        #     lines = parameters["lines"]
+        #     overscan_lines = parameters.get("overscan_lines", 0)
+        #     overscan_pixels = parameters.get("overscan_pixels", 0)
 
-            channels = int(parameters["taps_per_detector"])
+        #     channels = int(parameters["taps_per_detector"])
 
-            p1 = pixels * channels // 2
-            l1 = lines * channels // 2
+        #     p1 = pixels * channels // 2
+        #     l1 = lines * channels // 2
 
-            detsize = ccdsec = trimsec = f"[1:{p1}, 1:{l1}]"
-            ccdsec = trimsec = detsize
+        #     detsize = ccdsec = trimsec = f"[1:{p1}, 1:{l1}]"
 
-            if overscan_lines == 0 and overscan_pixels == 0:
-                biassec = ""
-            else:
-                p0 = pixels - overscan_pixels + 1
-                p1 = p0 + overscan_pixels * channels // 2 - 1
-                l0 = 1
-                l1 = lines * channels // 2
-                biassec = f"[{p0}:{p1}, {l0}:{l1}]"
+        #     if overscan_lines == 0 and overscan_pixels == 0:
+        #         biassec = ""
+        #     else:
+        #         p0 = pixels - overscan_pixels + 1
+        #         p1 = p0 + overscan_pixels * channels // 2 - 1
+        #         l0 = 1
+        #         l1 = lines * channels // 2
+        #         biassec = f"[{p0}:{p1}, {l0}:{l1}]"
 
-        header["DETSIZE"] = (detsize, "Detector size (1-index)")
-        header["CCDSEC"] = (ccdsec, "Region of CCD read (1-index)")
-        header["BIASSEC"] = (biassec, "Bias section (1-index)")
-        header["TRIMSEC"] = (trimsec, "Section of useful data (1-index)")
+        # header["DETSIZE"] = (detsize, "Detector size (1-index)")
+        # header["CCDSEC"] = (ccdsec, "Region of CCD read (1-index)")
+        # header["BIASSEC"] = (biassec, "Bias section (1-index)")
+        # header["TRIMSEC"] = (trimsec, "Section of useful data (1-index)")
 
         if controller.acf_loaded:
             acf = os.path.basename(controller.acf_loaded)
