@@ -7,7 +7,6 @@ controllers:
     parameters:
       pixels: 2040
       lines: 2040
-      prescan_pixels: 4
       overscan_pixels: 20
       taps_per_detector: 4
       framemode: split
