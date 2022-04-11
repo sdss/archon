@@ -221,7 +221,7 @@ devices:
 # installed. If the path is not absolute, the root of the package is used as working
 # directory.
 archon:
-  config_file: 'lvm/config/archon/LVM_100MHz.acf'
+  config_file: 'lvm/config/archon/LVM_100kHz.acf'
 
 # Write a log for each exposure (requires files.lab_log to be set).
 write_log: true
