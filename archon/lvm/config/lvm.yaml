@@ -13,17 +13,17 @@ controllers:
     detectors:
       r1:
         serial: STA29857
-        gain: [2.63, 2.64, 2.65, 2.71]
+        gain: [2.75, 2.79, 2.68, 2.74]
         readnoise: [3.2, 3.3, 3.0, 3.1]
         type: STA4850
       b1:
         serial: STA29925
-        gain: [2.45, 2.46, 2.46, 2.50]
+        gain: [2.71, 2.71, 2.68, 2.69]
         readnoise: [3.0, 3.0, 2.8, 2.8]
         type: STA4850
       z1:
         serial: STA27977
-        gain: [2.60, 2.65, 2.57, 2.72]
+        gain: [2.76, 2.65, 2.89, 2.78]
         readnoise: [3.6, 3.6, 3.4, 3.6]
         type: STA4850
   sp2:
