@@ -447,43 +447,6 @@ class ExposureDelegate(Generic[Actor_co]):
         header["BINNING"] = (binning, "Horizontal and vertical binning")
         header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
 
-        # TODO: Not working with central overscan regions. Fix.
-        # if controller_config["parameters"] == {}:  # pragma: no cover
-        #     # This is just for extra safety, but it should never happen
-        #     # because we need parameters to read out.
-        #     detsize = ""
-        #     ccdsec = ""
-        #     biassec = ""
-        #     trimsec = ""
-        #     channels = ""
-        # else:
-        #     parameters = controller_config["parameters"]
-        #     pixels = parameters["pixels"]
-        #     lines = parameters["lines"]
-        #     overscan_lines = parameters.get("overscan_lines", 0)
-        #     overscan_pixels = parameters.get("overscan_pixels", 0)
-
-        #     channels = int(parameters["taps_per_detector"])
-
-        #     p1 = pixels * channels // 2
-        #     l1 = lines * channels // 2
-
-        #     detsize = ccdsec = trimsec = f"[1:{p1}, 1:{l1}]"
-
-        #     if overscan_lines == 0 and overscan_pixels == 0:
-        #         biassec = ""
-        #     else:
-        #         p0 = pixels - overscan_pixels + 1
-        #         p1 = p0 + overscan_pixels * channels // 2 - 1
-        #         l0 = 1
-        #         l1 = lines * channels // 2
-        #         biassec = f"[{p0}:{p1}, {l0}:{l1}]"
-
-        # header["DETSIZE"] = (detsize, "Detector size (1-index)")
-        # header["CCDSEC"] = (ccdsec, "Region of CCD read (1-index)")
-        # header["BIASSEC"] = (biassec, "Bias section (1-index)")
-        # header["TRIMSEC"] = (trimsec, "Section of useful data (1-index)")
-
         if controller.acf_loaded:
             acf = os.path.basename(controller.acf_loaded)
         else:
@@ -495,29 +458,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
         # Add keywords specified in the configuration file.
         if hconfig := config.get("header"):
-            for hcommand in hconfig:
-                for kname in hconfig[hcommand]:
-                    kname = kname.upper()
-                    kconfig = hconfig[hcommand][kname]
-                    if isinstance(kconfig, dict):
-                        if ccd_name not in kconfig:
-                            self.command.warning(
-                                text=f"Mapping for keyword {kname} does not "
-                                f"specify CCD {ccd_name!r}."
-                            )
-                            header[kname] = "N/A"
-                            continue
-                        else:
-                            kparam, comment, *precision = kconfig[ccd_name]
-                    elif isinstance(kconfig, list):
-                        kparam, comment, *precision = kconfig
-                    else:
-                        self.command.warning(text=f"Invalid keyword format: {kname}.")
-                        header[kname] = "N/A"
-                        continue
+            for kname in hconfig:
+                kconfig = hconfig[kname]
+                kname = kname.upper()
 
-                    kparam = kparam.lower()
+                params = None
+                comment = ""
 
+                if "command" in kconfig:
+                    hcommand = kconfig["command"]
                     if hcommand.lower() == "status":
                         command_data = await controller.get_device_status()
                     elif hcommand.lower() == "system":
@@ -527,18 +476,31 @@ class ExposureDelegate(Generic[Actor_co]):
                         header[kname] = "N/A"
                         continue
 
-                    value = dict_get(command_data, kparam)
+                    if "detectors" in kconfig:
+                        for ccd in kconfig["detectors"]:
+                            if ccd != ccd_name:
+                                continue
+                            params = kconfig["detectors"][ccd]
+                    else:
+                        params = kconfig.get("value", None)
 
-                    if len(precision) > 0:
-                        value = round(float(cast(float, value)), precision[0])
+                    if params:
+                        # Replace first element, which is the key in the command
+                        # reply with the actual value.
+                        params[0] = command_data[params[0]]
 
-                    if not value:
-                        self.command.warning(
-                            text=f"Cannot find header value {kparam} for {kname}."
-                        )
-                        header[kname] = "N/A"
-                        continue
+                else:
+                    if isinstance(kconfig, (list, tuple)):
+                        params = kconfig
+                    else:
+                        params = kconfig
 
+                if params:
+                    value = params[0]
+                    if len(params) > 1:
+                        comment = params[1]
+                    if len(params) > 2:
+                        value = numpy.round(value, params[2])
                     header[kname] = (value, comment)
 
         # Convert JSON lists to tuples or astropy fails.

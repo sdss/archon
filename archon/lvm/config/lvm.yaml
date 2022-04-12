@@ -52,6 +52,34 @@ controllers:
         readnoise: [3.6, 3.6, 3.4, 3.6]
         type: STA4850
 
+# Header for each CCD. The key is the header keyword name. The value can
+# be a single string, a tuple with the value and comment, or a dictionary for
+# cases in which the value is retrieved from an archon command or when the
+# value depends on the CCD name.
+header:
+  CCDTEMP1:
+    command: status
+    detectors:
+      r1: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b1: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z1: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+  CCDTEMP2:
+    command: status
+    detectors:
+      r1: ['mod2/tempb', 'LN2 temperature (HEATERX 2)', 2]
+      b1: ['mod2/tempc', 'LN2 temperature (HEATERX 2)', 2]
+      z1: ['mod12/tempb', 'LN2 temperature (HEATERX 12)', 2]
+      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+  DATASEC: ['[1:4120,1:4080]', 'Section of the detector containing data']
+  CCDSEC: ['[1:4120,1:4080]', 'Section of the detector read out']
+  BIASSEC: ['[2041:2080,1:4080]', 'Section of calibration/bias data']
+  TRIMSEC: ['[1:2040,1:4080],[2081:4120,1:4080]', 'Section with useful data']
+
 devices:
   motor_controllers:
     sp1:
@@ -248,28 +276,6 @@ sensors:
   H5179:
     host: 10.7.45.30
     port: 1111
-
-# Additional header keywords to be obtained from the SYSTEM and STATUS commands.
-# Format must be the Archon command from where to get the information, the header
-# keyword name and, for each CCD, a tuple containing the parameter in the Archon
-# command reply to use, and optionally a comment for the header and the precision
-# to which to round the value.
-header:
-  status:
-    CCDTEMP1:
-      r1: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
-      b1: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
-      z1: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
-      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
-      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
-      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
-    CCDTEMP2:
-      r1: ['mod2/tempb', 'LN2 temperature (HEATERX 2)', 2]
-      b1: ['mod2/tempc', 'LN2 temperature (HEATERX 2)', 2]
-      z1: ['mod12/tempb', 'LN2 temperature (HEATERX 12)', 2]
-      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
-      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
-      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
 
 # Actor congiguration for the LVMActor class
 actor:
