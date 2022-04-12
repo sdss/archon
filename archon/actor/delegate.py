@@ -491,7 +491,6 @@ class ExposureDelegate(Generic[Actor_co]):
         header["ARCHACF"] = (acf, "Archon ACF file loaded")
 
         actor = self.actor
-        model = actor.model
         config = actor.config
 
         # Add keywords specified in the configuration file.
@@ -509,28 +508,37 @@ class ExposureDelegate(Generic[Actor_co]):
                             header[kname] = "N/A"
                             continue
                         else:
-                            kpath, comment, *precision = kconfig[ccd_name]
+                            kparam, comment, *precision = kconfig[ccd_name]
                     elif isinstance(kconfig, list):
-                        kpath, comment, *precision = kconfig
+                        kparam, comment, *precision = kconfig
                     else:
                         self.command.warning(text=f"Invalid keyword format: {kname}.")
                         header[kname] = "N/A"
                         continue
-                    kpath = kpath.lower()
-                    value = dict_get(model, kpath)
+
+                    kparam = kparam.lower()
+
+                    if hcommand.lower() == "status":
+                        command_data = await controller.get_device_status()
+                    elif hcommand.lower() == "system":
+                        command_data = await controller.get_system()
+                    else:
+                        self.command.warning(text=f"Invalid command {hcommand}.")
+                        header[kname] = "N/A"
+                        continue
+
+                    value = dict_get(command_data, kparam)
+
                     if len(precision) > 0:
                         value = round(float(cast(float, value)), precision[0])
-                    if not value:  # pragma: no cover (needs fix from CLU)
+
+                    if not value:
                         self.command.warning(
-                            text=f"Cannot find header value {kpath} for {kname}. "
-                            f"Issuing command {hcommand!r}"
+                            text=f"Cannot find header value {kparam} for {kname}."
                         )
-                        cmd = await actor.send_command(actor.name, hcommand)
-                        await cmd
-                        value = dict_get(model, kpath)
-                        if not value:
-                            self.command.warning(text=f"Cannot retrieve {kpath}.")
-                            value = "N/A"
+                        header[kname] = "N/A"
+                        continue
+
                     header[kname] = (value, comment)
 
         # Convert JSON lists to tuples or astropy fails.
@@ -633,7 +641,7 @@ def dict_get(d, k: str | list):
     if isinstance(k, str):
         k = k.split(".")
 
-    if d[k[0]].value is None:
+    if d[k[0]] is None:
         return {}
 
-    return reduce(lambda c, k: c.get(k, {}), k[1:], d[k[0]].value)
+    return reduce(lambda c, k: c.get(k, {}), k[1:], d[k[0]])
