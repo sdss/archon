@@ -239,7 +239,9 @@ files:
   split: true
   template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
 
-exposure_list_sheet: 103BNxjlZ59Sob3jDO4EN1z6zp2q5YrYA6nTjGlZM6XY
+exposure_list:
+  id: 103BNxjlZ59Sob3jDO4EN1z6zp2q5YrYA6nTjGlZM6XY
+  sheet: Sheet2
 
 # Sensor configuration. Mainly for lab testing.
 sensors:

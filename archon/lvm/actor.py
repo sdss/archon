@@ -166,7 +166,7 @@ class LVMActor(ArchonActor):
         if not self.config.get("write_log", False):
             return
 
-        if self.google_client is None or "exposure_list_sheet" not in self.config:
+        if self.google_client is None or "exposure_list" not in self.config:
             return
 
         path = key.value
@@ -260,17 +260,19 @@ class LVMActor(ArchonActor):
 
         self._log_values = {}
 
-        google_data = {
-            "range": "Sheet1!A1:A1",
-            "majorDimension": "ROWS",
-            "values": [data],
-        }
-
         async with self._log_lock:
-            spreadsheet_id = self.config["exposure_list_sheet"]
+            spreadsheet_id = self.config["exposure_list"]["id"]
+            sheet = self.config["exposure_list"]["sheet"]
+
+            google_data = {
+                "range": f"{sheet}!A1:A1",
+                "majorDimension": "ROWS",
+                "values": [data],
+            }
+
             r = await self.google_client.post(
                 f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/"
-                "values/Sheet1!A1:A1:append?valueInputOption=USER_ENTERED",
+                f"values/{sheet}!A1:A1:append?valueInputOption=USER_ENTERED",
                 json=google_data,
             )
 
