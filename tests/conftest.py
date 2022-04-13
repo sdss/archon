@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import asyncio
+import configparser
+import os
 import re
 import tempfile
 
@@ -97,7 +99,14 @@ async def controller(request, unused_tcp_port: int, monkeypatch):
         config["archon"]["default_parameters"]["Exposures"] = 0
         config.CONFIG_FILE = tempfile.NamedTemporaryFile().name
 
-        await archon.start(reset=False)
+        await archon.start(reset=False, read_acf=False)
+
+        # Add some fake ACF info from a file.
+        acf_config = configparser.ConfigParser()
+        acf_config.read(os.path.join(os.path.dirname(__file__), "data/BOSS_extra.acf"))
+        archon.acf_config = acf_config
+        archon._parse_params()
+
         archon._status = ControllerStatus.IDLE
 
         yield archon

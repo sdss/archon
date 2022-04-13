@@ -66,7 +66,7 @@ async def test_read_config(controller: ArchonController, mocker):
         side_effect=send_command(),
     )
 
-    config = await controller.read_config()
+    _, config = await controller.read_config()
     assert len(config) == 5
     assert config[0] == "LINE0=0"
 
@@ -113,7 +113,7 @@ async def test_read_config_save(controller: ArchonController, mocker, path):
 
     open_patch = mocker.patch("builtins.open")
 
-    config = await controller.read_config(save=path)
+    _, config = await controller.read_config(save=path)
     assert len(config) == 5
     assert config[0] == "LINE0=0"
 

@@ -26,7 +26,7 @@ async def test_config_read(actor: ArchonActor, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "read_config",
-        return_value=SAMPLE_CONFIG.splitlines(),
+        return_value=(None, SAMPLE_CONFIG.splitlines()),
     )
 
     command = await actor.invoke_mock_command("config read sp1")
@@ -41,6 +41,7 @@ async def test_config_read_save(actor: ArchonActor, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "read_config",
+        return_value=(None, SAMPLE_CONFIG.splitlines()),
     )
 
     command = await actor.invoke_mock_command("config read sp1 --save")
