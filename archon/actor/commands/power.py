@@ -73,6 +73,7 @@ async def power(command: ArchonCommandType, controller: ArchonController, mode: 
         if not command.actor.timed_commands.running:
             command.actor.timed_commands.start()
 
-    await command.send_command("archon", f"status -c {controller.name}")
+    status = await controller.get_device_status()
+    command.info(status={"controller": controller.name, "power": status["power"]})
 
     return True
