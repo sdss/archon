@@ -15,7 +15,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import reduce
 
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
 import astropy.time
 import numpy
