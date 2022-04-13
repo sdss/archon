@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import pathlib
 import warnings
 from contextlib import suppress
 
@@ -80,6 +81,8 @@ class ArchonBaseActor(BaseActor):
         self._fetch_log_jobs = []
         self._status_jobs = []
 
+        self.config_file_path: str | None = None
+
     async def start(self):
         """Start the actor and connect the controllers."""
 
@@ -133,6 +136,9 @@ class ArchonBaseActor(BaseActor):
             config = cls.BASE_CONFIG
 
         instance = super(ArchonBaseActor, cls).from_config(config, *args, **kwargs)
+
+        if isinstance(config, (str, pathlib.Path)):
+            instance.config_file_path = str(config)
 
         assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)
