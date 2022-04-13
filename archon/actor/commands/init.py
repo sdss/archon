@@ -14,11 +14,8 @@ import re
 from typing import TYPE_CHECKING
 
 import click
-from clu.command import Command
 
-import archon
 from archon.controller.command import ArchonCommand
-from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
 from ..tools import error_controller, parallel_controllers
@@ -26,11 +23,12 @@ from . import parser
 
 
 if TYPE_CHECKING:
-    from ..actor import ArchonActor
+    from archon.actor import ArchonCommandType
+    from archon.controller.controller import ArchonController
 
 
 def _output(
-    command: Command,
+    command: ArchonCommandType,
     controller: ArchonController,
     text: str,
     message_code="d",
@@ -49,7 +47,7 @@ def _output(
 @click.option("--hdr", is_flag=True, help="Set HDR mode.")
 @parallel_controllers()
 async def init(
-    command: Command[ArchonActor],
+    command: ArchonCommandType,
     controller: ArchonController,
     acf_file: str | None = None,
     hdr=False,
@@ -59,8 +57,6 @@ async def init(
     assert command.actor
 
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
-    _output(command, controller, "Loading and applying config", "i")
-
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
     if acf_file is None:
@@ -68,11 +64,21 @@ async def init(
         acf_file = default_config.format(archon_etc=archon_etc)
 
     if not os.path.isabs(acf_file):
-        etc_root = os.path.dirname(os.path.realpath(acf_file))
-        acf_file = os.path.join(etc_root, acf_file)
+        if command.actor.config_file_path is not None:
+            config_dirname = os.path.dirname(command.actor.config_file_path)
+            acf_file = os.path.join(config_dirname, acf_file)
+        else:
+            return error_controller(
+                command,
+                controller,
+                "The actor does not know the path of the configuration file. "
+                "ACF file path must be absolute.",
+            )
 
     if not os.path.exists(acf_file):
         return error_controller(command, controller, f"Cannot find file {acf_file}")
+
+    _output(command, controller, f"Loading and applying ACF file {acf_file}", "i")
 
     data = open(acf_file).read()
     if hdr:
