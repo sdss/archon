@@ -12,31 +12,31 @@
 import inspect
 
 
-class ArchonError(BaseException):
+class ArchonError(Exception):
     """A custom core Archon exception"""
 
 
 class ArchonControllerError(ArchonError):
     """An exception raised by an `.ArchonController`."""
 
-    # def __init__(self, message):
+    def __init__(self, message):
 
-    #     # import archon.controller
+        import archon.controller
 
-    #     # stack = inspect.stack()
-    #     # f_locals = stack[1][0].f_locals
+        stack = inspect.stack()
+        f_locals = stack[1][0].f_locals
 
-    #     # if "self" in f_locals:
-    #     #     class_ = f_locals["self"]
-    #     #     if isinstance(class_, archon.controller.ArchonController):
-    #     #         controller_name = f_locals["self"].name
-    #     #         if controller_name is None or controller_name == "":
-    #     #             controller_name = "unnamed"
-    #     #     else:
-    #     #         controller_name = "unnamed"
-    #     #     super().__init__(f"{controller_name} - {message}")
-    #     # else:
-    #     super().__init__(message)
+        if "self" in f_locals:
+            class_ = f_locals["self"]
+            if isinstance(class_, archon.controller.ArchonController):
+                controller_name = f_locals["self"].name
+                if controller_name is None or controller_name == "":
+                    controller_name = "unnamed"
+            else:
+                controller_name = "unnamed"
+            super().__init__(f"{controller_name} - {message}")
+        else:
+            super().__init__(message)
 
 
 class ArchonWarning(Warning):
