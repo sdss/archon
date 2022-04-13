@@ -447,8 +447,8 @@ class ExposureDelegate(Generic[Actor_co]):
         header["BINNING"] = (binning, "Horizontal and vertical binning")
         header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
 
-        if controller.acf_loaded:
-            acf = os.path.basename(controller.acf_loaded)
+        if controller.acf_file:
+            acf = os.path.basename(controller.acf_file)
         else:
             acf = "?"
         header["ARCHACF"] = (acf, "Archon ACF file loaded")

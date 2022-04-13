@@ -57,7 +57,7 @@ async def read(
         path: str | bool = False
 
     try:
-        config = await controller.read_config(save=path)
+        _, config = await controller.read_config(save=path)
     except ArchonError as err:
         return command.fail(
             error={

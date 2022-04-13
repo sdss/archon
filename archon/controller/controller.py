@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import configparser
+import io
 import os
-import pathlib
 import re
 import warnings
 from collections.abc import AsyncIterator
@@ -19,10 +19,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Callable, Iterable, Optional, cast
 
 import numpy
-import yaml
 from clu.device import Device
-
-from sdsstools import read_yaml_file
 
 from archon import config, log
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
@@ -59,21 +56,30 @@ class ArchonController(Device):
         self._status: ControllerStatus = ControllerStatus.UNKNOWN
         self.__status_event = asyncio.Event()
 
-        self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
-        self.DEFAULT_USER_CONFIG_FILE: str = "~/.config/sdss/archon/archon.yaml"
-        self._acf_loaded: str | None = None
+        self.auto_flush: bool | None = None
         self.parameters: dict[str, int] = {}
+
+        self.acf_file: str | None = None
+        self.acf_config: configparser.ConfigParser | None = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
 
-    async def start(self, reset=True):
+    async def start(self, reset: bool = True, read_acf: bool = True):
         """Starts the controller connection. If ``reset=True``, resets the status."""
 
         await super().start()
+        log.debug(f"Controller {self.name} connected at {self.host}.")
+
+        if read_acf:
+            log.debug(f"Retrieving ACF data from controller {self.name}.")
+            config_parser, _ = await self.read_config()
+            self.acf_config = config_parser
+            self._parse_params()
+
         if reset:
             try:
                 await self.reset()
@@ -81,8 +87,6 @@ class ArchonController(Device):
                 # Sometimes after a power cycle this will fail until the controller
                 # has been initialised.
                 pass
-
-        log.debug(f"Controller {self.name} connected at {self.host}.")
 
         return self
 
@@ -144,61 +148,6 @@ class ArchonController(Device):
             if self.status != prev_status:
                 yield self.status
             self.__status_event.clear()
-
-    @property
-    def acf_loaded(self):
-        """Returns the last ACF file loaded.
-
-        If no ACF has been loaded since the controller was started, tries to get the
-        last loaded file from the user configuration file.
-
-        """
-
-        if self._acf_loaded:
-            return self._acf_loaded
-
-        _, user_config = self._get_user_config()
-        if user_config is None:
-            return None
-
-        last_acf = user_config.get("last_acf_loaded", {}).get(self.host, None)
-
-        self._acf_loaded = last_acf
-        return self._acf_loaded
-
-    @acf_loaded.setter
-    def acf_loaded(self, value: str | pathlib.Path):
-
-        self._acf_loaded = os.path.abspath(os.path.realpath(str(value)))
-
-        user_config_file, user_config = self._get_user_config()
-
-        user_config = user_config or {}
-        user_config["last_acf_loaded"] = user_config.get("last_acf_loaded", {})
-        user_config["last_acf_loaded"][self.host] = self._acf_loaded
-
-        with open(user_config_file, "w") as file_:
-            yaml.safe_dump(
-                user_config,
-                file_,
-                default_flow_style=False,
-                sort_keys=False,
-            )
-
-        config["last_acf_loaded"] = user_config["last_acf_loaded"].copy()
-
-    def _get_user_config(self):
-        """Returns the user configuration."""
-
-        if not config.CONFIG_FILE or config.CONFIG_FILE == config._BASE_CONFIG_FILE:
-            user_config_file = os.path.expanduser(self.DEFAULT_USER_CONFIG_FILE)
-        else:
-            user_config_file = config.CONFIG_FILE
-
-        if not os.path.exists(user_config_file):
-            return (user_config_file, None)
-
-        return (user_config_file, read_yaml_file(user_config_file))
 
     def send_command(
         self,
@@ -395,7 +344,10 @@ class ArchonController(Device):
 
         return frame
 
-    async def read_config(self, save: str | bool = False) -> list[str]:
+    async def read_config(
+        self,
+        save: str | bool = False,
+    ) -> tuple[configparser.ConfigParser, list[str]]:
         """Reads the configuration from the controller.
 
         Parameters
@@ -466,7 +418,7 @@ class ArchonController(Device):
             with open(path, "w") as f:
                 c.write(f, space_around_delimiters=False)
 
-        return config_lines
+        return (c, config_lines)
 
     async def write_config(
         self,
@@ -506,23 +458,21 @@ class ArchonController(Device):
         timeout = timeout or config["timeouts"]["write_config_timeout"]
         delay: float = config["timeouts"]["write_config_delay"]
 
-        c = configparser.ConfigParser()
-        is_file = False
+        cp = configparser.ConfigParser()
 
         input = str(input)
         if os.path.exists(input):
-            is_file = True
-            c.read(input)
+            cp.read(input)
         else:
-            c.read_string(input)
+            cp.read_string(input)
 
-        if not c.has_section("CONFIG"):
+        if not cp.has_section("CONFIG"):
             raise ArchonControllerError(
                 "The config file does not have a CONFIG section."
             )
 
         # Undo the INI format: revert \ to / and remove quotes around values.
-        aconfig = c["CONFIG"]
+        aconfig = cp["CONFIG"]
         lines = list(
             map(
                 lambda k: k.upper().replace("\\", "/") + "=" + aconfig[k].strip('"'),
@@ -557,8 +507,8 @@ class ArchonController(Device):
 
         notifier("Sucessfully sent config lines")
 
-        if is_file:
-            self.acf_loaded = os.path.realpath(input)
+        self.acf_config = cp
+        self.acf_file = input if os.path.exists(input) else None
 
         # Restore polling
         await self.send_command("POLLON")
@@ -626,23 +576,39 @@ class ArchonController(Device):
     def _parse_params(self):
         """Reads the ACF file and constructs a dictionary of parameters."""
 
-        if not self.acf_loaded:
+        if not self.acf_config:
             raise ArchonControllerError("ACF file not loaded. Cannot parse parameters.")
 
-        data = open(self.acf_loaded, "r").read()
-        matches = re.findall(r'PARAMETER[0-9]+="([a-zA-Z]+)\s*=\s*([0-9]+)"', data)
+        # Dump the ACF ConfigParser object into a dummy file and read it as a string.
+        f = io.StringIO()
+        self.acf_config.write(f)
 
-        self.parameters = {k: int(v) for k, v in dict(matches).items()}
+        f.seek(0)
+        data = f.read()
 
-    async def set_param(self, param: str, value: int) -> ArchonCommand | None:
+        matches = re.findall(
+            r'PARAMETER[0-9]+\s*=\s*"([A-Z]+)\s*=\s*([0-9]+)"',
+            data,
+            re.IGNORECASE,
+        )
+
+        self.parameters = {k.upper(): int(v) for k, v in dict(matches).items()}
+
+    async def set_param(
+        self,
+        param: str,
+        value: int,
+        force: bool = False,
+    ) -> ArchonCommand | None:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
 
         # First we check if the parameter actually exists.
         if len(self.parameters) == 0:
-            if self._acf_loaded is None:
+            if self.acf_config is None:
                 raise ArchonControllerError("ACF not loaded. Cannot modify parameters.")
 
-        if param not in self.parameters:
+        param = param.upper()
+        if param not in self.parameters and force is False:
             return
 
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
