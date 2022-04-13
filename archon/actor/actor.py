@@ -16,6 +16,7 @@ from contextlib import suppress
 from typing import ClassVar, Dict, Type
 
 import click
+from clu import Command
 from clu.actor import AMQPActor, BaseActor
 
 from archon import __version__
@@ -184,3 +185,6 @@ class ArchonActor(ArchonBaseActor, AMQPActor):
     """Archon actor based on the AMQP protocol."""
 
     pass
+
+
+ArchonCommandType = Command[ArchonActor]

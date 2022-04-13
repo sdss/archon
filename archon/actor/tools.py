@@ -32,6 +32,7 @@ __all__ = [
 
 
 controller = click.option(
+    "-c",
     "--controller",
     type=str,
     nargs=1,
