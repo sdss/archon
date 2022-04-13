@@ -18,7 +18,7 @@ controllers:
         sensor: C
 
 archon:
-  config_file: 'lvm/config/archon/LVM_100MHz.acf'
+  config_file: 'lvm/config/archon/LVM_100kHz.acf'
 
 files:
   data_dir: '/var/tmp'
@@ -26,18 +26,28 @@ files:
   template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
 
 header:
-  status:
-    CCDTEMP1:
-      r1: ['status.mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
-      b1: ['status.mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
-      z1: ['status.mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
-    CCDTEMP2:
-      r1: ['status.mod2/tempb', 'LN2 temperature (HEATERX 2)']
-      b1: ['status.mod2/tempc', 'LN2 temperature (HEATERX 2)']
-      z1: ['status.mod12/tempb', 'LN2 temperature (HEATERX 12)']
+  CCDTEMP1:
+    command: status
+    detectors:
+      r1: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b1: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z1: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+  CCDTEMP2:
+    command: status
+    detectors:
+      r1: ['mod2/tempb', 'LN2 temperature (HEATERX 2)', 2]
+      b1: ['mod2/tempc', 'LN2 temperature (HEATERX 2)', 2]
+      z1: ['mod12/tempb', 'LN2 temperature (HEATERX 12)', 2]
+      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
+      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
     BADKEY: 'Invalid'
     BADDICT:
-      not_a_ccd: ['key1', 'value1']
+      detectors:
+        not_a_ccd: ['key1', 'value1']
 
 actor:
   name: archon

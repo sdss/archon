@@ -14,7 +14,7 @@ import tempfile
 
 from typing import Iterable, Tuple, Union
 
-import pytest
+import pytest_asyncio
 
 from archon import config
 from archon.controller.controller import ArchonController
@@ -24,7 +24,7 @@ from archon.controller.maskbits import ControllerStatus
 CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def controller(request, unused_tcp_port: int, monkeypatch):
     """Mocks a `.ArchonController` that replies to commands with predefined replies.
 

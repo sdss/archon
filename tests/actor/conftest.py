@@ -12,6 +12,7 @@ import pathlib
 import clu.testing
 import numpy
 import pytest
+import pytest_asyncio
 from clu.actor import AMQPBaseActor
 
 from sdsstools import merge_config, read_yaml_file
@@ -28,7 +29,7 @@ def test_config():
     yield merge_config(extra, config)
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture()
 async def actor(test_config: dict, controller: ArchonController, mocker):
 
     # We need to call the actor .start() method to force it to create the
@@ -63,15 +64,20 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
     )
 
     assert actor.model
-    actor.model["status"].value = {
-        "controller": "sp1",
-        "mod2/tempa": -110,
-        "mod2/tempb": -110,
-        "mod2/tempc": -110,
-        "mod12/tempa": -110,
-        "mod12/tempb": -110,
-        "mod12/tempc": -110,
-    }
+
+    mocker.patch.object(
+        actor.controllers["sp1"],
+        "get_device_status",
+        return_value={
+            "controller": "sp1",
+            "mod2/tempa": -110,
+            "mod2/tempb": -110,
+            "mod2/tempc": -110,
+            "mod12/tempa": -110,
+            "mod12/tempb": -110,
+            "mod12/tempc": -110,
+        },
+    )
 
     files_data_dir = tmp_path / "archon"
 
