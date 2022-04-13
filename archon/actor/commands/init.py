@@ -45,13 +45,13 @@ def _output(
 
 
 @parser.command()
-@click.argument("CONFIG-FILE", type=str, required=False)
+@click.argument("ACF-FILE", type=str, required=False)
 @click.option("--hdr", is_flag=True, help="Set HDR mode.")
 @parallel_controllers()
 async def init(
     command: Command[ArchonActor],
     controller: ArchonController,
-    config_file: str | None = None,
+    acf_file: str | None = None,
     hdr=False,
 ):
     """Initialises a controller."""
@@ -63,18 +63,18 @@ async def init(
 
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
-    if config_file is None:
-        default_config: str = command.actor.config["archon"]["config_file"]
-        config_file = default_config.format(archon_etc=archon_etc)
+    if acf_file is None:
+        default_config: str = command.actor.config["archon"]["acf_file"]
+        acf_file = default_config.format(archon_etc=archon_etc)
 
-    if not os.path.isabs(config_file):
-        archon_root = os.path.dirname(os.path.realpath(archon.__file__))
-        config_file = os.path.join(archon_root, config_file)
+    if not os.path.isabs(acf_file):
+        etc_root = os.path.dirname(os.path.realpath(acf_file))
+        acf_file = os.path.join(etc_root, acf_file)
 
-    if not os.path.exists(config_file):
-        return error_controller(command, controller, f"Cannot find file {config_file}")
+    if not os.path.exists(acf_file):
+        return error_controller(command, controller, f"Cannot find file {acf_file}")
 
-    data = open(config_file).read()
+    data = open(acf_file).read()
     if hdr:
         data = re.sub("(SAMPLEMODE)=[01]", "\\1=1", data)
 
@@ -83,7 +83,7 @@ async def init(
 
     try:
         await controller.write_config(data, applyall=True, poweron=False)
-        controller.acf_loaded = config_file
+        controller.acf_loaded = acf_file
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 

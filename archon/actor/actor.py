@@ -44,6 +44,7 @@ class ArchonBaseActor(BaseActor):
     """
 
     parser: ClassVar[click.Group] = archon_command_parser
+    is_legacy: bool = False
 
     BASE_CONFIG: ClassVar[str | Dict | None] = None
     DELEGATE_CLASS: ClassVar[Type[ExposureDelegate]] = ExposureDelegate
@@ -90,6 +91,12 @@ class ArchonBaseActor(BaseActor):
             except asyncio.TimeoutError:
                 warnings.warn(
                     f"Timeout out connecting to {controller.name!r}.",
+                    ArchonUserWarning,
+                )
+            except Exception as err:
+                warnings.warn(
+                    f"Failed connecting to controller {controller.name} at "
+                    f"{controller.host}: {err}",
                     ArchonUserWarning,
                 )
 

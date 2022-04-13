@@ -226,7 +226,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self,
         command: Command[Actor_co],
         extra_header={},
-        delay_readout=False,
+        delay_readout: int = 0,
     ):
         """Reads the exposure, fetches the buffer, and writes to disk."""
 

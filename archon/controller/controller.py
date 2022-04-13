@@ -24,7 +24,7 @@ from clu.device import Device
 
 from sdsstools import read_yaml_file
 
-from archon import config
+from archon import config, log
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
 from archon.controller.maskbits import ControllerStatus, ModType
 from archon.exceptions import ArchonControllerError, ArchonControllerWarning
@@ -64,6 +64,7 @@ class ArchonController(Device):
 
         self.DEFAULT_USER_CONFIG_FILE: str = "~/.config/sdss/archon/archon.yaml"
         self._acf_loaded: str | None = None
+        self.parameters: dict[str, int] = {}
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
@@ -80,6 +81,8 @@ class ArchonController(Device):
                 # Sometimes after a power cycle this will fail until the controller
                 # has been initialised.
                 pass
+
+        log.debug(f"Controller {self.name} connected at {self.host}.")
 
         return self
 
@@ -158,7 +161,7 @@ class ArchonController(Device):
         if user_config is None:
             return None
 
-        last_acf = user_config.get("last_acf_loaded", {}).get(self.name, None)
+        last_acf = user_config.get("last_acf_loaded", {}).get(self.host, None)
 
         self._acf_loaded = last_acf
         return self._acf_loaded
@@ -172,7 +175,7 @@ class ArchonController(Device):
 
         user_config = user_config or {}
         user_config["last_acf_loaded"] = user_config.get("last_acf_loaded", {})
-        user_config["last_acf_loaded"][self.name] = self._acf_loaded
+        user_config["last_acf_loaded"][self.host] = self._acf_loaded
 
         with open(user_config_file, "w") as file_:
             yaml.safe_dump(
@@ -591,6 +594,8 @@ class ArchonController(Device):
     async def reset(self, autoflush=True, restart_timing=True):
         """Resets timing and discards current exposures."""
 
+        self._parse_params()
+
         await self.send_command("HOLDTIMING")
 
         await self.set_autoflush(autoflush)
@@ -618,14 +623,36 @@ class ArchonController(Device):
         self._status = ControllerStatus.IDLE
         await self.get_device_status()  # Sets power bit.
 
-    async def set_param(self, param: str, value: int) -> ArchonCommand:
+    def _parse_params(self):
+        """Reads the ACF file and constructs a dictionary of parameters."""
+
+        if not self.acf_loaded:
+            raise ArchonControllerError("ACF file not loaded. Cannot parse parameters.")
+
+        data = open(self.acf_loaded, "r").read()
+        matches = re.findall(r'PARAMETER[0-9]+="([a-zA-Z]+)\s*=\s*([0-9]+)"', data)
+
+        self.parameters = {k: int(v) for k, v in dict(matches).items()}
+
+    async def set_param(self, param: str, value: int) -> ArchonCommand | None:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
+
+        # First we check if the parameter actually exists.
+        if len(self.parameters) == 0:
+            if self._acf_loaded is None:
+                raise ArchonControllerError("ACF not loaded. Cannot modify parameters.")
+
+        if param not in self.parameters:
+            return
 
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
         if not cmd.succeeded():
             raise ArchonControllerError(
                 f"Failed setting parameter {param!r} ({cmd.status.name})."
             )
+
+        self.parameters[param] = value
+
         return cmd
 
     async def expose(
