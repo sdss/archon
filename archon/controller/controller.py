@@ -23,8 +23,12 @@ from clu.device import Device
 
 from archon import config, log
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
-from archon.controller.maskbits import ControllerStatus, ModType
-from archon.exceptions import ArchonControllerError, ArchonControllerWarning
+from archon.controller.maskbits import ArchonPower, ControllerStatus, ModType
+from archon.exceptions import (
+    ArchonControllerError,
+    ArchonControllerWarning,
+    ArchonUserWarning,
+)
 
 from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
 
@@ -132,6 +136,16 @@ class ArchonController(Device):
             status &= ~ControllerStatus.ACTIVE
         elif status & ControllerStatus.ACTIVE:
             status &= ~ControllerStatus.IDLE
+
+        # Handle incompatible power bits.
+        if ControllerStatus.POWERBAD in bits:
+            status &= ~(ControllerStatus.POWERON | ControllerStatus.POWEROFF)
+        elif ControllerStatus.POWERON in bits or ControllerStatus.POWEROFF in bits:
+            status &= ~ControllerStatus.POWERBAD
+            if ControllerStatus.POWERON in bits:
+                status &= ~ControllerStatus.POWEROFF
+            else:
+                status &= ~ControllerStatus.POWERON
 
         self._status = status
 
@@ -315,11 +329,6 @@ class ArchonController(Device):
             key.lower(): int(value) if check_int(value) else float(value)
             for (key, value) in map(lambda k: k.split("="), keywords)
         }
-
-        if status["powergood"] != 1:
-            self.update_status(ControllerStatus.POWERBAD)
-        else:
-            self.update_status(ControllerStatus.POWERBAD, "off")
 
         return status
 
@@ -524,16 +533,55 @@ class ArchonController(Device):
 
             if poweron:
                 notifier("Sending POWERON")
-                cmd = await self.send_command("POWERON", timeout=timeout)
-                if not cmd.succeeded():
-                    self.update_status(ControllerStatus.ERROR)
-                    raise ArchonControllerError(
-                        f"Failed sending POWERON ({cmd.status.name})"
-                    )
+                await self.power(True)
 
         await self.reset()
 
         return
+
+    async def power(self, mode: bool | None = None):
+        """Handles power to the CCD(s). Sets the power status bit.
+
+        Parameters
+        ----------
+        mode
+            If `None`, returns `True` if the array is currently powered,
+            `False` otherwise. If `True`, powers n the array; if `False`
+            powers if off.
+
+        Returns
+        -------
+        state : `.ArchonPower`
+            The power state as an `.ArchonPower` flag.
+
+        """
+
+        if mode is not None:
+            cmd_str = "POWERON" if mode is True else "POWEROFF"
+            cmd = await self.send_command(cmd_str, timeout=10)
+            if not cmd.succeeded():
+                self.update_status([ControllerStatus.ERROR, ControllerStatus.POWERBAD])
+                raise ArchonControllerError(
+                    f"Failed sending POWERON ({cmd.status.name})"
+                )
+
+            await asyncio.sleep(1)
+
+        status = await self.get_device_status()
+
+        power_status = ArchonPower(status["power"])
+
+        if power_status not in [ArchonPower.ON, ArchonPower.OFF]:
+            if power_status == ArchonPower.INTERMEDIATE:
+                warnings.warn("Power in INTERMEDIATE state.", ArchonUserWarning)
+            self.update_status(ControllerStatus.POWERBAD)
+        else:
+            if power_status == ArchonPower.ON:
+                self.update_status(ControllerStatus.POWERON)
+            elif power_status == ArchonPower.OFF:
+                self.update_status(ControllerStatus.POWEROFF)
+
+        return power_status
 
     async def set_autoflush(self, mode: bool):
         """Enables or disables autoflushing."""
@@ -571,7 +619,7 @@ class ArchonController(Device):
                     )
 
         self._status = ControllerStatus.IDLE
-        await self.get_device_status()  # Sets power bit.
+        await self.power()  # Sets power bit.
 
     def _parse_params(self):
         """Reads the ACF file and constructs a dictionary of parameters."""
