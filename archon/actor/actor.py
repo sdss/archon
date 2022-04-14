@@ -20,6 +20,8 @@ import click
 from clu import Command
 from clu.actor import AMQPActor, BaseActor
 
+from sdsstools.configuration import Configuration
+
 from archon import __version__
 from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
@@ -139,6 +141,8 @@ class ArchonBaseActor(BaseActor):
 
         if isinstance(config, (str, pathlib.Path)):
             instance.config_file_path = str(config)
+        elif isinstance(config, Configuration):
+            instance.config_file_path = str(config.CONFIG_FILE)
 
         assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)
