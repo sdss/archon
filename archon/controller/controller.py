@@ -85,12 +85,7 @@ class ArchonController(Device):
             self._parse_params()
 
         if reset:
-            try:
-                await self.reset()
-            except ArchonControllerError:
-                # Sometimes after a power cycle this will fail until the controller
-                # has been initialised.
-                pass
+            await self.reset()
 
         return self
 
