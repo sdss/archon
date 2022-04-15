@@ -493,7 +493,7 @@ class ExposureDelegate(Generic[Actor_co]):
                     if isinstance(kconfig, (list, tuple)):
                         params = kconfig
                     else:
-                        params = kconfig
+                        params = [kconfig]
 
                 if params:
                     value = params[0]
