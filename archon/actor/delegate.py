@@ -360,13 +360,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
         loop = asyncio.get_running_loop()
 
+        writeto = partial(hdu.writeto, checksum=True)
+
         if file_path.endswith(".gz"):
             # Astropy compresses with gzip -9 which takes forever.
             # Instead we compress manually with -1, which is still pretty good.
-            await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
+            await loop.run_in_executor(None, writeto, file_path[:-3])
             await gzip_async(file_path[:-3], complevel=1)
         else:
-            await loop.run_in_executor(None, hdu.writeto, file_path)
+            await loop.run_in_executor(None, writeto, file_path)
 
         assert os.path.exists(file_path), "Failed writing image to disk."
 
