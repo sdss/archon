@@ -449,6 +449,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         if controller.acf_file:
             acf = os.path.basename(controller.acf_file)
+        elif "archon" in config and "acf_file" in config["archon"]:
+            acf = os.path.basename(config["archon"]["acf_file"])
         else:
             acf = "?"
         header["ARCHACF"] = (acf, "Archon ACF file loaded")
