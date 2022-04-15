@@ -689,7 +689,7 @@ class ArchonController(Device):
                 "Controller has a readout pending. Read the device or flush."
             )
 
-        if (not (CS.POWERON & self.status)) or (CS.POWERBAD & CS.POWERBAD):
+        if (not (CS.POWERON & self.status)) or (CS.POWERBAD & self.status):
             raise ArchonControllerError("Controller power is off or invalid.")
 
         await self.reset(autoflush=False, restart_timing=False)
