@@ -345,7 +345,7 @@ class ExposureDelegate(Generic[Actor_co]):
             hdu.header["filename"] = os.path.basename(file_path)
             hdu.header.insert(
                 "filename",
-                ("EXPNO", expose_data.exposure_no, "Exposure number"),
+                ("EXPOSURE", expose_data.exposure_no, "Exposure number"),
                 after=True,
             )
 
