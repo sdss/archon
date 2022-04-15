@@ -785,7 +785,10 @@ class ArchonController(Device):
         """
 
         expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
-        if not force and self.status != expected_state:
+        if not force and not (
+            (expected_state & ControllerStatus.READOUT_PENDING)
+            and (expected_state & ControllerStatus.IDLE)
+        ):
             raise ArchonControllerError("Controller is not in a readable state.")
 
         delay = int(delay)
