@@ -13,7 +13,7 @@ import os
 import pathlib
 from contextlib import suppress
 from dataclasses import dataclass, field
-from functools import reduce
+from functools import partial, reduce
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
@@ -21,6 +21,7 @@ import astropy.time
 import numpy
 from astropy.io import fits
 
+from archon import __version__
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.tools import gzip_async
@@ -396,6 +397,7 @@ class ExposureDelegate(Generic[Actor_co]):
         header = fits.Header()
 
         # Basic header
+        header["V_ARCHON"] = __version__
         header["FILENAME"] = ("", "File basename")  # Will be filled out later
         header["SPEC"] = (controller.name, "Spectrograph name")
         header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
