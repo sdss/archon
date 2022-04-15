@@ -652,6 +652,10 @@ class ArchonController(Device):
 
         param = param.upper()
         if param not in self.parameters and force is False:
+            warnings.warn(
+                f"Trying to set unknown parameter {param}.",
+                ArchonUserWarning,
+            )
             return
 
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
