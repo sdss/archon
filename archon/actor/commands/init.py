@@ -63,9 +63,23 @@ async def init(
 
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
+    default_config: str | dict[str, str]
+
     if config_file is None:
-        default_config: str = command.actor.config["archon"]["config_file"]
-        config_file = default_config.format(archon_etc=archon_etc)
+        default_config = command.actor.config["archon"]["config_file"]
+
+        if isinstance(default_config, str):
+            config_file = default_config
+        else:
+            if controller.name not in default_config:
+                return error_controller(
+                    command,
+                    controller,
+                    f"Configuration file for controller {controller.name} not found.",
+                )
+            config_file = default_config[controller.name]
+
+        config_file = config_file.format(archon_etc=archon_etc)
 
     if not os.path.isabs(config_file):
         archon_root = os.path.dirname(os.path.realpath(archon.__file__))
