@@ -566,7 +566,10 @@ class ArchonController(Device):
 
         power_status = ArchonPower(status["power"])
 
-        if power_status not in [ArchonPower.ON, ArchonPower.OFF]:
+        if (
+            power_status not in [ArchonPower.ON, ArchonPower.OFF]
+            or status["powergood"] == 0
+        ):
             if power_status == ArchonPower.INTERMEDIATE:
                 warnings.warn("Power in INTERMEDIATE state.", ArchonUserWarning)
             self.update_status(ControllerStatus.POWERBAD)
