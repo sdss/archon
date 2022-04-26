@@ -86,7 +86,7 @@ async def controller(request, unused_tcp_port: int, monkeypatch):
             # Default reply
             if not found_command:
                 if com.upper() == "STATUS":
-                    writer.write(f"<{cid}POWERGOOD=1\n".encode())
+                    writer.write(f"<{cid}POWER=4 POWERGOOD=1\n".encode())
                 else:
                     writer.write(f"<{cid}\n".encode())
                 await writer.drain()
