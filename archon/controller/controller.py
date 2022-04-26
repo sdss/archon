@@ -790,10 +790,9 @@ class ArchonController(Device):
         many seconds (useful for creating photon transfer frames).
         """
 
-        expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
         if not force and not (
-            (expected_state & ControllerStatus.READOUT_PENDING)
-            and (expected_state & ControllerStatus.IDLE)
+            (self.status & ControllerStatus.READOUT_PENDING)
+            and (self.status & ControllerStatus.IDLE)
         ):
             raise ArchonControllerError("Controller is not in a readable state.")
 
