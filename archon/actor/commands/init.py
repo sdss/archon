@@ -45,12 +45,14 @@ def _output(
 @parser.command()
 @click.argument("ACF-FILE", type=str, required=False)
 @click.option("--hdr", is_flag=True, help="Set HDR mode.")
+@click.option("--power/--no-power", default=True, help="Power the array after init.")
 @parallel_controllers()
 async def init(
     command: ArchonCommandType,
     controller: ArchonController,
     acf_file: str | None = None,
-    hdr=False,
+    hdr: bool = False,
+    power: bool = True,
 ):
     """Initialises a controller."""
 
@@ -112,14 +114,15 @@ async def init(
         )
 
     # Power on
-    _output(command, controller, "Powering on")
-    acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
-    if not acmd.succeeded():
-        return error_controller(
-            command,
-            controller,
-            f"Failed while powering on ({acmd.status.name})",
-        )
+    if power:
+        _output(command, controller, "Powering on")
+        acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
+        if not acmd.succeeded():
+            return error_controller(
+                command,
+                controller,
+                f"Failed while powering on ({acmd.status.name})",
+            )
 
     await controller.reset()
     if not command.actor.timed_commands.running:
