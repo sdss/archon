@@ -268,6 +268,7 @@ class ExposureDelegate(Generic[Actor_co]):
             hdus = await asyncio.gather(*[self.fetch_hdus(c) for c in controllers])
 
         except Exception as err:
+            raise
             return self.fail(f"Failed reading out: {err}")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
@@ -463,51 +464,53 @@ class ExposureDelegate(Generic[Actor_co]):
         config = actor.config
 
         # Add keywords specified in the configuration file.
-        if hconfig := config.get("header"):
-            for kname in hconfig:
-                kconfig = hconfig[kname]
-                kname = kname.upper()
 
-                params = None
-                comment = ""
+        if "header" in config and isinstance(config["header"], dict):
+            if hconfig := config["header"].copy():
+                for kname in hconfig:
+                    kconfig = hconfig[kname]
+                    kname = kname.upper()
 
-                if "command" in kconfig:
-                    hcommand = kconfig["command"]
-                    if hcommand.lower() == "status":
-                        command_data = await controller.get_device_status()
-                    elif hcommand.lower() == "system":
-                        command_data = await controller.get_system()
+                    params = None
+                    comment = ""
+
+                    if "command" in kconfig:
+                        hcommand = kconfig["command"]
+                        if hcommand.lower() == "status":
+                            command_data = await controller.get_device_status()
+                        elif hcommand.lower() == "system":
+                            command_data = await controller.get_system()
+                        else:
+                            self.command.warning(text=f"Invalid command {hcommand}.")
+                            header[kname] = "N/A"
+                            continue
+
+                        if "detectors" in kconfig:
+                            for ccd in kconfig["detectors"]:
+                                if ccd != ccd_name:
+                                    continue
+                                params = kconfig["detectors"][ccd][:]
+                        else:
+                            params = kconfig.get("value", [])[:]
+
+                        if params:
+                            # Replace first element, which is the key in the command
+                            # reply with the actual value.
+                            params[0] = command_data[params[0]]
+
                     else:
-                        self.command.warning(text=f"Invalid command {hcommand}.")
-                        header[kname] = "N/A"
-                        continue
-
-                    if "detectors" in kconfig:
-                        for ccd in kconfig["detectors"]:
-                            if ccd != ccd_name:
-                                continue
-                            params = kconfig["detectors"][ccd]
-                    else:
-                        params = kconfig.get("value", None)
+                        if isinstance(kconfig, (list, tuple)):
+                            params = kconfig
+                        else:
+                            params = kconfig
 
                     if params:
-                        # Replace first element, which is the key in the command
-                        # reply with the actual value.
-                        params[0] = command_data[params[0]]
-
-                else:
-                    if isinstance(kconfig, (list, tuple)):
-                        params = kconfig
-                    else:
-                        params = [kconfig]
-
-                if params:
-                    value = params[0]
-                    if len(params) > 1:
-                        comment = params[1]
-                    if len(params) > 2:
-                        value = numpy.round(value, params[2])
-                    header[kname] = (value, comment)
+                        value = params[0]
+                        if len(params) > 1:
+                            comment = params[1]
+                        if len(params) > 2:
+                            value = numpy.round(value, params[2])
+                        header[kname] = (value, comment)
 
         # Convert JSON lists to tuples or astropy fails.
         for key in expose_data.header:

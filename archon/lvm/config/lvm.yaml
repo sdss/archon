@@ -1,31 +1,31 @@
 ---
 # A dictionary of controller name to Archon controller connection parameters.
 controllers:
-  sp1:
-    host: 10.7.45.26
-    port: 4242
-    parameters:
-      pixels: 2040
-      lines: 2040
-      overscan_pixels: 20
-      taps_per_detector: 4
-      framemode: split
-    detectors:
-      r1:
-        serial: STA29857
-        gain: [2.75, 2.79, 2.68, 2.74]
-        readnoise: [3.2, 3.3, 3.0, 3.1]
-        type: STA4850
-      b1:
-        serial: STA29925
-        gain: [2.71, 2.71, 2.68, 2.69]
-        readnoise: [3.0, 3.0, 2.8, 2.8]
-        type: STA4850
-      z1:
-        serial: STA27977
-        gain: [2.76, 2.65, 2.89, 2.78]
-        readnoise: [3.6, 3.6, 3.4, 3.6]
-        type: STA4850
+  # sp1:
+  #   host: 10.7.45.26
+  #   port: 4242
+  #   parameters:
+  #     pixels: 2040
+  #     lines: 2040
+  #     overscan_pixels: 20
+  #     taps_per_detector: 4
+  #     framemode: split
+  #   detectors:
+  #     r1:
+  #       serial: STA29857
+  #       gain: [2.75, 2.79, 2.68, 2.74]
+  #       readnoise: [3.2, 3.3, 3.0, 3.1]
+  #       type: STA4850
+  #     b1:
+  #       serial: STA29925
+  #       gain: [2.71, 2.71, 2.68, 2.69]
+  #       readnoise: [3.0, 3.0, 2.8, 2.8]
+  #       type: STA4850
+  #     z1:
+  #       serial: STA27977
+  #       gain: [2.76, 2.65, 2.89, 2.78]
+  #       readnoise: [3.6, 3.6, 3.4, 3.6]
+  #       type: STA4850
   sp2:
     host: 10.7.45.25
     port: 4242
@@ -72,9 +72,9 @@ header:
       r1: ['mod2/tempb', 'LN2 temperature (HEATERX 2)', 2]
       b1: ['mod2/tempc', 'LN2 temperature (HEATERX 2)', 2]
       z1: ['mod12/tempb', 'LN2 temperature (HEATERX 12)', 2]
-      r2: ['mod2/tempa', 'Temperature of the sensor (HEATERX 2)', 2]
-      b2: ['mod12/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
-      z2: ['mod12/tempa', 'Temperature of the sensor (HEATERX 12)', 2]
+      r2: ['mod2/tempb', 'Temperature of the sensor (HEATERX 2)', 2]
+      b2: ['mod2/tempc', 'Temperature of the sensor (HEATERX 12)', 2]
+      z2: ['mod12/tempb', 'Temperature of the sensor (HEATERX 12)', 2]
   DATASEC: ['[1:4120,1:4080]', 'Section of the detector containing data']
   CCDSEC: ['[1:4120,1:4080]', 'Section of the detector read out']
   BIASSEC: ['[2041:2080,1:4080]', 'Section of calibration/bias data']
@@ -82,16 +82,16 @@ header:
 
 devices:
   motor_controllers:
-    sp1:
-      shutter:
-        host: 10.7.45.28
-        port: 7776
-      hartmann_left:
-        host: 10.7.45.28
-        port: 7777
-      hartmann_right:
-        host: 10.7.45.28
-        port: 7778
+    # sp1:
+    #   shutter:
+    #     host: 10.7.45.28
+    #     port: 7776
+    #   hartmann_left:
+    #     host: 10.7.45.28
+    #     port: 7777
+    #   hartmann_right:
+    #     host: 10.7.45.28
+    #     port: 7778
     sp2:
       shutter:
         host: 10.7.45.27
@@ -131,17 +131,29 @@ devices:
       host: 10.7.45.31
       outlet: 7
   pressure:
-    r1:
-      host: 10.7.45.30
-      port: 1112
-      id: 253
-    b1:
-      host: 10.7.45.30
+    # r1:
+    #   host: 10.7.45.30
+    #   port: 1112
+    #   id: 253
+    # b1:
+    #   host: 10.7.45.30
+    #   port: 1114
+    #   id: 253
+    # z1:
+    #   host: 10.7.45.30
+    #   port: 1115
+    #   id: 253
+    b2:
+      host: 10.7.45.33
       port: 1114
       id: 253
-    z1:
-      host: 10.7.45.30
+    z2:
+      host: 10.7.45.33
       port: 1115
+      id: 253
+    r2:
+      host: 10.7.45.33
+      port: 1112
       id: 253
   depth:
     host: 10.7.45.30
@@ -149,9 +161,9 @@ devices:
     channel: null
   wago:
     controllers:
-      sp1:
-        address: 10.7.45.28
-        port: 502
+      # sp1:
+      #   address: 10.7.45.28
+      #   port: 502
       sp2:
         address: 10.7.45.27
         port: 502
@@ -249,7 +261,9 @@ devices:
 # installed. If the path is not absolute, the root of the package is used as working
 # directory.
 archon:
-  acf_file: 'lvm/config/archon/LVM_100MHz.acf'
+  config_file:
+    sp1: lvm/config/archon/LVM_100kHz_sp1.acf
+    sp2: lvm/config/archon/LVM_100kHz_sp2.acf
 
 # Write a log for each exposure (requires files.lab_log to be set).
 write_log: true
