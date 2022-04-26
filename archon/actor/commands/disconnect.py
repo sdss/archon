@@ -6,10 +6,17 @@
 # @Filename: disconnect.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-from archon.actor.actor import ArchonCommandType
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from archon.actor.commands import parser
 from archon.actor.tools import parallel_controllers
-from archon.controller.controller import ArchonController
+
+
+if TYPE_CHECKING:
+    from archon.actor import ArchonCommandType
+    from archon.controller.controller import ArchonController
 
 
 @parser.command()
