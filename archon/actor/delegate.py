@@ -504,11 +504,14 @@ class ExposureDelegate(Generic[Actor_co]):
                             params = kconfig
 
                     if params:
-                        value = params[0]
-                        if len(params) > 1:
-                            comment = params[1]
-                        if len(params) > 2:
-                            value = numpy.round(value, params[2])
+                        if isinstance(params, str):
+                            value = params
+                        else:
+                            value = params[0]
+                            if len(params) > 1:
+                                comment = params[1]
+                            if len(params) > 2:
+                                value = numpy.round(value, params[2])
                         header[kname] = (value, comment)
 
         # Convert JSON lists to tuples or astropy fails.
