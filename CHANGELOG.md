@@ -2,9 +2,20 @@
 
 ## Next version
 
+### 💥 Breaking changes
+
+* `expose start|finish|abort` are not `expose --no-readout`, `readout`, and `abort` respectively. `expose` without `--no-readout` will expose and readout all in the same command.
+
+### 🚀 New
+
+* Archon power status is now reported as part of the status and overall better handled.
+* Some refactoring to support `yao` and more generally to implement external packages that use the library and the actor.
+* Added `power on|off` and `disconnect` commands.
+
 ### ✨ Improved
 
 * `expose finish --header` now accepts a JSON-like dictionary in which a keyword can be the name of a detector. In that case the contents of that keyword are only added to the detector with that name.
+* The `init` command does a better job at understanding relative paths.
 
 
 ## 0.5.1 - September 18, 2021
