@@ -1201,7 +1201,7 @@ sdsstools = ">=0.4.1"
 
 [[package]]
 name = "sdsstools"
-version = "0.4.15"
+version = "0.5.0"
 description = "Small tools for SDSS products"
 category = "main"
 optional = false
@@ -1589,7 +1589,7 @@ lvm = ["sdss-drift", "httpx", "Authlib"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b0570caa24e17347b45ef5b9f42b9399f57eb2c8f7499738ac0917f043b38976"
+content-hash = "7345da496301830994f2762c9a349fc5b7b72b4db92b787cf40797b21768caa1"
 
 [metadata.files]
 aio-pika = [
@@ -2340,8 +2340,8 @@ sdss-drift = [
     {file = "sdss_drift-0.4.1-py3-none-any.whl", hash = "sha256:cd51553a563ef53fb92bf566a9fb0d98a018467868f1718b2c7767823d1fa34a"},
 ]
 sdsstools = [
-    {file = "sdsstools-0.4.15-py3-none-any.whl", hash = "sha256:d07c136010241a7ba8f3fd5aa7571d2afef06ffe295ee44695cd1bd962cef6f9"},
-    {file = "sdsstools-0.4.15.tar.gz", hash = "sha256:e2b1880c7600fd36c46c5927dc3274787a197f4961bd104ae24ace6d0119085c"},
+    {file = "sdsstools-0.5.0-py3-none-any.whl", hash = "sha256:a84e81862d69994ddb82ecb57a02825efa9b69391e395a15dd0b98c4a0fcde7b"},
+    {file = "sdsstools-0.5.0.tar.gz", hash = "sha256:fdf9b83492a8b99609aaf13a3c73c45a842e6bb6f78293874432991333313416"},
 ]
 semantic-version = [
     {file = "semantic_version-2.9.0-py2.py3-none-any.whl", hash = "sha256:db2504ab37902dd2c9876ece53567aa43a5b2a417fbe188097b2048fff46da3d"},
