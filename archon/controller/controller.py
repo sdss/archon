@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import asyncio
 import configparser
+import io
 import os
-import pathlib
 import re
 import warnings
 from collections.abc import AsyncIterator
@@ -19,15 +19,16 @@ from collections.abc import AsyncIterator
 from typing import Any, Callable, Iterable, Optional, cast
 
 import numpy
-import yaml
 from clu.device import Device
 
-from sdsstools import read_yaml_file
-
-from archon import config
+from archon import config, log
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
-from archon.controller.maskbits import ControllerStatus, ModType
-from archon.exceptions import ArchonControllerError, ArchonControllerWarning
+from archon.controller.maskbits import ArchonPower, ControllerStatus, ModType
+from archon.exceptions import (
+    ArchonControllerError,
+    ArchonControllerWarning,
+    ArchonUserWarning,
+)
 
 from . import MAX_COMMAND_ID, MAX_CONFIG_LINES
 
@@ -59,27 +60,32 @@ class ArchonController(Device):
         self._status: ControllerStatus = ControllerStatus.UNKNOWN
         self.__status_event = asyncio.Event()
 
-        self.auto_flush: bool | None = None
         self._binary_reply: Optional[bytearray] = None
 
-        self.DEFAULT_USER_CONFIG_FILE: str = "~/.config/sdss/archon/archon.yaml"
-        self._acf_loaded: str | None = None
+        self.auto_flush: bool | None = None
+        self.parameters: dict[str, int] = {}
+
+        self.acf_file: str | None = None
+        self.acf_config: configparser.ConfigParser | None = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
 
-    async def start(self, reset=True):
+    async def start(self, reset: bool = True, read_acf: bool = True):
         """Starts the controller connection. If ``reset=True``, resets the status."""
 
         await super().start()
+        log.debug(f"Controller {self.name} connected at {self.host}.")
+
+        if read_acf:
+            log.debug(f"Retrieving ACF data from controller {self.name}.")
+            config_parser, _ = await self.read_config()
+            self.acf_config = config_parser
+            self._parse_params()
+
         if reset:
-            try:
-                await self.reset()
-            except ArchonControllerError:
-                # Sometimes after a power cycle this will fail until the controller
-                # has been initialised.
-                pass
+            await self.reset()
 
         return self
 
@@ -126,6 +132,16 @@ class ArchonController(Device):
         elif status & ControllerStatus.ACTIVE:
             status &= ~ControllerStatus.IDLE
 
+        # Handle incompatible power bits.
+        if ControllerStatus.POWERBAD in bits:
+            status &= ~(ControllerStatus.POWERON | ControllerStatus.POWEROFF)
+        elif ControllerStatus.POWERON in bits or ControllerStatus.POWEROFF in bits:
+            status &= ~ControllerStatus.POWERBAD
+            if ControllerStatus.POWERON in bits:
+                status &= ~ControllerStatus.POWEROFF
+            else:
+                status &= ~ControllerStatus.POWERON
+
         self._status = status
 
         if notify:
@@ -141,61 +157,6 @@ class ArchonController(Device):
             if self.status != prev_status:
                 yield self.status
             self.__status_event.clear()
-
-    @property
-    def acf_loaded(self):
-        """Returns the last ACF file loaded.
-
-        If no ACF has been loaded since the controller was started, tries to get the
-        last loaded file from the user configuration file.
-
-        """
-
-        if self._acf_loaded:
-            return self._acf_loaded
-
-        _, user_config = self._get_user_config()
-        if user_config is None:
-            return None
-
-        last_acf = user_config.get("last_acf_loaded", {}).get(self.name, None)
-
-        self._acf_loaded = last_acf
-        return self._acf_loaded
-
-    @acf_loaded.setter
-    def acf_loaded(self, value: str | pathlib.Path):
-
-        self._acf_loaded = os.path.abspath(os.path.realpath(str(value)))
-
-        user_config_file, user_config = self._get_user_config()
-
-        user_config = user_config or {}
-        user_config["last_acf_loaded"] = user_config.get("last_acf_loaded", {})
-        user_config["last_acf_loaded"][self.name] = self._acf_loaded
-
-        with open(user_config_file, "w") as file_:
-            yaml.safe_dump(
-                user_config,
-                file_,
-                default_flow_style=False,
-                sort_keys=False,
-            )
-
-        config["last_acf_loaded"] = user_config["last_acf_loaded"].copy()
-
-    def _get_user_config(self):
-        """Returns the user configuration."""
-
-        if not config.CONFIG_FILE or config.CONFIG_FILE == config._BASE_CONFIG_FILE:
-            user_config_file = os.path.expanduser(self.DEFAULT_USER_CONFIG_FILE)
-        else:
-            user_config_file = config.CONFIG_FILE
-
-        if not os.path.exists(user_config_file):
-            return (user_config_file, None)
-
-        return (user_config_file, read_yaml_file(user_config_file))
 
     def send_command(
         self,
@@ -364,11 +325,6 @@ class ArchonController(Device):
             for (key, value) in map(lambda k: k.split("="), keywords)
         }
 
-        if status["powergood"] != 1:
-            self.update_status(ControllerStatus.POWERBAD)
-        else:
-            self.update_status(ControllerStatus.POWERBAD, "off")
-
         return status
 
     async def get_frame(self) -> dict[str, int]:
@@ -392,7 +348,10 @@ class ArchonController(Device):
 
         return frame
 
-    async def read_config(self, save: str | bool = False) -> list[str]:
+    async def read_config(
+        self,
+        save: str | bool = False,
+    ) -> tuple[configparser.ConfigParser, list[str]]:
         """Reads the configuration from the controller.
 
         Parameters
@@ -463,7 +422,7 @@ class ArchonController(Device):
             with open(path, "w") as f:
                 c.write(f, space_around_delimiters=False)
 
-        return config_lines
+        return (c, config_lines)
 
     async def write_config(
         self,
@@ -503,23 +462,21 @@ class ArchonController(Device):
         timeout = timeout or config["timeouts"]["write_config_timeout"]
         delay: float = config["timeouts"]["write_config_delay"]
 
-        c = configparser.ConfigParser()
-        is_file = False
+        cp = configparser.ConfigParser()
 
         input = str(input)
         if os.path.exists(input):
-            is_file = True
-            c.read(input)
+            cp.read(input)
         else:
-            c.read_string(input)
+            cp.read_string(input)
 
-        if not c.has_section("CONFIG"):
+        if not cp.has_section("CONFIG"):
             raise ArchonControllerError(
                 "The config file does not have a CONFIG section."
             )
 
         # Undo the INI format: revert \ to / and remove quotes around values.
-        aconfig = c["CONFIG"]
+        aconfig = cp["CONFIG"]
         lines = list(
             map(
                 lambda k: k.upper().replace("\\", "/") + "=" + aconfig[k].strip('"'),
@@ -554,8 +511,8 @@ class ArchonController(Device):
 
         notifier("Sucessfully sent config lines")
 
-        if is_file:
-            self.acf_loaded = os.path.realpath(input)
+        self.acf_config = cp
+        self.acf_file = input if os.path.exists(input) else None
 
         # Restore polling
         await self.send_command("POLLON")
@@ -571,16 +528,58 @@ class ArchonController(Device):
 
             if poweron:
                 notifier("Sending POWERON")
-                cmd = await self.send_command("POWERON", timeout=timeout)
-                if not cmd.succeeded():
-                    self.update_status(ControllerStatus.ERROR)
-                    raise ArchonControllerError(
-                        f"Failed sending POWERON ({cmd.status.name})"
-                    )
+                await self.power(True)
 
         await self.reset()
 
         return
+
+    async def power(self, mode: bool | None = None):
+        """Handles power to the CCD(s). Sets the power status bit.
+
+        Parameters
+        ----------
+        mode
+            If `None`, returns `True` if the array is currently powered,
+            `False` otherwise. If `True`, powers n the array; if `False`
+            powers if off.
+
+        Returns
+        -------
+        state : `.ArchonPower`
+            The power state as an `.ArchonPower` flag.
+
+        """
+
+        if mode is not None:
+            cmd_str = "POWERON" if mode is True else "POWEROFF"
+            cmd = await self.send_command(cmd_str, timeout=10)
+            if not cmd.succeeded():
+                self.update_status([ControllerStatus.ERROR, ControllerStatus.POWERBAD])
+                raise ArchonControllerError(
+                    f"Failed sending POWERON ({cmd.status.name})"
+                )
+
+            await asyncio.sleep(1)
+
+        status = await self.get_device_status()
+
+        power_status = ArchonPower(status["power"])
+
+        if (
+            power_status not in [ArchonPower.ON, ArchonPower.OFF]
+            or status["powergood"] == 0
+        ):
+            if power_status == ArchonPower.INTERMEDIATE:
+                warnings.warn("Power in INTERMEDIATE state.", ArchonUserWarning)
+            self.update_status(ControllerStatus.POWERBAD)
+        else:
+            if power_status == ArchonPower.ON:
+                self.update_status(ControllerStatus.POWERON)
+            elif power_status == ArchonPower.OFF:
+                self.update_status(ControllerStatus.POWEROFF)
+
+        return power_status
 
     async def set_autoflush(self, mode: bool):
         """Enables or disables autoflushing."""
@@ -590,6 +589,8 @@ class ArchonController(Device):
 
     async def reset(self, autoflush=True, restart_timing=True):
         """Resets timing and discards current exposures."""
+
+        self._parse_params()
 
         await self.send_command("HOLDTIMING")
 
@@ -616,16 +617,58 @@ class ArchonController(Device):
                     )
 
         self._status = ControllerStatus.IDLE
-        await self.get_device_status()  # Sets power bit.
+        await self.power()  # Sets power bit.
 
-    async def set_param(self, param: str, value: int) -> ArchonCommand:
+    def _parse_params(self):
+        """Reads the ACF file and constructs a dictionary of parameters."""
+
+        if not self.acf_config:
+            raise ArchonControllerError("ACF file not loaded. Cannot parse parameters.")
+
+        # Dump the ACF ConfigParser object into a dummy file and read it as a string.
+        f = io.StringIO()
+        self.acf_config.write(f)
+
+        f.seek(0)
+        data = f.read()
+
+        matches = re.findall(
+            r'PARAMETER[0-9]+\s*=\s*"([A-Z]+)\s*=\s*([0-9]+)"',
+            data,
+            re.IGNORECASE,
+        )
+
+        self.parameters = {k.upper(): int(v) for k, v in dict(matches).items()}
+
+    async def set_param(
+        self,
+        param: str,
+        value: int,
+        force: bool = False,
+    ) -> ArchonCommand | None:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
+
+        # First we check if the parameter actually exists.
+        if len(self.parameters) == 0:
+            if self.acf_config is None:
+                raise ArchonControllerError("ACF not loaded. Cannot modify parameters.")
+
+        param = param.upper()
+        if param not in self.parameters and force is False:
+            warnings.warn(
+                f"Trying to set unknown parameter {param}.",
+                ArchonUserWarning,
+            )
+            return
 
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
         if not cmd.succeeded():
             raise ArchonControllerError(
                 f"Failed setting parameter {param!r} ({cmd.status.name})."
             )
+
+        self.parameters[param] = value
+
         return cmd
 
     async def expose(
@@ -648,6 +691,9 @@ class ArchonController(Device):
             raise ArchonControllerError(
                 "Controller has a readout pending. Read the device or flush."
             )
+
+        if (not (CS.POWERON & self.status)) or (CS.POWERBAD & self.status):
+            raise ArchonControllerError("Controller power is off or invalid.")
 
         await self.reset(autoflush=False, restart_timing=False)
 
@@ -744,8 +790,10 @@ class ArchonController(Device):
         many seconds (useful for creating photon transfer frames).
         """
 
-        expected_state = ControllerStatus.READOUT_PENDING | ControllerStatus.IDLE
-        if not force and self.status != expected_state:
+        if not force and not (
+            (self.status & ControllerStatus.READOUT_PENDING)
+            and (self.status & ControllerStatus.IDLE)
+        ):
             raise ArchonControllerError("Controller is not in a readable state.")
 
         delay = int(delay)

@@ -17,13 +17,11 @@ pytestmark = [pytest.mark.asyncio]
 
 async def test_init(actor):
 
-    assert actor.controllers["sp1"].acf_loaded is None
-
     command = await actor.invoke_mock_command("init")
     await command
 
     assert command.status.did_succeed
-    assert actor.controllers["sp1"].acf_loaded is not None
+    assert actor.controllers["sp1"].acf_config is not None
 
 
 async def test_init_hdr(actor):

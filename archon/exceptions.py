@@ -36,7 +36,7 @@ class ArchonControllerError(ArchonError):
                 controller_name = "unnamed"
             super().__init__(f"{controller_name} - {message}")
         else:
-            super().__init__(f"{message}")
+            super().__init__(message)
 
 
 class ArchonWarning(Warning):

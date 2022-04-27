@@ -25,9 +25,9 @@ async def test_get_device_status(controller: ArchonController):
     assert controller.status
 
 
-@pytest.mark.commands([["STATUS", ["<{cid}POWERGOOD=0"]]])
-async def test_get_device_status_powerbad(controller: ArchonController):
-    await controller.get_device_status()
+@pytest.mark.commands([["STATUS", ["<{cid}POWER=4 POWERGOOD=0"]]])
+async def test_power_powerbad(controller: ArchonController):
+    await controller.power()
     assert controller.status & ControllerStatus.POWERBAD
 
 

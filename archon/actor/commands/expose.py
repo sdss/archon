@@ -24,17 +24,10 @@ from ..tools import check_controller, controller
 from . import parser
 
 
-__all__ = ["expose"]
+__all__ = ["expose", "read", "abort"]
 
 
-@parser.group()
-def expose(*args):
-    """Exposes the cameras."""
-
-    pass
-
-
-@expose.command()
+@parser.command()
 @controller
 @click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
 @click.option(
@@ -43,51 +36,65 @@ def expose(*args):
     flag_value="bias",
     default=False,
     show_default=True,
-    help="Take a bias",
+    help="Take a bias.",
 )
 @click.option(
     "--dark",
     "flavour",
     flag_value="dark",
     default=False,
-    help="Take a dark",
+    help="Take a dark.",
 )
 @click.option(
     "--flat",
     "flavour",
     flag_value="flat",
     default=False,
-    help="Take a flat",
+    help="Take a flat.",
 )
 @click.option(
     "--object",
     "flavour",
     flag_value="object",
     default=True,
-    help="Take an object frame",
+    help="Take an object frame.",
 )
 @click.option(
     "-b",
     "--binning",
     type=int,
     default=1,
-    help="Binning factor",
+    help="Binning factor.",
 )
 @click.option(
-    "--finish",
-    "-f",
-    "do_finish",
-    is_flag=True,
-    help="Finish the exposure",
+    "--readout/--no-readout",
+    " /-R",
+    default=True,
+    help="Whether to read out the frame.",
 )
-async def start(
+@click.option(
+    "--header",
+    type=str,
+    default="{}",
+    help="JSON string with additional header keyword-value pairs. Avoid using spaces.",
+)
+@click.option(
+    "-d",
+    "--delay-readout",
+    type=int,
+    default=0,
+    help="Slow down the readout by this many seconds.",
+)
+async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
-    exposure_time: float,
-    controller: str | None,
-    flavour: str,
-    do_finish: bool,
+    exposure_time: float | None = None,
+    controller: str | None = None,
+    flavour: str = "object",
+    readout: bool = True,
     binning: int = 1,
+    header: str = "{}",
+    delay_readout: int = 0,
 ):
     """Exposes the cameras."""
 
@@ -109,13 +116,17 @@ async def start(
     if delegate is None:
         return command.fail(error="Cannot find expose delegate.")
 
+    extra_header = json.loads(header)
+
     result = await delegate.expose(
         command,
         selected_controllers,
         flavour=flavour,
         exposure_time=exposure_time,
         binning=binning,
-        readout=do_finish,
+        readout=readout,
+        extra_header=extra_header,
+        delay_readout=delay_readout,
     )
 
     if result:
@@ -125,7 +136,7 @@ async def start(
         return
 
 
-@expose.command()
+@parser.command()
 @click.option(
     "--header",
     type=str,
@@ -139,7 +150,7 @@ async def start(
     default=0,
     help="Slow down the readout by this many seconds.",
 )
-async def finish(
+async def read(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: Dict[str, ArchonController],
     header: str,
@@ -167,7 +178,7 @@ async def finish(
         return
 
 
-@expose.command()
+@parser.command()
 @click.option("--flush", is_flag=True, help="Flush the device after aborting.")
 @click.option("--force", is_flag=True, help="Forces abort.")
 @click.option("--all", "all_", is_flag=True, help="Aborts all the controllers.")

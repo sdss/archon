@@ -14,11 +14,8 @@ import re
 from typing import TYPE_CHECKING
 
 import click
-from clu.command import Command
 
-import archon
 from archon.controller.command import ArchonCommand
-from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonError
 
 from ..tools import error_controller, parallel_controllers
@@ -26,11 +23,12 @@ from . import parser
 
 
 if TYPE_CHECKING:
-    from ..actor import ArchonActor
+    from archon.actor import ArchonCommandType
+    from archon.controller.controller import ArchonController
 
 
 def _output(
-    command: Command,
+    command: ArchonCommandType,
     controller: ArchonController,
     text: str,
     message_code="d",
@@ -45,50 +43,46 @@ def _output(
 
 
 @parser.command()
-@click.argument("CONFIG-FILE", type=str, required=False)
+@click.argument("ACF-FILE", type=str, required=False)
 @click.option("--hdr", is_flag=True, help="Set HDR mode.")
+@click.option("--power/--no-power", default=True, help="Power the array after init.")
 @parallel_controllers()
 async def init(
-    command: Command[ArchonActor],
+    command: ArchonCommandType,
     controller: ArchonController,
-    config_file: str | None = None,
-    hdr=False,
+    acf_file: str | None = None,
+    hdr: bool = False,
+    power: bool = True,
 ):
     """Initialises a controller."""
 
     assert command.actor
 
     # Load config, apply all, LOADPARAMS, and LOADTIMING, but no power up.
-    _output(command, controller, "Loading and applying config", "i")
-
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
-    default_config: str | dict[str, str]
+    if acf_file is None:
+        default_config: str = command.actor.config["archon"]["acf_file"]
+        acf_file = default_config.format(archon_etc=archon_etc)
 
-    if config_file is None:
-        default_config = command.actor.config["archon"]["config_file"]
-
-        if isinstance(default_config, str):
-            config_file = default_config
+    if not os.path.isabs(acf_file):
+        if command.actor.config_file_path is not None:
+            config_dirname = os.path.dirname(command.actor.config_file_path)
+            acf_file = os.path.join(config_dirname, acf_file)
         else:
-            if controller.name not in default_config:
-                return error_controller(
-                    command,
-                    controller,
-                    f"Configuration file for controller {controller.name} not found.",
-                )
-            config_file = default_config[controller.name]
+            return error_controller(
+                command,
+                controller,
+                "The actor does not know the path of the configuration file. "
+                "ACF file path must be absolute.",
+            )
 
-        config_file = config_file.format(archon_etc=archon_etc)
+    if not os.path.exists(acf_file):
+        return error_controller(command, controller, f"Cannot find file {acf_file}")
 
-    if not os.path.isabs(config_file):
-        archon_root = os.path.dirname(os.path.realpath(archon.__file__))
-        config_file = os.path.join(archon_root, config_file)
+    _output(command, controller, f"Loading and applying ACF file {acf_file}", "i")
 
-    if not os.path.exists(config_file):
-        return error_controller(command, controller, f"Cannot find file {config_file}")
-
-    data = open(config_file).read()
+    data = open(acf_file).read()
     if hdr:
         data = re.sub("(SAMPLEMODE)=[01]", "\\1=1", data)
 
@@ -97,7 +91,6 @@ async def init(
 
     try:
         await controller.write_config(data, applyall=True, poweron=False)
-        controller.acf_loaded = config_file
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 
@@ -121,14 +114,15 @@ async def init(
         )
 
     # Power on
-    _output(command, controller, "Powering on")
-    acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
-    if not acmd.succeeded():
-        return error_controller(
-            command,
-            controller,
-            f"Failed while powering on ({acmd.status.name})",
-        )
+    if power:
+        _output(command, controller, "Powering on")
+        acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
+        if not acmd.succeeded():
+            return error_controller(
+                command,
+                controller,
+                f"Failed while powering on ({acmd.status.name})",
+            )
 
     await controller.reset()
     if not command.actor.timed_commands.running:

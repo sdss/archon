@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import pathlib
 import warnings
 from contextlib import suppress
 
@@ -18,6 +19,8 @@ from typing import ClassVar, Dict, Type
 import click
 from clu import Command
 from clu.actor import AMQPActor, BaseActor
+
+from sdsstools.configuration import Configuration
 
 from archon import __version__
 from archon.controller.command import ArchonCommand
@@ -44,6 +47,7 @@ class ArchonBaseActor(BaseActor):
     """
 
     parser: ClassVar[click.Group] = archon_command_parser
+    is_legacy: bool = False
 
     BASE_CONFIG: ClassVar[str | Dict | None] = None
     DELEGATE_CLASS: ClassVar[Type[ExposureDelegate]] = ExposureDelegate
@@ -79,6 +83,8 @@ class ArchonBaseActor(BaseActor):
         self._fetch_log_jobs = []
         self._status_jobs = []
 
+        self.config_file_path: str | None = None
+
     async def start(self):
         """Start the actor and connect the controllers."""
 
@@ -90,6 +96,12 @@ class ArchonBaseActor(BaseActor):
             except asyncio.TimeoutError:
                 warnings.warn(
                     f"Timeout out connecting to {controller.name!r}.",
+                    ArchonUserWarning,
+                )
+            except Exception as err:
+                warnings.warn(
+                    f"Failed connecting to controller {controller.name} at "
+                    f"{controller.host}: {err}",
                     ArchonUserWarning,
                 )
 
@@ -126,6 +138,11 @@ class ArchonBaseActor(BaseActor):
             config = cls.BASE_CONFIG
 
         instance = super(ArchonBaseActor, cls).from_config(config, *args, **kwargs)
+
+        if isinstance(config, (str, pathlib.Path)):
+            instance.config_file_path = str(config)
+        elif isinstance(config, Configuration):
+            instance.config_file_path = str(config.CONFIG_FILE)
 
         assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)

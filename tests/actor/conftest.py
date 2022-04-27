@@ -41,6 +41,7 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
     test_config["controllers"]["sp1"]["port"] = controller.port
 
     _actor = ArchonActor.from_config(test_config)
+    _actor.config_file_path = os.path.join(os.path.dirname(__file__), "config.yaml")
     await _actor.start()
 
     _actor = await clu.testing.setup_test_actor(_actor)  # type: ignore
@@ -76,6 +77,8 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
             "mod12/tempa": -110,
             "mod12/tempb": -110,
             "mod12/tempc": -110,
+            "power": 4,
+            "powergood": 1,
         },
     )
 

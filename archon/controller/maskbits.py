@@ -11,7 +11,7 @@ from __future__ import annotations
 import enum
 
 
-__all__ = ["ModType", "ControllerStatus"]
+__all__ = ["ModType", "ControllerStatus", "ArchonPower"]
 
 
 class ModType(enum.Enum):
@@ -46,7 +46,9 @@ class ControllerStatus(enum.Flag):
     FETCHING = 0x20
     FLUSHING = 0x40
     ERROR = 0x80
-    POWERBAD = 0x100
+    POWERON = 0x100
+    POWEROFF = 0x200
+    POWERBAD = 0x400
 
     ACTIVE = EXPOSING | READING | FETCHING | FLUSHING
     ERRORED = ERROR | POWERBAD
@@ -57,3 +59,13 @@ class ControllerStatus(enum.Flag):
         skip = ["ACTIVE", "ERRORED"]
 
         return [b for b in ControllerStatus if b & self and b.name not in skip]
+
+
+class ArchonPower(enum.Enum):
+
+    UNKNOWN = 0
+    NOT_CONFIGURED = 1
+    OFF = 2
+    INTERMEDIATE = 3
+    ON = 4
+    STANDBY = 5

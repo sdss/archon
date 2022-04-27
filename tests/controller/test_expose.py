@@ -33,7 +33,7 @@ async def test_expose(controller: ArchonController, mocker):
     assert controller.status & ControllerStatus.READOUT_PENDING
 
     await task
-    assert controller.status == ControllerStatus.READING
+    assert controller.status == ControllerStatus.READING | ControllerStatus.POWERON
 
 
 async def test_expose_not_idle(controller: ArchonController):

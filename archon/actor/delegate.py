@@ -13,14 +13,15 @@ import os
 import pathlib
 from contextlib import suppress
 from dataclasses import dataclass, field
-from functools import reduce
+from functools import partial, reduce
 
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
 import astropy.time
 import numpy
 from astropy.io import fits
 
+from archon import __version__
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
 from archon.tools import gzip_async
@@ -226,7 +227,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self,
         command: Command[Actor_co],
         extra_header={},
-        delay_readout=False,
+        delay_readout: int = 0,
     ):
         """Reads the exposure, fetches the buffer, and writes to disk."""
 
@@ -267,7 +268,6 @@ class ExposureDelegate(Generic[Actor_co]):
             hdus = await asyncio.gather(*[self.fetch_hdus(c) for c in controllers])
 
         except Exception as err:
-            raise
             return self.fail(f"Failed reading out: {err}")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
@@ -346,7 +346,7 @@ class ExposureDelegate(Generic[Actor_co]):
             hdu.header["filename"] = os.path.basename(file_path)
             hdu.header.insert(
                 "filename",
-                ("EXPNO", expose_data.exposure_no, "Exposure number"),
+                ("EXPOSURE", expose_data.exposure_no, "Exposure number"),
                 after=True,
             )
 
@@ -361,13 +361,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
         loop = asyncio.get_running_loop()
 
+        writeto = partial(hdu.writeto, checksum=True)
+
         if file_path.endswith(".gz"):
             # Astropy compresses with gzip -9 which takes forever.
             # Instead we compress manually with -1, which is still pretty good.
-            await loop.run_in_executor(None, hdu.writeto, file_path[:-3])
+            await loop.run_in_executor(None, writeto, file_path[:-3])
             await gzip_async(file_path[:-3], complevel=1)
         else:
-            await loop.run_in_executor(None, hdu.writeto, file_path)
+            await loop.run_in_executor(None, writeto, file_path)
 
         assert os.path.exists(file_path), "Failed writing image to disk."
 
@@ -395,6 +397,7 @@ class ExposureDelegate(Generic[Actor_co]):
         header = fits.Header()
 
         # Basic header
+        header["V_ARCHON"] = __version__
         header["FILENAME"] = ("", "File basename")  # Will be filled out later
         header["SPEC"] = (controller.name, "Spectrograph name")
         header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
@@ -448,8 +451,10 @@ class ExposureDelegate(Generic[Actor_co]):
         header["BINNING"] = (binning, "Horizontal and vertical binning")
         header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
 
-        if controller.acf_loaded:
-            acf = os.path.basename(controller.acf_loaded)
+        if controller.acf_file:
+            acf = os.path.basename(controller.acf_file)
+        elif "archon" in config and "acf_file" in config["archon"]:
+            acf = os.path.basename(config["archon"]["acf_file"])
         else:
             acf = "?"
         header["ARCHACF"] = (acf, "Archon ACF file loaded")
