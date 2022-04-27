@@ -59,7 +59,6 @@ async def test_controller_command_not_running(controller: ArchonController):
         await asyncio.sleep(0.01)
 
 
-@pytest.mark.xfail
 @pytest.mark.commands([["PING", ["<02PONG"]]])
 async def test_controller_bad_reply(controller: ArchonController):
     with pytest.warns(ArchonControllerWarning):
@@ -102,10 +101,10 @@ async def test_yield_status(controller: ArchonController):
 
     status = None
     async for status in controller.yield_status():
-        if status.name == "EXPOSING":
+        if status == ControllerStatus.EXPOSING | ControllerStatus.POWERON:
             break
 
-    assert status and status.name == "EXPOSING"
+    assert status and status == ControllerStatus.EXPOSING | ControllerStatus.POWERON
 
 
 async def test_start_with_reset(controller: ArchonController):

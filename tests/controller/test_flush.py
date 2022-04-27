@@ -29,4 +29,4 @@ async def test_flush(controller: ArchonController, mocker):
 
     set_param_mock.assert_any_call("DoFlush", 1)
 
-    assert controller.status == ControllerStatus.IDLE
+    assert controller.status == ControllerStatus.IDLE | ControllerStatus.POWERON

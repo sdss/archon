@@ -107,7 +107,7 @@ async def controller(request, unused_tcp_port: int, monkeypatch):
         archon.acf_config = acf_config
         archon._parse_params()
 
-        archon._status = ControllerStatus.IDLE
+        archon._status = ControllerStatus.IDLE | ControllerStatus.POWERON
 
         yield archon
 

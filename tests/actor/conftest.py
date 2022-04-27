@@ -77,6 +77,8 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
             "mod12/tempa": -110,
             "mod12/tempb": -110,
             "mod12/tempc": -110,
+            "power": 4,
+            "powergood": 1,
         },
     )
 

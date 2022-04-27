@@ -38,7 +38,7 @@ async def test_readout(controller: ArchonController, mocker):
     await controller.readout(wait_for=0.01)
 
     set_param_mock.assert_any_call("ReadOut", 1)
-    assert controller.status == ControllerStatus.IDLE
+    assert controller.status == ControllerStatus.IDLE | ControllerStatus.POWERON
 
 
 async def test_readout_no_block(controller: ArchonController):
@@ -46,7 +46,7 @@ async def test_readout_no_block(controller: ArchonController):
 
     await controller.readout(block=False)
 
-    assert controller.status == ControllerStatus.READING
+    assert controller.status == ControllerStatus.READING | ControllerStatus.POWERON
 
 
 async def test_readout_delay(controller: ArchonController, mocker):
@@ -60,7 +60,7 @@ async def test_readout_delay(controller: ArchonController, mocker):
     await controller.readout(delay=60, block=False)
 
     set_param_mock.assert_any_call("WaitCount", 60)
-    assert controller.status == ControllerStatus.READING
+    assert controller.status == ControllerStatus.READING | ControllerStatus.POWERON
 
 
 @pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=0"]]])

@@ -168,7 +168,7 @@ async def test_write_config_applyall_poweron(
 ):
     await controller.write_config(config_file, applyall=True, poweron=True)
     send_command_mock.assert_any_call("APPLYALL", timeout=5)
-    send_command_mock.assert_any_call("POWERON", timeout=2)
+    send_command_mock.assert_any_call("POWERON", timeout=10)
 
 
 async def test_write_config_no_config(controller: ArchonController, tmp_path):
