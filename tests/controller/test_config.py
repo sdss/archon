@@ -234,6 +234,11 @@ async def test_write_config_after_command_fails(
 async def test_write_line(controller: ArchonController, keyword: str, value, mod):
     await controller.write_line(keyword, value, mod=mod)
 
+    assert controller.acf_config
+
+    keyword = ((mod + "\\") if mod else "") + keyword.replace("/", "\\")
+    assert str(value) in controller.acf_config["CONFIG"][keyword]
+
 
 async def test_write_line_applycds(controller: ArchonController):
     await controller.write_line("LINECOUNT", 100, apply="APPLYCDS")
