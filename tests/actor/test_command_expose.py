@@ -170,7 +170,7 @@ async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
 
 async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
 
-    start = await actor.invoke_mock_command("expose --no-readout 0.01")
+    start = await actor.invoke_mock_command("expose --no-readout 0.05")
     await start
 
     actor.expose_delegate.expose_data = None
