@@ -534,6 +534,85 @@ class ArchonController(Device):
 
         return
 
+    async def write_line(
+        self,
+        keyword: str,
+        value: int | float | str,
+        mod: Optional[str] = None,
+        apply: bool | str = True,
+    ):
+        """Write a single line to the controller, replacing the current configuration.
+
+        Parameters
+        ----------
+        keyword
+            The config keyword to replace. If ``mod=None``, must include the module
+            name (e.g., ``MOD11/HEATERAP``); otherwise the module is added from
+            ``mod``. Modules and module keywords can be separated by slashes or
+            backlashes.
+        value
+            The value of the keyword.
+        mod
+            The name of the keyword module, e.g., ``MOD11``.
+        apply
+            Whether to re-apply the configuration for the module. If ``apply``
+            is a string, defines the command to be used to apply the new setting,
+            e.g., ``APPLYCDS``.
+
+        """
+
+        if not self.acf_config:
+            raise ArchonControllerError("The controller ACF configuration is unknown.")
+
+        keyword = keyword.upper().replace("/", "\\")
+
+        if mod != "" and mod is not None:
+            mod = mod.upper()
+            if not keyword.startswith(mod):
+                keyword = mod + "\\" + keyword
+        else:
+            mod_re = re.match(r"(MOD[0-9]+)\\", keyword)
+            if mod_re:
+                mod = mod_re.group(1)
+
+        current_keywords = [k.upper() for k in list(self.acf_config["CONFIG"])]
+
+        if keyword not in current_keywords:
+            raise ArchonControllerError(f"Invalid keyword {keyword}")
+
+        n_line = current_keywords.index(keyword)
+
+        if isinstance(value, (int, float)):
+            value_str = str(value)
+        elif isinstance(value, str):
+            if any(quotable_char in value for quotable_char in [",", " ", "="]):
+                value_str = '"' + value + '"'
+            else:
+                value_str = value
+
+        line = f"{keyword}={value_str}"
+
+        cmd = await self.send_command(f"WCONFIG{n_line:04X}{line}")
+        if cmd.status == ArchonCommandStatus.FAILED:
+            raise ArchonControllerError(
+                f"Failed sending line {cmd.raw!r} ({cmd.status.name})"
+            )
+
+        self.acf_config["CONFIG"][keyword] = value_str
+
+        if apply:
+            if isinstance(apply, str):
+                apply_cmd_str = apply.upper()
+            else:
+                if mod is None:
+                    raise ArchonControllerError("Apply can only be used with modules.")
+                modn = mod[3:]
+                apply_cmd_str = f"APPLYMOD{modn}"
+
+            cmd_apply = await self.send_command(apply_cmd_str)
+            if cmd_apply.status == ArchonCommandStatus.FAILED:
+                raise ArchonControllerError(f"Failed applying changes to {mod}.")
+
     async def power(self, mode: bool | None = None):
         """Handles power to the CCD(s). Sets the power status bit.
 

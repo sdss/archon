@@ -11,6 +11,7 @@
 * Archon power status is now reported as part of the status and overall better handled.
 * Some refactoring to support `yao` and more generally to implement external packages that use the library and the actor.
 * Added `power on|off` and `disconnect` commands.
+* `ArchonController.write_line()` allows to set and apply a line in the configuration file without reloading it completely.
 
 ### ✨ Improved
 

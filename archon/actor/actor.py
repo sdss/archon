@@ -89,6 +89,7 @@ class ArchonBaseActor(BaseActor):
         """Start the actor and connect the controllers."""
 
         connect_timeout = self.config["timeouts"]["controller_connect"]
+        connect_timeout = 10
 
         for controller in self.controllers.values():
             try:
