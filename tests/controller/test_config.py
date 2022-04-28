@@ -219,3 +219,37 @@ async def test_write_config_after_command_fails(
     with pytest.raises(ArchonControllerError) as err:
         await controller.write_config(config_file, applyall=True, poweron=True)
     assert f"Failed sending {after_command}" in str(err)
+
+
+@pytest.mark.parametrize(
+    "keyword,value,mod",
+    [
+        ("MOD1/XVP_ENABLE1", 1, ""),
+        ("MOD1\\XVP_ENABLE1", 1, ""),
+        ("XVP_ENABLE1", "1", "MOD1"),
+        ("MOD1/XVP_ENABLE1", 1.0, ""),
+        ("MOD1/XVP_ENABLE1", "1,2", ""),
+    ],
+)
+async def test_write_line(controller: ArchonController, keyword: str, value, mod):
+    await controller.write_line(keyword, value, mod=mod)
+
+
+async def test_write_line_applycds(controller: ArchonController):
+    await controller.write_line("LINECOUNT", 100, apply="APPLYCDS")
+
+
+async def test_write_line_no_acf(controller: ArchonController):
+    controller.acf_config = None
+    with pytest.raises(ArchonControllerError):
+        await controller.write_line("XVP_ENABLE1", 1, mod="MOD1")
+
+
+async def test_write_line_bad_keyword(controller: ArchonController):
+    with pytest.raises(ArchonControllerError):
+        await controller.write_line("BADKEYWORD", 1, mod="MOD1")
+
+
+async def test_write_line_apply_no_mod_faild(controller: ArchonController):
+    with pytest.raises(ArchonControllerError):
+        await controller.write_line("ADXCDS", 1)
