@@ -15,6 +15,7 @@ import os
 import re
 import warnings
 from collections.abc import AsyncIterator
+from copy import deepcopy
 
 from typing import Any, Callable, Iterable, Optional, cast
 
@@ -67,6 +68,7 @@ class ArchonController(Device):
 
         self.acf_file: str | None = None
         self.acf_config: configparser.ConfigParser | None = None
+        # self.base_acf_config: configparser.ConfigParser | None = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
@@ -82,6 +84,7 @@ class ArchonController(Device):
             log.debug(f"Retrieving ACF data from controller {self.name}.")
             config_parser, _ = await self.read_config()
             self.acf_config = config_parser
+            self.base_acf_config = deepcopy(config_parser)
             self._parse_params()
 
         if reset:
@@ -512,6 +515,7 @@ class ArchonController(Device):
         notifier("Sucessfully sent config lines")
 
         self.acf_config = cp
+        self.base_acf_config = deepcopy(cp)
         self.acf_file = input if os.path.exists(input) else None
 
         # Restore polling
