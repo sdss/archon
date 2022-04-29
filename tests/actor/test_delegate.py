@@ -18,7 +18,7 @@ from clu import Command
 from archon.actor.actor import ArchonActor
 from archon.actor.delegate import ExposureDelegate
 from archon.controller import ControllerStatus as CS
-from archon.exceptions import ArchonError
+from archon.exceptions import ArchonControllerError, ArchonError
 
 
 pytestmark = [pytest.mark.asyncio]
@@ -230,4 +230,63 @@ async def test_delegate_readout_shutter_fails(delegate: ExposureDelegate, mocker
     mocker.patch.object(delegate, "shutter", return_value=False)
 
     result = await delegate.readout(command)
+    assert result is False
+
+
+@pytest.mark.parametrize("window_mode", ["test_mode", "default"])
+async def test_delegate_expose_window_mode(delegate: ExposureDelegate, window_mode):
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+        window_mode=window_mode,
+    )
+
+    assert result
+
+    filename = delegate.actor.model["filename"].value
+    hdu = fits.open(filename)
+
+    if window_mode == "test_mode":
+        assert hdu[0].data.shape == (100, 100)
+    else:
+        assert hdu[0].data.shape == (800, 800)
+
+
+async def test_delegate_expose_bad_window_mode(delegate: ExposureDelegate):
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+        window_mode="bad_window_mode",
+    )
+
+    assert result is False
+
+
+async def test_delegate_expose_set_window_fails(delegate: ExposureDelegate, mocker):
+
+    mocker.patch.object(
+        delegate.actor.controllers["sp1"],
+        "set_window",
+        side_effect=ArchonControllerError,
+    )
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
     assert result is False

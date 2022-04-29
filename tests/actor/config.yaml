@@ -14,6 +14,11 @@ controllers:
         sensor: C
         taps: 4
 
+window_modes:
+  test_mode:
+    lines: 50
+    pixels: 50
+
 archon:
   acf_file: '../data/BOSS_extra.acf'
 
