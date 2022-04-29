@@ -97,7 +97,17 @@
       "additionalProperties": false,
       "required": ["controller", "command", "response"]
     },
-    "filename": { "type": "string" }
+    "filename": { "type": "string" },
+    "lines": { "type": "integer" },
+    "pixels": { "type": "integer" },
+    "preskiplines": { "type": "integer" },
+    "postskiplines": { "type": "integer" },
+    "preskippixels": { "type": "integer" },
+    "postskippixels": { "type": "integer" },
+    "overscanpixels": { "type": "integer" },
+    "overscanlines": { "type": "integer" },
+    "hbin": { "type": "integer" },
+    "vbin": { "type": "integer" }
   },
   "additionalProperties": false
 }
