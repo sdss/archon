@@ -54,6 +54,13 @@ __all__ = ["expose", "read", "abort"]
     help="Take a flat.",
 )
 @click.option(
+    "--arc",
+    "flavour",
+    flag_value="arc",
+    default=False,
+    help="Take an arc.",
+)
+@click.option(
     "--object",
     "flavour",
     flag_value="object",
