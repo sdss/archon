@@ -93,7 +93,8 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float | None = 1.0,
         readout: bool = True,
-        binning: int = 1,
+        window_mode: str | None = None,
+        window_params: dict = {},
         **readout_params,
     ):
 
@@ -108,11 +109,19 @@ class ExposureDelegate(Generic[Actor_co]):
             if exposure_time is None:
                 return self.fail(f"Exposure time required for flavour {flavour!r}.")
 
+        config = self.actor.config
+        expose_modes = config.get("expose_modes", {})
+
+        if window_mode:
+            extra_window_params = window_params.copy()
+            window_params = expose_modes.get(window_mode, {})
+            window_params.update(extra_window_params)
+
         self.expose_data = ExposeData(
             exposure_time=exposure_time,
             flavour=flavour,
             controllers=controllers,
-            binning=binning,
+            window_params=window_params,
         )
 
         if not (await self.check_expose()):
@@ -134,25 +143,27 @@ class ExposureDelegate(Generic[Actor_co]):
         if exposure_time == 0.0 or flavour == "bias":
             exposure_time = 0.0
 
-        jobs = [
-            asyncio.create_task(
-                controller.expose(
-                    exposure_time,
-                    readout=False,
-                    binning=binning,
-                )
-            )
+        try:
+            self.command.debug("Setting exposure window.")
+            await asyncio.gather(*[c.set_window(**window_params) for c in controllers])
+        except BaseException as err:
+            self.command.error("One controller failed setting the exposure window.")
+            self.command.error(error=str(err))
+            return self.fail()
+
+        expose_jobs = [
+            asyncio.create_task(controller.expose(exposure_time, readout=False))
             for controller in controllers
         ]
 
         try:
             c_list = ", ".join([controller.name for controller in controllers])
             self.command.debug(text=f"Starting exposure in controllers: {c_list}.")
-            await asyncio.gather(*jobs)
+            await asyncio.gather(*expose_jobs)
         except BaseException as err:
             self.command.error(error=str(err))
             self.command.error("One controller failed. Cancelling remaining tasks.")
-            for job in jobs:
+            for job in expose_jobs:
                 if not job.done():  # pragma: no cover
                     with suppress(asyncio.CancelledError):
                         job.cancel()
@@ -447,9 +458,10 @@ class ExposureDelegate(Generic[Actor_co]):
         else:
             header["RDNOISE"] = (readnoise, "CCD read noise [e-]")
 
-        binning = int(expose_data.binning)
-        header["BINNING"] = (binning, "Horizontal and vertical binning")
-        header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
+        window_params = expose_data.window_params
+        hbin = window_params.get("hbin", 1)
+        vbin = window_params.get("vbin", 1)
+        header["CCDSUM"] = (f"{hbin} {vbin}", "Horizontal and vertical binning")
 
         if controller.acf_file:
             acf = os.path.basename(controller.acf_file)
@@ -608,7 +620,7 @@ class ExposeData:
     exposure_no: int = 0
     header: Dict[str, Any] = field(default_factory=dict)
     delay_readout: int = 0
-    binning: int = 1
+    window_params: dict = field(default_factory=dict)
 
 
 def dict_get(d, k: str | list):

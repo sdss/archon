@@ -68,13 +68,13 @@ It's possible to "subscribe" to the controller status via the `~.ArchonControlle
 Exposing and reading the CCDs
 -----------------------------
 
-To expose the CCDs attached to the controller use the `~.ArchonController.expose` method which accepts an exposure time and a binning factor ::
+To expose the CCDs attached to the controller use the `~.ArchonController.expose` method which accepts an exposure time ::
 
-  await archon.expose(15., binning=2, readout=True)
+  await archon.expose(15., readout=True)
 
-The coroutine will turn off autoflushing, set the binning parameters, start the device integration routine, wait the desired exposure time, and turn off integration. When the integration starts the status bits `~.ControllerStatus.EXPOSING` and `~.ControllerStatus.READOUT_PENDING` are turned on. When the integration is complete the `~.ControllerStatus.EXPOSING` bit changes to `~.ControllerStatus.IDLE`. Note that `.ArchonController.expose` returns immediately after the integration starts and returns a task that can be awaited until the readout finishes. ::
+The coroutine will turn off autoflushing, start the device integration routine, wait the desired exposure time, and turn off integration. When the integration starts the status bits `~.ControllerStatus.EXPOSING` and `~.ControllerStatus.READOUT_PENDING` are turned on. When the integration is complete the `~.ControllerStatus.EXPOSING` bit changes to `~.ControllerStatus.IDLE`. Note that `.ArchonController.expose` returns immediately after the integration starts and returns a task that can be awaited until the readout finishes. ::
 
-  >>> expose_task = await archon.expose(15., binning=2, readout=True)
+  >>> expose_task = await archon.expose(15., readout=True)
   # The exposure has started but expose() returns immediately.
 
   >>> await expose_task  # This will block until the exposure and readout ends.

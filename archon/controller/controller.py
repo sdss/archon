@@ -65,6 +65,8 @@ class ArchonController(Device):
         self.auto_flush: bool | None = None
 
         self.parameters: dict[str, int] = {}
+
+        self.current_window: dict[str, int] = {}
         self.default_window: dict[str, int] = {}
 
         self.acf_file: str | None = None
@@ -734,12 +736,7 @@ class ArchonController(Device):
 
         """
 
-        if not self.acf_config:
-            raise ArchonControllerError("ACF file not loaded.")
-
         self.default_window = {
-            "linecount": int(self.acf_config["CONFIG"]["LINECOUNT"]),
-            "pixelcount": int(self.acf_config["CONFIG"]["PIXELCOUNT"]),
             "lines": int(self.parameters["LINES"]),
             "pixels": int(self.parameters["PIXELS"]),
             "preskiplines": int(self.parameters.get("PRESKIPLINES", 0)),
@@ -783,6 +780,11 @@ class ArchonController(Device):
 
         return cmd
 
+    async def reset_window(self):
+        """Resets the exposure window."""
+
+        await self.set_window(**self.default_window)
+
     async def set_window(
         self,
         lines: int | None = None,
@@ -796,22 +798,25 @@ class ArchonController(Device):
         hbin: int | None = None,
         vbin: int | None = None,
     ):
-        """Sets the CCD window. Without arguments, resets the original window."""
+        """Sets the CCD window."""
 
-        lines = lines or self.default_window["lines"]
-        pixels = pixels or self.default_window["pixels"]
+        window = self.default_window.copy()
+        window.update(self.current_window)
 
-        preskiplines = preskiplines or self.default_window["preskiplines"]
-        postskiplines = postskiplines or self.default_window["postskiplines"]
+        lines = lines or window["lines"]
+        pixels = pixels or window["pixels"]
 
-        preskippixels = preskippixels or self.default_window["preskippixels"]
-        postskippixels = postskippixels or self.default_window["postskippixels"]
+        preskiplines = preskiplines or window["preskiplines"]
+        postskiplines = postskiplines or window["postskiplines"]
 
-        overscanlines = overscanlines or self.default_window["overscanlines"]
-        overscanpixels = overscanpixels or self.default_window["overscanpixels"]
+        preskippixels = preskippixels or window["preskippixels"]
+        postskippixels = postskippixels or window["postskippixels"]
 
-        vbin = vbin or self.default_window["vbin"]
-        hbin = hbin or self.default_window["hbin"]
+        overscanlines = overscanlines or window["overscanlines"]
+        overscanpixels = overscanpixels or window["overscanpixels"]
+
+        vbin = vbin or window["vbin"]
+        hbin = hbin or window["hbin"]
 
         await self.set_param("Lines", lines)
         await self.set_param("Pixels", pixels)
@@ -828,10 +833,24 @@ class ArchonController(Device):
         await self.write_line("LINECOUNT", linecount, apply=False)
         await self.write_line("PIXELCOUNT", pixelcount, apply="APPLYCDS")
 
+        self.current_window = {
+            "lines": lines,
+            "pixels": pixels,
+            "preskiplines": preskiplines,
+            "postskiplines": postskiplines,
+            "preskippixels": preskippixels,
+            "postskippixels": postskippixels,
+            "overscanpixels": overscanpixels,
+            "overscanlines": overscanlines,
+            "hbin": hbin,
+            "vbin": vbin,
+        }
+
+        return self.current_window
+
     async def expose(
         self,
         exposure_time: float = 1,
-        binning: int = 1,
         readout: bool = True,
     ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
@@ -861,9 +880,6 @@ class ArchonController(Device):
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
-
-        await self.set_param("HorizontalBinning", binning)
-        await self.set_param("VerticalBinning", binning)
 
         await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")

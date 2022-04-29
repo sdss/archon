@@ -233,7 +233,12 @@ async def test_expose_abort_flush_fails(delegate, actor: ArchonActor, mocker):
 
 async def test_expose_set_window(delegate, actor: ArchonActor):
 
-    await actor.controllers["sp1"].set_window(lines=100, pixels=100)
+    controller = actor.controllers["sp1"]
+
+    await controller.reset_window()
+    assert controller.default_window == controller.current_window
+
+    await controller.set_window(lines=100, pixels=100)
 
     command = await actor.invoke_mock_command("expose 0.01")
     await command
