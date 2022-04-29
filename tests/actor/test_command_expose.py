@@ -229,3 +229,17 @@ async def test_expose_abort_flush_fails(delegate, actor: ArchonActor, mocker):
     await abort
 
     assert abort.status.did_fail
+
+
+async def test_expose_set_window(delegate, actor: ArchonActor):
+
+    await actor.controllers["sp1"].set_window(lines=100, pixels=100)
+
+    command = await actor.invoke_mock_command("expose 0.01")
+    await command
+
+    assert command.status.did_succeed
+
+    filename = delegate.actor.model["filename"].value
+    hdu = fits.open(filename)
+    assert hdu[0].data.shape == (200, 200)

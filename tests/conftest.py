@@ -115,7 +115,9 @@ async def start_archon(self, **kwargs):
     acf_config = configparser.ConfigParser()
     acf_config.read(os.path.join(os.path.dirname(__file__), "data/BOSS_extra.acf"))
     self.acf_config = acf_config
+
     self._parse_params()
+    self._set_default_window_params()
 
     # Add some fake ACF info from a file.
     self._status = ControllerStatus.IDLE | ControllerStatus.POWERON
