@@ -14,6 +14,7 @@ import pathlib
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
+from time import time
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
@@ -110,18 +111,23 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail(f"Exposure time required for flavour {flavour!r}.")
 
         config = self.actor.config
-        expose_modes = config.get("expose_modes", {})
 
         if window_mode:
-            extra_window_params = window_params.copy()
-            window_params = expose_modes.get(window_mode, {})
-            window_params.update(extra_window_params)
+            if window_mode == "default":
+                window_params = controllers[0].default_window.copy()
+            elif "window_modes" in config and window_mode in config["window_modes"]:
+                extra_window_params = window_params.copy()
+                window_params = config["window_modes"][window_mode]
+                window_params.update(extra_window_params)
+            else:
+                return self.fail(f"Invalid window mode {window_mode!r}.")
 
         self.expose_data = ExposeData(
             exposure_time=exposure_time,
             flavour=flavour,
             controllers=controllers,
             window_params=window_params,
+            window_mode=window_mode,
         )
 
         if not (await self.check_expose()):
@@ -624,6 +630,7 @@ class ExposeData:
     exposure_no: int = 0
     header: Dict[str, Any] = field(default_factory=dict)
     delay_readout: int = 0
+    window_mode: str | None = None
     window_params: dict = field(default_factory=dict)
 
 

@@ -30,6 +30,7 @@ __all__ = ["expose", "read", "abort"]
 @parser.command()
 @controller
 @click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
+@click.option("--window-mode", type=str, help="Exposure window profile.")
 @click.option(
     "--bias",
     "flavour",
@@ -82,6 +83,7 @@ async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     exposure_time: float | None = None,
+    window_mode: str | None = None,
     controller: str | None = None,
     flavour: str = "object",
     readout: bool = True,
@@ -118,6 +120,7 @@ async def expose(
         readout=readout,
         extra_header=extra_header,
         delay_readout=delay_readout,
+        window_mode=window_mode,
     )
 
     if result:
