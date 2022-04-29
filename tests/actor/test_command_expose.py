@@ -112,7 +112,7 @@ async def test_expose_read_header(delegate, actor: ArchonActor):
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
-    assert hdu[0].data.shape == (2048, 2068)
+    assert hdu[0].data.shape == (800, 800)
     assert hdu[0].header["CCDTEMP1"] == -110
     assert hdu[0].header["KEY1"] == 666
     assert hdu[0].header["KEY2"] == "hi"
@@ -229,3 +229,22 @@ async def test_expose_abort_flush_fails(delegate, actor: ArchonActor, mocker):
     await abort
 
     assert abort.status.did_fail
+
+
+async def test_expose_set_window(delegate, actor: ArchonActor):
+
+    controller = actor.controllers["sp1"]
+
+    await controller.reset_window()
+    assert controller.default_window == controller.current_window
+
+    await controller.set_window(lines=100, pixels=100)
+
+    command = await actor.invoke_mock_command("expose 0.01")
+    await command
+
+    assert command.status.did_succeed
+
+    filename = delegate.actor.model["filename"].value
+    hdu = fits.open(filename)
+    assert hdu[0].data.shape == (200, 200)

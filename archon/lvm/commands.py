@@ -336,13 +336,6 @@ async def lamps(command, controllers, lamp, state, list_):
     default=0,
     help="Slow down the readout by this many seconds.",
 )
-@click.option(
-    "-b",
-    "--binning",
-    type=int,
-    default=1,
-    help="Binning factor",
-)
 @click.option("--lamp-current", type=str)
 @click.option("--test-no", type=str)
 @click.option("--test-iteration", type=str)
@@ -358,7 +351,6 @@ async def expose(
     flavour,
     count,
     delay_readout,
-    binning,
     lamp_current,
     test_no,
     test_iteration,
@@ -406,7 +398,6 @@ async def expose(
                 exposure_time=exposure_time,
                 readout=True,
                 delay_readout=delay_readout,
-                binning=binning,
             )
 
             if not result:

@@ -15,7 +15,6 @@ import os
 import re
 import warnings
 from collections.abc import AsyncIterator
-from copy import deepcopy
 
 from typing import Any, Callable, Iterable, Optional, cast
 
@@ -64,11 +63,14 @@ class ArchonController(Device):
         self._binary_reply: Optional[bytearray] = None
 
         self.auto_flush: bool | None = None
+
         self.parameters: dict[str, int] = {}
+
+        self.current_window: dict[str, int] = {}
+        self.default_window: dict[str, int] = {}
 
         self.acf_file: str | None = None
         self.acf_config: configparser.ConfigParser | None = None
-        # self.base_acf_config: configparser.ConfigParser | None = None
 
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
@@ -84,8 +86,8 @@ class ArchonController(Device):
             log.debug(f"Retrieving ACF data from controller {self.name}.")
             config_parser, _ = await self.read_config()
             self.acf_config = config_parser
-            self.base_acf_config = deepcopy(config_parser)
             self._parse_params()
+            await self._set_default_window_params()
 
         if reset:
             await self.reset()
@@ -515,8 +517,11 @@ class ArchonController(Device):
         notifier("Sucessfully sent config lines")
 
         self.acf_config = cp
-        self.base_acf_config = deepcopy(cp)
         self.acf_file = input if os.path.exists(input) else None
+
+        # Reset objects that depend on the configuration file.
+        self._parse_params()
+        await self._set_default_window_params()
 
         # Restore polling
         await self.send_command("POLLON")
@@ -723,6 +728,32 @@ class ArchonController(Device):
 
         self.parameters = {k.upper(): int(v) for k, v in dict(matches).items()}
 
+    async def _set_default_window_params(self, reset: bool = True):
+        """Sets the default window parameters.
+
+        This is assumed to be called only after the default ACF has been loaded
+        and before any calls to `.write_line` or `.set_param`. Resets the window.
+
+        """
+
+        self.default_window = {
+            "lines": int(self.parameters["LINES"]),
+            "pixels": int(self.parameters["PIXELS"]),
+            "preskiplines": int(self.parameters.get("PRESKIPLINES", 0)),
+            "postskiplines": int(self.parameters.get("POSTSKIPLINES", 0)),
+            "preskippixels": int(self.parameters.get("PRESKIPPIXELS", 0)),
+            "postskippixels": int(self.parameters.get("POSTSKIPPIXELS", 0)),
+            "overscanpixels": int(self.parameters.get("OVERSCANPIXELS", 0)),
+            "overscanlines": int(self.parameters.get("OVERSCANLINES", 0)),
+            "hbin": int(self.parameters.get("HORIZONTALBINNING", 1)),
+            "vbin": int(self.parameters.get("VERTICALBINNING", 1)),
+        }
+
+        self.current_window = self.default_window.copy()
+
+        if reset:
+            await self.reset_window()
+
     async def set_param(
         self,
         param: str,
@@ -754,10 +785,89 @@ class ArchonController(Device):
 
         return cmd
 
+    async def reset_window(self):
+        """Resets the exposure window."""
+
+        await self.set_window(**self.default_window)
+
+    async def set_window(
+        self,
+        lines: int | None = None,
+        pixels: int | None = None,
+        preskiplines: int | None = None,
+        postskiplines: int | None = None,
+        preskippixels: int | None = None,
+        postskippixels: int | None = None,
+        overscanlines: int | None = None,
+        overscanpixels: int | None = None,
+        hbin: int | None = None,
+        vbin: int | None = None,
+    ):
+        """Sets the CCD window."""
+
+        if lines is None:
+            lines = self.current_window["lines"]
+
+        if pixels is None:
+            pixels = self.current_window["pixels"]
+
+        if preskiplines is None:
+            preskiplines = self.current_window["preskiplines"]
+
+        if postskiplines is None:
+            postskiplines = self.current_window["postskiplines"]
+
+        if preskippixels is None:
+            preskippixels = self.current_window["preskippixels"]
+
+        if postskippixels is None:
+            postskippixels = self.current_window["postskippixels"]
+
+        if overscanlines is None:
+            overscanlines = self.current_window["overscanlines"]
+
+        if overscanpixels is None:
+            overscanpixels = self.current_window["overscanpixels"]
+
+        if vbin is None:
+            vbin = self.current_window["vbin"]
+
+        if hbin is None:
+            hbin = self.current_window["hbin"]
+
+        await self.set_param("Lines", lines)
+        await self.set_param("Pixels", pixels)
+        await self.set_param("PreSkipLines", preskiplines)
+        await self.set_param("PostSkipLines", postskiplines)
+        await self.set_param("PreSkipPixels", preskippixels)
+        await self.set_param("PostSkipPixels", postskippixels)
+        await self.set_param("VerticalBinning", vbin)
+        await self.set_param("HorizontalBinning", hbin)
+
+        linecount = (lines + overscanlines) // vbin
+        pixelcount = (pixels + overscanpixels) // hbin
+
+        await self.write_line("LINECOUNT", linecount, apply=False)
+        await self.write_line("PIXELCOUNT", pixelcount, apply="APPLYCDS")
+
+        self.current_window = {
+            "lines": lines,
+            "pixels": pixels,
+            "preskiplines": preskiplines,
+            "postskiplines": postskiplines,
+            "preskippixels": preskippixels,
+            "postskippixels": postskippixels,
+            "overscanpixels": overscanpixels,
+            "overscanlines": overscanlines,
+            "hbin": hbin,
+            "vbin": vbin,
+        }
+
+        return self.current_window
+
     async def expose(
         self,
         exposure_time: float = 1,
-        binning: int = 1,
         readout: bool = True,
     ) -> asyncio.Task:
         """Integrates the CCD for ``exposure_time`` seconds.
@@ -787,9 +897,6 @@ class ArchonController(Device):
 
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
-
-        await self.set_param("HorizontalBinning", binning)
-        await self.set_param("VerticalBinning", binning)
 
         await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")

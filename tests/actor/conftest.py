@@ -44,6 +44,9 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
     _actor.config_file_path = os.path.join(os.path.dirname(__file__), "config.yaml")
     await _actor.start()
 
+    # Replace controller since the one after .start() has only a partial ACF.
+    _actor.controllers["sp1"] = controller
+
     _actor = await clu.testing.setup_test_actor(_actor)  # type: ignore
 
     yield _actor
@@ -61,7 +64,7 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((1024, 12408)),
+        return_value=numpy.ones((1000, 1000)),
     )
 
     assert actor.model

@@ -14,6 +14,7 @@ import pathlib
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
+from time import time
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
@@ -93,7 +94,8 @@ class ExposureDelegate(Generic[Actor_co]):
         flavour: str = "object",
         exposure_time: float | None = 1.0,
         readout: bool = True,
-        binning: int = 1,
+        window_mode: str | None = None,
+        window_params: dict = {},
         **readout_params,
     ):
 
@@ -108,11 +110,24 @@ class ExposureDelegate(Generic[Actor_co]):
             if exposure_time is None:
                 return self.fail(f"Exposure time required for flavour {flavour!r}.")
 
+        config = self.actor.config
+
+        if window_mode:
+            if window_mode == "default":
+                window_params = controllers[0].default_window.copy()
+            elif "window_modes" in config and window_mode in config["window_modes"]:
+                extra_window_params = window_params.copy()
+                window_params = config["window_modes"][window_mode]
+                window_params.update(extra_window_params)
+            else:
+                return self.fail(f"Invalid window mode {window_mode!r}.")
+
         self.expose_data = ExposeData(
             exposure_time=exposure_time,
             flavour=flavour,
             controllers=controllers,
-            binning=binning,
+            window_params=window_params,
+            window_mode=window_mode,
         )
 
         if not (await self.check_expose()):
@@ -134,25 +149,27 @@ class ExposureDelegate(Generic[Actor_co]):
         if exposure_time == 0.0 or flavour == "bias":
             exposure_time = 0.0
 
-        jobs = [
-            asyncio.create_task(
-                controller.expose(
-                    exposure_time,
-                    readout=False,
-                    binning=binning,
-                )
-            )
+        try:
+            self.command.debug("Setting exposure window.")
+            await asyncio.gather(*[c.set_window(**window_params) for c in controllers])
+        except BaseException as err:
+            self.command.error("One controller failed setting the exposure window.")
+            self.command.error(error=str(err))
+            return self.fail()
+
+        expose_jobs = [
+            asyncio.create_task(controller.expose(exposure_time, readout=False))
             for controller in controllers
         ]
 
         try:
             c_list = ", ".join([controller.name for controller in controllers])
             self.command.debug(text=f"Starting exposure in controllers: {c_list}.")
-            await asyncio.gather(*jobs)
+            await asyncio.gather(*expose_jobs)
         except BaseException as err:
             self.command.error(error=str(err))
             self.command.error("One controller failed. Cancelling remaining tasks.")
-            for job in jobs:
+            for job in expose_jobs:
                 if not job.done():  # pragma: no cover
                     with suppress(asyncio.CancelledError):
                         job.cancel()
@@ -249,6 +266,8 @@ class ExposureDelegate(Generic[Actor_co]):
         self.expose_data.header = extra_header
         self.expose_data.delay_readout = delay_readout
 
+        t0 = time()
+
         try:
             jobs = [
                 c.abort(readout=False)
@@ -269,6 +288,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         except Exception as err:
             return self.fail(f"Failed reading out: {err}")
+
+        self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
@@ -307,7 +328,7 @@ class ExposureDelegate(Generic[Actor_co]):
         hdus = []
         for ccd_name in controller_info["detectors"]:
             header = await self.build_base_header(controller, ccd_name)
-            ccd_data = self._get_ccd_data(data, ccd_name, controller_info)
+            ccd_data = self._get_ccd_data(data, controller, ccd_name, controller_info)
             hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
 
         return hdus
@@ -447,9 +468,10 @@ class ExposureDelegate(Generic[Actor_co]):
         else:
             header["RDNOISE"] = (readnoise, "CCD read noise [e-]")
 
-        binning = int(expose_data.binning)
-        header["BINNING"] = (binning, "Horizontal and vertical binning")
-        header["CCDSUM"] = (f"{binning} {binning}", "Horizontal and vertical binning")
+        window_params = expose_data.window_params
+        hbin = window_params.get("hbin", 1)
+        vbin = window_params.get("vbin", 1)
+        header["CCDSUM"] = (f"{hbin} {vbin}", "Horizontal and vertical binning")
 
         if controller.acf_file:
             acf = os.path.basename(controller.acf_file)
@@ -537,6 +559,7 @@ class ExposureDelegate(Generic[Actor_co]):
     def _get_ccd_data(
         self,
         data: numpy.ndarray,
+        controller: ArchonController,
         ccd_name: str,
         controller_info: Dict[str, Any],
     ) -> numpy.ndarray:
@@ -544,29 +567,31 @@ class ExposureDelegate(Generic[Actor_co]):
 
         assert self.expose_data
 
-        binning = self.expose_data.binning
+        assert controller.acf_config
 
-        parameters = controller_info["parameters"]
+        pixels = int(controller.acf_config["CONFIG"]["PIXELCOUNT"])
+        lines = int(controller.acf_config["CONFIG"]["LINECOUNT"])
 
-        pixels = parameters["pixels"]
-        lines = parameters["lines"]
-        taps = parameters["taps_per_detector"]
+        framemode_int = int(controller.acf_config["CONFIG"]["FRAMEMODE"])
+        if framemode_int == 0:
+            framemode = "top"
+        elif framemode_int == 1:
+            framemode = "bottom"
+        else:
+            framemode = "split"
 
-        framemode = parameters.get("framemode", "split")
-        overscan_pixels = parameters.get("overscan_pixels", 0)
-
+        taps = controller_info["detectors"][ccd_name]["taps"]
         ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
 
         if framemode == "top":
-            x0_base = ccd_index * (pixels + overscan_pixels) * taps
+            x0_base = ccd_index * pixels * taps
             x0 = x0_base
 
             ccd_taps = []
-            for tap in range(taps):
+            for _ in range(taps):
                 y0 = 0
-                y1 = lines // binning
-
-                x1 = x0 + (pixels + overscan_pixels) // binning
+                y1 = lines
+                x1 = x0 + pixels
 
                 ccd_taps.append(data[y0:y1, x0:x1])
 
@@ -580,14 +605,14 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
 
         elif framemode == "split":
-            x0 = ccd_index * (pixels + overscan_pixels) * (taps // 2)
-            x1 = x0 + (pixels + overscan_pixels) * (taps // 2)
+            x0 = ccd_index * pixels * (taps // 2)
+            x1 = x0 + pixels * (taps // 2)
             y0 = 0
             y1 = lines * (taps // 2)
             ccd_data = data[y0:y1, x0:x1]
 
         else:
-            raise ValueError(f"Framemode {framemode} is supported at this time.")
+            raise ValueError(f"Framemode {framemode} is not supported at this time.")
 
         return ccd_data
 
@@ -605,7 +630,8 @@ class ExposeData:
     exposure_no: int = 0
     header: Dict[str, Any] = field(default_factory=dict)
     delay_readout: int = 0
-    binning: int = 1
+    window_mode: str | None = None
+    window_params: dict = field(default_factory=dict)
 
 
 def dict_get(d, k: str | list):
