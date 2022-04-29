@@ -87,7 +87,7 @@ class ArchonController(Device):
             config_parser, _ = await self.read_config()
             self.acf_config = config_parser
             self._parse_params()
-            self._set_default_window_params()
+            await self._set_default_window_params()
 
         if reset:
             await self.reset()
@@ -521,7 +521,7 @@ class ArchonController(Device):
 
         # Reset objects that depend on the configuration file.
         self._parse_params()
-        self._set_default_window_params()
+        await self._set_default_window_params()
 
         # Restore polling
         await self.send_command("POLLON")
@@ -728,11 +728,11 @@ class ArchonController(Device):
 
         self.parameters = {k.upper(): int(v) for k, v in dict(matches).items()}
 
-    def _set_default_window_params(self):
+    async def _set_default_window_params(self, reset: bool = True):
         """Sets the default window parameters.
 
         This is assumed to be called only after the default ACF has been loaded
-        and before any calls to `.write_line` or `.set_param`.
+        and before any calls to `.write_line` or `.set_param`. Resets the window.
 
         """
 
@@ -748,6 +748,11 @@ class ArchonController(Device):
             "hbin": int(self.parameters.get("HORIZONTALBINNING", 1)),
             "vbin": int(self.parameters.get("VERTICALBINNING", 1)),
         }
+
+        self.current_window = self.default_window.copy()
+
+        if reset:
+            await self.reset_window()
 
     async def set_param(
         self,

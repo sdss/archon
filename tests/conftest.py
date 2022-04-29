@@ -117,7 +117,7 @@ async def start_archon(self, **kwargs):
     self.acf_config = acf_config
 
     self._parse_params()
-    self._set_default_window_params()
+    await self._set_default_window_params(reset=False)
 
     # Add some fake ACF info from a file.
     self._status = ControllerStatus.IDLE | ControllerStatus.POWERON
