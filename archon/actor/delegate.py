@@ -260,6 +260,8 @@ class ExposureDelegate(Generic[Actor_co]):
         self.expose_data.header = extra_header
         self.expose_data.delay_readout = delay_readout
 
+        t0 = time()
+
         try:
             jobs = [
                 c.abort(readout=False)
@@ -280,6 +282,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         except Exception as err:
             return self.fail(f"Failed reading out: {err}")
+
+        self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
