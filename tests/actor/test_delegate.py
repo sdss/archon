@@ -48,16 +48,16 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
     assert hdu[0].header["CCDTEMP1"] == -110
 
 
-async def test_delegate_expose_split_mode(delegate: ExposureDelegate, mocker):
+async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
 
     # For framemode=top
     mocker.patch.object(
         delegate.actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((2048 * 2, 2068 * 3)),
+        return_value=numpy.ones((400, 400 * 4 * 3)),
     )
 
-    await delegate.actor.controllers["sp1"].write_line("FRAMEMODE", 2, apply="APPLYCDS")
+    await delegate.actor.controllers["sp1"].write_line("FRAMEMODE", 0, apply="APPLYCDS")
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(

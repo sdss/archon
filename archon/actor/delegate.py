@@ -545,8 +545,6 @@ class ExposureDelegate(Generic[Actor_co]):
 
         assert self.expose_data
 
-        binning = self.expose_data.binning
-
         assert controller.acf_config
 
         pixels = int(controller.acf_config["CONFIG"]["PIXELCOUNT"])
@@ -570,8 +568,8 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_taps = []
             for _ in range(taps):
                 y0 = 0
-                y1 = lines // binning
-                x1 = x0 + pixels // binning
+                y1 = lines
+                x1 = x0 + pixels
 
                 ccd_taps.append(data[y0:y1, x0:x1])
 
