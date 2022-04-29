@@ -29,7 +29,7 @@ async def reconnect(command: Command, controller: ArchonController, timeout: flo
 
     if controller.is_connected():
         try:
-            await asyncio.wait_for(controller.stop(), timeout=timeout or 1)
+            await asyncio.wait_for(controller.stop(), timeout=timeout or 3)
         except BaseException as err:
             command.warning(
                 text=f"Failed disconnecting from {name!r} with "

@@ -112,7 +112,7 @@ async def test_expose_read_header(delegate, actor: ArchonActor):
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
-    assert hdu[0].data.shape == (2048, 2068)
+    assert hdu[0].data.shape == (800, 800)
     assert hdu[0].header["CCDTEMP1"] == -110
     assert hdu[0].header["KEY1"] == 666
     assert hdu[0].header["KEY2"] == "hi"

@@ -128,4 +128,6 @@ async def init(
     if not command.actor.timed_commands.running:
         command.actor.timed_commands.start()
 
+    await controller.set_window(50, 50, 50, 50)
+
     return True

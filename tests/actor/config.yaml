@@ -3,19 +3,16 @@ controllers:
   sp1:
     host: 10.7.45.26
     port: 4242
-    parameters:
-      pixels: 1024
-      lines: 1024
-      overscan_pixels: 10
-      taps_per_detector: 4
-      framemode: top
     detectors:
       r1:
         sensor: A
+        taps: 4
       b1:
         sensor: B
+        taps: 4
       z1:
         sensor: C
+        taps: 4
 
 archon:
   acf_file: '../data/BOSS_extra.acf'

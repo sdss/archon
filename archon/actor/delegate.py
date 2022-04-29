@@ -307,7 +307,7 @@ class ExposureDelegate(Generic[Actor_co]):
         hdus = []
         for ccd_name in controller_info["detectors"]:
             header = await self.build_base_header(controller, ccd_name)
-            ccd_data = self._get_ccd_data(data, ccd_name, controller_info)
+            ccd_data = self._get_ccd_data(data, controller, ccd_name, controller_info)
             hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
 
         return hdus
@@ -537,6 +537,7 @@ class ExposureDelegate(Generic[Actor_co]):
     def _get_ccd_data(
         self,
         data: numpy.ndarray,
+        controller: ArchonController,
         ccd_name: str,
         controller_info: Dict[str, Any],
     ) -> numpy.ndarray:
@@ -546,27 +547,31 @@ class ExposureDelegate(Generic[Actor_co]):
 
         binning = self.expose_data.binning
 
-        parameters = controller_info["parameters"]
+        assert controller.acf_config
 
-        pixels = parameters["pixels"]
-        lines = parameters["lines"]
-        taps = parameters["taps_per_detector"]
+        pixels = int(controller.acf_config["CONFIG"]["PIXELCOUNT"])
+        lines = int(controller.acf_config["CONFIG"]["LINECOUNT"])
 
-        framemode = parameters.get("framemode", "split")
-        overscan_pixels = parameters.get("overscan_pixels", 0)
+        framemode_int = int(controller.acf_config["CONFIG"]["FRAMEMODE"])
+        if framemode_int == 0:
+            framemode = "top"
+        elif framemode_int == 1:
+            framemode = "bottom"
+        else:
+            framemode = "split"
 
+        taps = controller_info["detectors"][ccd_name]["taps"]
         ccd_index = list(controller_info["detectors"].keys()).index(ccd_name)
 
         if framemode == "top":
-            x0_base = ccd_index * (pixels + overscan_pixels) * taps
+            x0_base = ccd_index * pixels * taps
             x0 = x0_base
 
             ccd_taps = []
-            for tap in range(taps):
+            for _ in range(taps):
                 y0 = 0
                 y1 = lines // binning
-
-                x1 = x0 + (pixels + overscan_pixels) // binning
+                x1 = x0 + pixels // binning
 
                 ccd_taps.append(data[y0:y1, x0:x1])
 
@@ -580,14 +585,14 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_data = numpy.vstack([top[:, ::-1], bottom[::-1, :]])
 
         elif framemode == "split":
-            x0 = ccd_index * (pixels + overscan_pixels) * (taps // 2)
-            x1 = x0 + (pixels + overscan_pixels) * (taps // 2)
+            x0 = ccd_index * pixels * (taps // 2)
+            x1 = x0 + pixels * (taps // 2)
             y0 = 0
             y1 = lines * (taps // 2)
             ccd_data = data[y0:y1, x0:x1]
 
         else:
-            raise ValueError(f"Framemode {framemode} is supported at this time.")
+            raise ValueError(f"Framemode {framemode} is not supported at this time.")
 
         return ccd_data
 

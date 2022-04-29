@@ -44,7 +44,7 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
-    assert hdu[0].data.shape == (2048, 2068)
+    assert hdu[0].data.shape == (800, 800)
     assert hdu[0].header["CCDTEMP1"] == -110
 
 
@@ -57,7 +57,7 @@ async def test_delegate_expose_split_mode(delegate: ExposureDelegate, mocker):
         return_value=numpy.ones((2048 * 2, 2068 * 3)),
     )
 
-    delegate.actor.config["controllers"]["sp1"]["parameters"]["framemode"] = "split"
+    await delegate.actor.controllers["sp1"].write_line("FRAMEMODE", 2, apply="APPLYCDS")
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -74,7 +74,7 @@ async def test_delegate_expose_split_mode(delegate: ExposureDelegate, mocker):
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
-    assert hdu[0].data.shape == (2048, 2068)
+    assert hdu[0].data.shape == (800, 800)
     assert hdu[0].header["CCDTEMP1"] == -110
 
 

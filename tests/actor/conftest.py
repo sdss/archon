@@ -42,7 +42,7 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
 
     _actor = ArchonActor.from_config(test_config)
     _actor.config_file_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-    await _actor.start()
+    _actor.controllers["sp1"] = controller
 
     _actor = await clu.testing.setup_test_actor(_actor)  # type: ignore
 
@@ -61,7 +61,7 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((1024, 12408)),
+        return_value=numpy.ones((1000, 1000)),
     )
 
     assert actor.model

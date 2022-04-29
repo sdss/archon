@@ -31,7 +31,7 @@ async def test_reconnect_stop_fails(actor: ArchonActor, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "stop",
-        side_effect=[ArchonError, None],  # stop() is also called on tear down.
+        side_effect=[ArchonError, None, None],  # stop() is also called on tear down.
     )
 
     command = await actor.invoke_mock_command("reconnect")

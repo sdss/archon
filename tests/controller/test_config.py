@@ -128,6 +128,10 @@ def config_file(tmp_path):
             r"""[CONFIG]
 CONFIG\1=1
 CONFIG\2="2,2"
+LINECOUNT=100
+PIXELCOUNT=100
+PARAMETER1="Lines=100"
+PARAMETER2="Pixels=100"
 """
         )
 

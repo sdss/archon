@@ -13,6 +13,7 @@ import configparser
 import os
 import re
 import tempfile
+import types
 
 from typing import Iterable, Tuple, Union
 
@@ -27,7 +28,7 @@ CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 
 @pytest_asyncio.fixture()
-async def controller(request, unused_tcp_port: int, monkeypatch):
+async def controller(request, unused_tcp_port: int, mocker):
     """Mocks a `.ArchonController` that replies to commands with predefined replies.
 
     Tests that use this fixture must be decorated with ``@pytest.mark.commands``. The
@@ -94,21 +95,27 @@ async def controller(request, unused_tcp_port: int, monkeypatch):
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
 
     async with server:
-        archon = ArchonController("test_controller", "localhost", unused_tcp_port)
+        archon = ArchonController("sp1", "localhost", unused_tcp_port)
 
         config["archon"]["default_parameters"]["Exposures"] = 0
         config.CONFIG_FILE = tempfile.NamedTemporaryFile().name
 
-        await archon.start(reset=False, read_acf=False)
+        archon.start = types.MethodType(start_archon, archon)
 
-        # Add some fake ACF info from a file.
-        acf_config = configparser.ConfigParser()
-        acf_config.read(os.path.join(os.path.dirname(__file__), "data/BOSS_extra.acf"))
-        archon.acf_config = acf_config
-        archon._parse_params()
-
-        archon._status = ControllerStatus.IDLE | ControllerStatus.POWERON
+        await archon.start()
 
         yield archon
 
         await archon.stop()
+
+
+async def start_archon(self, **kwargs):
+    await ArchonController.start(self, reset=False, read_acf=False)
+
+    acf_config = configparser.ConfigParser()
+    acf_config.read(os.path.join(os.path.dirname(__file__), "data/BOSS_extra.acf"))
+    self.acf_config = acf_config
+    self._parse_params()
+
+    # Add some fake ACF info from a file.
+    self._status = ControllerStatus.IDLE | ControllerStatus.POWERON
