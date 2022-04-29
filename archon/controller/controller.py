@@ -800,23 +800,35 @@ class ArchonController(Device):
     ):
         """Sets the CCD window."""
 
-        window = self.default_window.copy()
-        window.update(self.current_window)
+        if lines is None:
+            lines = self.current_window["lines"]
 
-        lines = lines or window["lines"]
-        pixels = pixels or window["pixels"]
+        if pixels is None:
+            pixels = self.current_window["pixels"]
 
-        preskiplines = preskiplines or window["preskiplines"]
-        postskiplines = postskiplines or window["postskiplines"]
+        if preskiplines is None:
+            preskiplines = self.current_window["preskiplines"]
 
-        preskippixels = preskippixels or window["preskippixels"]
-        postskippixels = postskippixels or window["postskippixels"]
+        if postskiplines is None:
+            postskiplines = self.current_window["postskiplines"]
 
-        overscanlines = overscanlines or window["overscanlines"]
-        overscanpixels = overscanpixels or window["overscanpixels"]
+        if preskippixels is None:
+            preskippixels = self.current_window["preskippixels"]
 
-        vbin = vbin or window["vbin"]
-        hbin = hbin or window["hbin"]
+        if postskippixels is None:
+            postskippixels = self.current_window["postskippixels"]
+
+        if overscanlines is None:
+            overscanlines = self.current_window["overscanlines"]
+
+        if overscanpixels is None:
+            overscanpixels = self.current_window["overscanpixels"]
+
+        if vbin is None:
+            vbin = self.current_window["vbin"]
+
+        if hbin is None:
+            hbin = self.current_window["hbin"]
 
         await self.set_param("Lines", lines)
         await self.set_param("Pixels", pixels)
