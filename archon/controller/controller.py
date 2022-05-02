@@ -87,10 +87,13 @@ class ArchonController(Device):
             config_parser, _ = await self.read_config()
             self.acf_config = config_parser
             self._parse_params()
-            await self._set_default_window_params()
 
         if reset:
-            await self.reset()
+            try:
+                await self._set_default_window_params()
+                await self.reset()
+            except ArchonControllerError as err:
+                warnings.warn(f"Failed resetting controller: {err}", ArchonUserWarning)
 
         return self
 
@@ -519,10 +522,6 @@ class ArchonController(Device):
         self.acf_config = cp
         self.acf_file = input if os.path.exists(input) else None
 
-        # Reset objects that depend on the configuration file.
-        self._parse_params()
-        await self._set_default_window_params()
-
         # Restore polling
         await self.send_command("POLLON")
 
@@ -534,6 +533,10 @@ class ArchonController(Device):
                 raise ArchonControllerError(
                     f"Failed sending APPLYALL ({cmd.status.name})"
                 )
+
+            # Reset objects that depend on the configuration file.
+            self._parse_params()
+            await self._set_default_window_params()
 
             if poweron:
                 notifier("Sending POWERON")

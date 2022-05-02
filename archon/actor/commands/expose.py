@@ -86,6 +86,13 @@ __all__ = ["expose", "read", "abort"]
     default=0,
     help="Slow down the readout by this many seconds.",
 )
+@click.option(
+    "-n",
+    "--count",
+    type=int,
+    default=1,
+    help="Number of images to take.",
+)
 async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
@@ -96,6 +103,7 @@ async def expose(
     readout: bool = True,
     header: str = "{}",
     delay_readout: int = 0,
+    count: int = 1,
 ):
     """Exposes the cameras."""
 
@@ -119,22 +127,28 @@ async def expose(
 
     extra_header = json.loads(header)
 
-    result = await delegate.expose(
-        command,
-        selected_controllers,
-        flavour=flavour,
-        exposure_time=exposure_time,
-        readout=readout,
-        extra_header=extra_header,
-        delay_readout=delay_readout,
-        window_mode=window_mode,
-    )
+    if count > 1 and readout is False:
+        return command.fail(error="--count > 1 requires readout.")
 
-    if result:
-        return command.finish()
-    else:
-        # expose will fail the command.
-        return
+    for n in range(1, count + 1):
+
+        result = await delegate.expose(
+            command,
+            selected_controllers,
+            flavour=flavour,
+            exposure_time=exposure_time,
+            readout=readout,
+            extra_header=extra_header,
+            delay_readout=delay_readout,
+            window_mode=window_mode,
+        )
+
+        if not result:
+            # expose will fail the command.
+            return
+        else:
+            if n == count:
+                return command.finish()
 
 
 @parser.command()
