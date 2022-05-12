@@ -61,15 +61,15 @@ async def init(
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
     if acf_file is None:
-        default_config: str | dict = command.actor.config["archon"]["acf_file"]
-        if isinstance(default_config, dict):
-            if controller.name not in default_config:
+        acf_file: str | dict[str, str] = command.actor.config["archon"]["acf_file"]
+        if isinstance(acf_file, dict):
+            if controller.name not in acf_file:
                 return error_controller(
                     command,
                     controller,
                     "No ACF file defined for this controller.",
                 )
-            acf_file = default_config[controller.name]
+            acf_file = acf_file[controller.name]
 
     if acf_file is None:
         return error_controller(command, controller, "Invalid ACF file.")
