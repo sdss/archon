@@ -313,7 +313,7 @@ class ArchonController(Device):
 
         return system
 
-    async def get_device_status(self) -> dict[str, Any]:
+    async def get_device_status(self, update_power_bits: bool = True) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``STATUS`` command."""
 
         def check_int(s):
@@ -332,6 +332,9 @@ class ArchonController(Device):
             key.lower(): int(value) if check_int(value) else float(value)
             for (key, value) in map(lambda k: k.split("="), keywords)
         }
+
+        if update_power_bits:
+            await self.power()
 
         return status
 
@@ -653,7 +656,7 @@ class ArchonController(Device):
 
             await asyncio.sleep(1)
 
-        status = await self.get_device_status()
+        status = await self.get_device_status(update_power_bits=False)
 
         power_status = ArchonPower(status["power"])
 
