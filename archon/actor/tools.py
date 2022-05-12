@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import fcntl
 import functools
+import json
+import pathlib
 from contextlib import contextmanager
 from os import PathLike
 
@@ -28,6 +30,7 @@ __all__ = [
     "check_controller",
     "open_with_lock",
     "controller",
+    "get_schema",
 ]
 
 
@@ -170,3 +173,11 @@ def open_with_lock(
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         yield fd
         fcntl.flock(fd, fcntl.LOCK_UN)
+
+
+def get_schema():
+    """Returns the default JSONschema for Archon actors."""
+
+    path = pathlib.Path(__file__).parent / "../etc/schema.json"
+
+    return json.loads(open(path, "r").read())
