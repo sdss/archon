@@ -15,11 +15,11 @@ from archon.exceptions import ArchonControllerError
 pytestmark = [pytest.mark.asyncio]
 
 
-@pytest.mark.commands([["STATUS", ["<{cid}KEY1=1 KEY2=-2.1 POWERGOOD=1"]]])
+@pytest.mark.commands([["STATUS", ["<{cid}KEY1=1 KEY2=-2.1 POWERGOOD=1 POWER=4"]]])
 async def test_get_device_status(controller: ArchonController):
     status = await controller.get_device_status()
     assert isinstance(status, dict)
-    assert len(status) == 3
+    assert len(status) == 4
     assert status["key1"] == 1
     assert status["key2"] == -2.1
     assert controller.status
