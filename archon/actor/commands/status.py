@@ -29,6 +29,11 @@ async def status(
 ):
     """Reports the status of the controller."""
 
+    try:
+        status = await controller.get_device_status()
+    except ArchonError as ee:
+        return error_controller(command, controller, str(ee))
+
     if simple:
         command.info(
             status={
@@ -38,11 +43,6 @@ async def status(
             }
         )
         return True
-
-    try:
-        status = await controller.get_device_status()
-    except ArchonError as ee:
-        return error_controller(command, controller, str(ee))
 
     command.info(
         status={
