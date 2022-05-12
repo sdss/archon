@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import os
-import re
 
 from typing import TYPE_CHECKING
 
@@ -44,7 +43,6 @@ def _output(
 
 @parser.command()
 @click.argument("ACF-FILE", type=str, required=False)
-@click.option("--hdr", is_flag=True, help="Set HDR mode.")
 @click.option("--power/--no-power", default=True, help="Power the array after init.")
 @parallel_controllers()
 async def init(
@@ -94,14 +92,11 @@ async def init(
 
     _output(command, controller, f"Loading and applying ACF file {acf_file}", "i")
 
-    data = open(acf_file).read()
-    if hdr:
-        data = re.sub("(SAMPLEMODE)=[01]", "\\1=1", data)
-
     # Stop timed commands since they may fail while writing data or power is off
     await command.actor.timed_commands.stop()
 
     try:
+        data = open(acf_file).read()
         await controller.write_config(data, applyall=True, poweron=False)
     except ArchonError as err:
         return error_controller(command, controller, str(err))
