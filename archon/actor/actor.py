@@ -143,7 +143,11 @@ class ArchonBaseActor(BaseActor):
         if isinstance(config, (str, pathlib.Path)):
             instance.config_file_path = str(config)
         elif isinstance(config, Configuration):
-            instance.config_file_path = str(config.CONFIG_FILE)
+            instance.config_file_path = str(
+                config._BASE_CONFIG_FILE
+                if config._BASE_CONFIG_FILE
+                else config.CONFIG_FILE
+            )
 
         assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)
