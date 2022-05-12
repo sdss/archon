@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 from typing import TYPE_CHECKING
@@ -130,6 +131,10 @@ async def init(
                 controller,
                 f"Failed while powering on ({acmd.status.name})",
             )
+
+        # Sometimes if we reset immediately after POWERON the power is in intermediate
+        # state. Let's give it a few seconsd.
+        await asyncio.sleep(3)
 
     await controller.reset()
     if not command.actor.timed_commands.running:
