@@ -80,10 +80,7 @@ markers = [
 branch = true
 include = ["archon/*"]
 omit = [
-    "*/__init__.py",
-    "archon/__main__.py",
-    "archon/lvm/*",
-    "archon/boss/*"
+    "*/__init__.py"
 ]
 
 [tool.coverage.report]
