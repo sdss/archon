@@ -152,6 +152,8 @@ class ArchonBaseActor(BaseActor):
         assert isinstance(instance, ArchonBaseActor)
         assert isinstance(instance.config, dict)
 
+        enabled_controllers = instance.config.get("enabled_controllers", None)
+
         if "controllers" in instance.config:
             controllers = (
                 ArchonController(
@@ -160,6 +162,7 @@ class ArchonBaseActor(BaseActor):
                     ctr["port"],
                 )
                 for (ctrname, ctr) in instance.config["controllers"].items()
+                if enabled_controllers is not None and ctrname in enabled_controllers
             )
             instance.controllers = {c.name: c for c in controllers}
             instance.parser_args = [instance.controllers]  # Need to refresh this
