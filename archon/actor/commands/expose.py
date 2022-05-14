@@ -93,6 +93,8 @@ __all__ = ["expose", "read", "abort"]
     default=1,
     help="Number of images to take.",
 )
+@click.option("--no-shutter", is_flag=True, help="Do not trigger the shutter.")
+@click.option("--with-dark", is_flag=True, help="Take a matching dark exposure.")
 async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
@@ -104,12 +106,17 @@ async def expose(
     header: str = "{}",
     delay_readout: int = 0,
     count: int = 1,
+    no_shutter: bool = False,
+    with_dark: bool = False,
 ):
     """Exposes the cameras."""
 
     assert command.actor
 
     selected_controllers: list[ArchonController]
+
+    if with_dark and not readout:
+        return command.fail("--with-dark cannot be used with --no-readout.")
 
     if not controller:
         selected_controllers = list(controllers.values())
@@ -132,23 +139,26 @@ async def expose(
 
     for n in range(1, count + 1):
 
-        result = await delegate.expose(
-            command,
-            selected_controllers,
-            flavour=flavour,
-            exposure_time=exposure_time,
-            readout=readout,
-            extra_header=extra_header,
-            delay_readout=delay_readout,
-            window_mode=window_mode,
-        )
+        flavours = [flavour, "dark"] if with_dark else [flavour]
+        for this_flavour in flavours:
 
-        if not result:
-            # expose will fail the command.
-            return
-        else:
-            if n == count:
-                return command.finish()
+            delegate.use_shutter = not no_shutter
+            result = await delegate.expose(
+                command,
+                selected_controllers,
+                flavour=this_flavour,
+                exposure_time=exposure_time,
+                readout=readout,
+                extra_header=extra_header,
+                delay_readout=delay_readout,
+                window_mode=window_mode,
+            )
+
+            if not result:
+                # expose will fail the command.
+                return
+
+    return command.finish()
 
 
 @parser.command()

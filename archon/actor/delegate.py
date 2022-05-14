@@ -47,6 +47,8 @@ class ExposureDelegate(Generic[Actor_co]):
         self.expose_data: ExposeData | None = None
         self.next_exp_file: pathlib.Path | None = None
 
+        self.use_shutter: bool = True
+
         self.lock = asyncio.Lock()
 
         self._command: Command[Actor_co] | None = None
@@ -177,8 +179,9 @@ class ExposureDelegate(Generic[Actor_co]):
             return self.fail()
 
         # Operate the shutter
-        if not (await self.shutter(True)):
-            return self.fail("Shutter failed to open.")
+        if self.use_shutter:
+            if not (await self.shutter(True)):
+                return self.fail("Shutter failed to open.")
 
         with open(next_exp_file, "w") as fd:
             fd.write(str(next_exp_no + 1))
@@ -257,8 +260,9 @@ class ExposureDelegate(Generic[Actor_co]):
             return self.fail("No exposure data found.")
 
         # Close shutter.
-        if not (await self.shutter(False)):
-            return self.fail("Shutter failed to close.")
+        if self.use_shutter:
+            if not (await self.shutter(False)):
+                return self.fail("Shutter failed to close.")
 
         controllers = self.expose_data.controllers
 

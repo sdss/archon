@@ -110,6 +110,26 @@ async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
     assert result is False
 
 
+async def test_delegate_no_use_shutter(delegate: ExposureDelegate, mocker):
+
+    shutter = mocker.patch.object(delegate, "shutter")
+
+    delegate.use_shutter = False
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is True
+
+    shutter.assert_not_called()
+
+
 async def test_delegate_fetch_fails(delegate: ExposureDelegate, mocker):
 
     mocker.patch.object(delegate, "fetch_hdus", side_effect=ArchonError)

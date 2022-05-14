@@ -248,3 +248,25 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
     filename = delegate.actor.model["filename"].value
     hdu = fits.open(filename)
     assert hdu[0].data.shape == (200, 200)
+
+
+async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
+
+    expose_mock = mocker.patch.object(delegate, "expose", return_value=True)
+
+    command = await actor.invoke_mock_command("expose --with-dark 0.01")
+    await command
+
+    expose_mock.assert_called()
+    assert expose_mock.call_count == 2
+
+
+async def test_expose_with_dark_no_readout_fails(delegate, actor: ArchonActor):
+
+    command = await actor.invoke_mock_command("expose --with-dark --no-readout 0.01")
+    await command
+
+    assert command.status.did_fail
+    assert command.replies[-1].message == {
+        "error": "--with-dark cannot be used with --no-readout."
+    }
