@@ -400,7 +400,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         basename = os.path.basename(file_path)
         self.command.info(text=f"File {basename} written to disk.")
-        self.command.debug(filename=file_path)
+        self.command.info(filename=file_path)
 
     async def post_process(
         self,
