@@ -398,8 +398,6 @@ class ExposureDelegate(Generic[Actor_co]):
 
         assert os.path.exists(file_path), "Failed writing image to disk."
 
-        basename = os.path.basename(file_path)
-        self.command.info(text=f"File {basename} written to disk.")
         self.command.info(filename=file_path)
 
     async def post_process(
