@@ -61,15 +61,16 @@ async def init(
     archon_etc = os.path.join(os.path.dirname(__file__), "../../etc")
 
     if acf_file is None:
-        acf_file: str | dict[str, str] = command.actor.config["archon"]["acf_file"]
-        if isinstance(acf_file, dict):
-            if controller.name not in acf_file:
+        if isinstance(command.actor.config["archon"]["acf_file"], dict):
+            if controller.name not in command.actor.config["archon"]["acf_file"]:
                 return error_controller(
                     command,
                     controller,
                     "No ACF file defined for this controller.",
                 )
-            acf_file = acf_file[controller.name]
+            acf_file = command.actor.config["archon"]["acf_file"][controller.name]
+        else:
+            acf_file = command.actor.config["archon"]["acf_file"]
 
     if acf_file is None:
         return error_controller(command, controller, "Invalid ACF file.")
@@ -96,9 +97,22 @@ async def init(
     # Stop timed commands since they may fail while writing data or power is off
     await command.actor.timed_commands.stop()
 
+    # Read configuration overrides.
+    overrides = {}
+    if "acf_overrides" in command.actor.config["archon"]:
+        overrides_cfg = command.actor.config["archon"]["acf_overrides"]
+        overrides = overrides_cfg.get("global", {}).copy()
+        if controller.name in overrides_cfg:
+            overrides.update(overrides_cfg[controller.name])
+
     try:
         data = open(acf_file).read()
-        await controller.write_config(data, applyall=True, poweron=False)
+        await controller.write_config(
+            data,
+            applyall=True,
+            poweron=False,
+            overrides=overrides,
+        )
     except ArchonError as err:
         return error_controller(command, controller, str(err))
 

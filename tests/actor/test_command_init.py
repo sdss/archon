@@ -109,3 +109,18 @@ async def test_init_invalid_controllers(actor: ArchonActor):
     await command
 
     assert command.status.did_fail
+
+
+async def test_init_with_overrides(actor):
+
+    # Modify config file with overrides.
+    actor.config["archon"]["acf_overrides"] = {"sp1": {"MOD11/HEATERATARGET": -200}}
+
+    command = await actor.invoke_mock_command("init")
+    await command
+
+    assert command.status.did_succeed
+
+    acf_config = actor.controllers["sp1"].acf_config
+    assert acf_config is not None
+    assert acf_config["CONFIG"]["MOD11\\HEATERATARGET"] == "-200"
