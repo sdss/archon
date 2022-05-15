@@ -441,6 +441,7 @@ class ArchonController(Device):
         applyall: bool = False,
         poweron: bool = False,
         timeout: float | None = None,
+        overrides: dict = {},
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Writes a configuration file to the contoller.
@@ -460,10 +461,15 @@ class ArchonController(Device):
             The amount of time to wait for each command to succeed.  If `None`, reads
             the value from the configuration entry for
             ``timeouts.write_config_timeout``.
+        overrides
+            A dictionary with configuration lines to be overridden. Must be a mapping
+            of keywords to replace, including the module name (e.g.,
+            ``MOD11/HEATERAP``), to the new values.
         notifier
             A callback that receives a message with the current operation being
             performed. Useful when `.write_config` is called by the actor to report
             progress to the users.
+
         """
 
         notifier = notifier or (lambda x: None)
@@ -524,6 +530,12 @@ class ArchonController(Device):
 
         self.acf_config = cp
         self.acf_file = input if os.path.exists(input) else None
+
+        # Write overrides. Do not apply since we optionall do an APPLYALL afterwards.
+        if overrides and len(overrides) > 0:
+            notifier("Writing configuration overrides.")
+            for keyword, value in overrides.items():
+                await self.write_line(keyword, value, apply=False)
 
         # Restore polling
         await self.send_command("POLLON")
