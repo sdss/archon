@@ -617,7 +617,9 @@ class ArchonController(Device):
             else:
                 value_str = value
 
-        line = f"{keyword}={value_str}"
+        # For WCONFIG we need to use MODX/KEYWORD.
+        keyword_wconfig = keyword.replace("\\", "/")
+        line = f"{keyword_wconfig}={value_str}"
 
         cmd = await self.send_command(f"WCONFIG{n_line:04X}{line}")
         if cmd.status == ArchonCommandStatus.FAILED:
