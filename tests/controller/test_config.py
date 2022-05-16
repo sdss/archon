@@ -225,6 +225,23 @@ async def test_write_config_after_command_fails(
     assert f"Failed sending {after_command}" in str(err)
 
 
+async def test_write_config_overrides(
+    controller: ArchonController,
+    send_command_mock,
+    config_file,
+):
+
+    await controller.write_config(
+        config_file,
+        applyall=True,
+        poweron=True,
+        overrides={"CONFIG/1": 200},
+    )
+
+    assert controller.acf_config
+    assert controller.acf_config["CONFIG"]["CONFIG\\1"] == "200"
+
+
 @pytest.mark.parametrize(
     "keyword,value,mod",
     [
