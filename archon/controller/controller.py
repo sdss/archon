@@ -16,7 +16,7 @@ import re
 import warnings
 from collections.abc import AsyncIterator
 
-from typing import Any, Callable, Iterable, Optional, cast
+from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 
 import numpy
 from clu.device import Device
@@ -991,6 +991,7 @@ class ArchonController(Device):
         block: bool = True,
         delay: int = 0,
         wait_for: float | None = None,
+        notifier: Optional[Callable[[str], None]] = None,
     ):
         """Reads the detector into a buffer.
 
@@ -1033,6 +1034,9 @@ class ArchonController(Device):
         frame = await self.get_frame()
         wbuf = frame["wbuf"]
 
+        if notifier:
+            notifier(f"Reading buffer {wbuf}.")
+
         while True:
             if waited > max_wait:
                 self.update_status(ControllerStatus.ERROR)
@@ -1044,15 +1048,34 @@ class ArchonController(Device):
                 self.update_status(ControllerStatus.IDLE)
                 # Reset autoflushing.
                 await self.set_autoflush(True)
-                return
+                break
             waited += 1.0
             await asyncio.sleep(1.0)
+
+        return wbuf
+
+    @overload
+    async def fetch(
+        self,
+        *,
+        return_buffer: Literal[False],
+    ) -> numpy.ndarray:
+        ...
+
+    @overload
+    async def fetch(
+        self,
+        *,
+        return_buffer: Literal[True],
+    ) -> tuple[numpy.ndarray, int]:
+        ...
 
     async def fetch(
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
-    ) -> numpy.ndarray:
+        return_buffer: bool = False,
+    ):
         """Fetches a frame buffer and returns a Numpy array.
 
         Parameters
@@ -1063,6 +1086,16 @@ class ArchonController(Device):
         notifier
             A callback that receives a message with the current operation. Useful when
             `.fetch` is called by the actor to report progress to the users.
+        return_buffer
+            If `True`, returns the buffer number returned.
+
+        Returns
+        -------
+        data
+            If ``return_buffer=False``, returns the fetched data as a Numpy array.
+            If ``return_buffer=True`` returns a tuple with the Numpy array and
+            the buffer number.
+
         """
 
         if self.status & ControllerStatus.FETCHING:
@@ -1127,6 +1160,9 @@ class ArchonController(Device):
 
         # Turn off FETCHING bit
         self.update_status(ControllerStatus.IDLE)
+
+        if return_buffer:
+            return (arr, buffer_no)
 
         return arr
 

@@ -282,7 +282,10 @@ class ExposureDelegate(Generic[Actor_co]):
 
             command.debug(text="Reading out CCDs.")
             readout_tasks = [
-                controller.readout(delay=self.expose_data.delay_readout)
+                controller.readout(
+                    delay=self.expose_data.delay_readout,
+                    notifier=self.command.info,
+                )
                 for controller in controllers
             ]
             await asyncio.gather(*readout_tasks, self.readout_cotasks())
@@ -326,7 +329,10 @@ class ExposureDelegate(Generic[Actor_co]):
 
         # Fetch buffer
         self.command.debug(text=f"Fetching {controller.name} buffer.")
-        data = await controller.fetch()
+        data, buffer_no = await controller.fetch(return_buffer=True)
+
+        assert self.expose_data
+        self.expose_data.header["BUFFER"] = (buffer_no, "The buffer number read")
 
         controller_info = config["controllers"][controller.name]
         hdus = []
