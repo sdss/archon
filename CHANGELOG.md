@@ -5,6 +5,7 @@
 ### 🚀 New
 
 * [#40](https://github.com/sdss/archon/issues/40) `ArchonController.write_config()` now acccepts an `overrides` dictionary with keywords to be replaced in the ACF file. The format is similar to `ArchonController.write_line()`. If a section `archon.acf_overrides` is present in the configuration file, those overrides will be applied when the `init` command is called. This allows to define a single ACF file but tweak some parameters depending on the controller to which it is sent. `archon.acf_overrides` must be a dictionary with either a `global` section (overrides sent to all controllers) or sections for each controller name.
+* Add `ExposureDelegate.expose_cotasks()` for tasks that should be run during integration. This is useful to grab sensor data that could change as readout begins, for example lamp status, but there is no promise that the `expose_cotasks()` will be waited or that will complete before readout begins.
 
 ### ✨ Improved
 

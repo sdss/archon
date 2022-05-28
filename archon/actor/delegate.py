@@ -52,6 +52,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self.lock = asyncio.Lock()
 
         self._command: Command[Actor_co] | None = None
+        self._expose_cotasks: asyncio.Task | None = None
 
     @property
     def command(self):
@@ -73,6 +74,11 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.expose_data = None
         self.command = None
+
+        if self._expose_cotasks is not None and not self._expose_cotasks.done():
+            self._expose_cotasks.cancel()
+
+        self._expose_cotasks = None
 
         if self.lock.locked():
             self.lock.release()
@@ -158,6 +164,8 @@ class ExposureDelegate(Generic[Actor_co]):
             self.command.error("One controller failed setting the exposure window.")
             self.command.error(error=str(err))
             return self.fail()
+
+        self._expose_cotasks = asyncio.create_task(self.expose_cotasks())
 
         expose_jobs = [
             asyncio.create_task(controller.expose(exposure_time, readout=False))
@@ -311,6 +319,16 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.reset()
         return True
+
+    async def expose_cotasks(self):
+        """Tasks that will be executed concurrently with readout.
+
+        There is no guarantee that this coroutine will be waited or that
+        it will complete before the shutter closes and the readout begins.
+
+        """
+
+        return
 
     async def readout_cotasks(self):
         """Tasks that will be executed concurrently with readout.
