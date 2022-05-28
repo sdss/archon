@@ -186,8 +186,14 @@ class ExposureDelegate(Generic[Actor_co]):
         with open(next_exp_file, "w") as fd:
             fd.write(str(next_exp_no + 1))
 
+        await asyncio.sleep(exposure_time)
+
+        # Close shutter.
+        if self.use_shutter:
+            if not (await self.shutter(False)):
+                return self.fail("Shutter failed to close.")
+
         if readout:
-            await asyncio.sleep(exposure_time)
             return await self.readout(self.command, **readout_params)
 
         return True
@@ -258,11 +264,6 @@ class ExposureDelegate(Generic[Actor_co]):
 
         if self.expose_data is None:
             return self.fail("No exposure data found.")
-
-        # Close shutter.
-        if self.use_shutter:
-            if not (await self.shutter(False)):
-                return self.fail("Shutter failed to close.")
 
         controllers = self.expose_data.controllers
 
