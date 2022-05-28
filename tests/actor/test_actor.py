@@ -11,9 +11,6 @@ import pytest
 from archon.actor import ArchonActor
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 async def test_actor(actor: ArchonActor):
 
     assert actor

@@ -19,9 +19,6 @@ from archon.exceptions import (
 )
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.commands([["PING", ["<{cid}PONG"]]])
 async def test_controller(controller: ArchonController):
     assert controller.host == "localhost"

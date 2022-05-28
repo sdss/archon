@@ -22,9 +22,6 @@ from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 # Make tests faster by faking the number of config lines
 archon.controller.controller.MAX_CONFIG_LINES = 5
 

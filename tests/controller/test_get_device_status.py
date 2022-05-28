@@ -12,9 +12,6 @@ from archon.controller.controller import ArchonController, ControllerStatus
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.commands([["STATUS", ["<{cid}KEY1=1 KEY2=-2.1 POWERGOOD=1 POWER=4"]]])
 async def test_get_device_status(controller: ArchonController):
     status = await controller.get_device_status()

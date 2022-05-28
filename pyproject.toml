@@ -75,6 +75,7 @@ addopts = "--cov archon --cov-report xml --cov-report html --cov-report term"
 markers = [
     "commands: commands and replies for the test Archon"
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 branch = true

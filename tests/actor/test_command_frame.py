@@ -6,13 +6,8 @@
 # @Filename: test_command_frame.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-import pytest
-
 from archon.actor import ArchonActor
 from archon.exceptions import ArchonError
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_config_frame_status(actor: ArchonActor):

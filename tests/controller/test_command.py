@@ -14,9 +14,6 @@ from archon.controller.command import ArchonCommand
 from archon.exceptions import ArchonUserWarning
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.parametrize("command_id", [-5, 2**8 + 1])
 def test_command_bad_command_id(command_id):
     with pytest.raises(ValueError):

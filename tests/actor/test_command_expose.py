@@ -10,14 +10,10 @@ import os
 
 from typing import Any
 
-import pytest
 from astropy.io import fits
 
 from archon.actor.actor import ArchonActor
 from archon.exceptions import ArchonError
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_expose_start(delegate, actor: ArchonActor):

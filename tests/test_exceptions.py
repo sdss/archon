@@ -13,9 +13,6 @@ import pytest
 from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 async def test_archon_controller_error_unnamed(controller):
 
     controller.name = None

@@ -16,9 +16,6 @@ from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 async def test_readout_bad_state(controller: ArchonController):
     controller.update_status(ControllerStatus.EXPOSING)
 

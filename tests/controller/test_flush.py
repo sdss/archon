@@ -8,13 +8,8 @@
 
 from unittest.mock import AsyncMock
 
-import pytest
-
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_flush(controller: ArchonController, mocker):

@@ -8,13 +8,8 @@
 
 import asyncio
 
-import pytest
-
 from archon.actor import ArchonActor
 from archon.exceptions import ArchonError
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_reconnect(actor: ArchonActor):

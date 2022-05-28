@@ -11,9 +11,6 @@ import pytest
 from archon.actor import ArchonActor
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 async def test_get_window(actor: ArchonActor):
 
     command = await actor.invoke_mock_command("get-window")

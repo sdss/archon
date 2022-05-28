@@ -6,13 +6,8 @@
 # @Filename: test_command_init.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-import pytest
-
 from archon.actor.actor import ArchonActor
 from archon.exceptions import ArchonError
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_init(actor):

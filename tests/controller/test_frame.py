@@ -12,9 +12,6 @@ from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.commands([["FRAME", ["<{cid}TIME=FF KEY2=2 BUFF2TIMESTAMP=AF"]]])
 async def test_get_frame(controller: ArchonController):
     system = await controller.get_frame()

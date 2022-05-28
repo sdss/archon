@@ -21,9 +21,6 @@ from archon.controller import ControllerStatus as CS
 from archon.exceptions import ArchonControllerError, ArchonError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
 async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
 

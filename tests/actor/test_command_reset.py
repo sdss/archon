@@ -6,13 +6,8 @@
 # @Filename: test_command_reset.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-import pytest
-
 from archon.actor import ArchonActor
 from archon.exceptions import ArchonError
-
-
-pytestmark = [pytest.mark.asyncio]
 
 
 async def test_reset(actor: ArchonActor):

@@ -15,9 +15,6 @@ from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.commands([["FRAME", ["<{cid}WBUF=3 BUF3COMPLETE=0"]]])
 async def test_expose(controller: ArchonController, mocker):
     set_param_mock: AsyncMock = mocker.patch.object(

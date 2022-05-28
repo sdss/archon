@@ -13,9 +13,6 @@ from archon.controller.maskbits import ModType
 from archon.exceptions import ArchonControllerError
 
 
-pytestmark = [pytest.mark.asyncio]
-
-
 @pytest.mark.commands([["SYSTEM", ["<{cid}KEY1=1 KEY2=2"]]])
 async def test_get_system(controller: ArchonController):
     system = await controller.get_system()
