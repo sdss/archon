@@ -51,7 +51,7 @@ async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
     mocker.patch.object(
         delegate.actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((400, 400 * 4 * 3)),
+        return_value=(numpy.ones((400, 400 * 4 * 3)), 1),
     )
 
     await delegate.actor.controllers["sp1"].write_line("FRAMEMODE", 0, apply="APPLYCDS")
@@ -78,22 +78,6 @@ async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
 async def test_delegate_expose_locked(delegate: ExposureDelegate):
 
     await delegate.lock.acquire()
-
-    command = Command("", actor=delegate.actor)
-    result = await delegate.expose(
-        command,
-        [delegate.actor.controllers["sp1"]],
-        flavour="object",
-        exposure_time=0.01,
-        readout=True,
-    )
-
-    assert result is False
-
-
-async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
-
-    mocker.patch.object(delegate, "shutter", return_value=False)
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -232,7 +216,9 @@ async def test_delegate_readout_no_expose_data(delegate: ExposureDelegate):
     assert result is False
 
 
-async def test_delegate_readout_shutter_fails(delegate: ExposureDelegate, mocker):
+async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
+
+    mocker.patch.object(delegate, "shutter", return_value=False)
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -242,11 +228,6 @@ async def test_delegate_readout_shutter_fails(delegate: ExposureDelegate, mocker
         exposure_time=0.01,
         readout=False,
     )
-    assert result is True
-
-    mocker.patch.object(delegate, "shutter", return_value=False)
-
-    result = await delegate.readout(command)
     assert result is False
 
 

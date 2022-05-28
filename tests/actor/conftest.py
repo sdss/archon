@@ -64,7 +64,7 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
     mocker.patch.object(
         actor.controllers["sp1"],
         "fetch",
-        return_value=numpy.ones((1000, 1000)),
+        return_value=(numpy.ones((1000, 1000)), 1),
     )
 
     assert actor.model
