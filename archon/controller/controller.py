@@ -1057,6 +1057,8 @@ class ArchonController(Device):
     @overload
     async def fetch(
         self,
+        buffer_no: int = -1,
+        notifier: Optional[Callable[[str], None]] = None,
         *,
         return_buffer: Literal[False],
     ) -> numpy.ndarray:
@@ -1065,9 +1067,20 @@ class ArchonController(Device):
     @overload
     async def fetch(
         self,
+        buffer_no: int = -1,
+        notifier: Optional[Callable[[str], None]] = None,
         *,
         return_buffer: Literal[True],
     ) -> tuple[numpy.ndarray, int]:
+        ...
+
+    @overload
+    async def fetch(
+        self,
+        buffer_no: int = -1,
+        notifier: Optional[Callable[[str], None]] = None,
+        return_buffer: bool = False,
+    ) -> numpy.ndarray:
         ...
 
     async def fetch(
