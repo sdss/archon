@@ -251,7 +251,7 @@ class ArchonController(Device):
                 cmd_str = cmd_strs.pop()
                 cmd = self.send_command(cmd_str, command_id=cmd_id, timeout=timeout)
                 pending.append(cmd)
-            done_cmds: tuple[ArchonCommand] = await asyncio.gather(*pending)
+            done_cmds: list[ArchonCommand] = await asyncio.gather(*pending)
             if all([cmd.succeeded() for cmd in done_cmds]):
                 done += done_cmds
                 for cmd in done_cmds:
@@ -757,8 +757,8 @@ class ArchonController(Device):
         """
 
         self.default_window = {
-            "lines": int(self.parameters["LINES"]),
-            "pixels": int(self.parameters["PIXELS"]),
+            "lines": int(self.parameters.get("LINES", -1)),
+            "pixels": int(self.parameters.get("PIXELS", -1)),
             "preskiplines": int(self.parameters.get("PRESKIPLINES", 0)),
             "postskiplines": int(self.parameters.get("POSTSKIPLINES", 0)),
             "preskippixels": int(self.parameters.get("PRESKIPPIXELS", 0)),
@@ -855,7 +855,16 @@ class ArchonController(Device):
         if hbin is None:
             hbin = self.current_window["hbin"]
 
-        await self.set_param("Lines", lines)
+        if lines >= 0:
+            await self.set_param("Lines", lines)
+        else:
+            warnings.warn("Lines value unknown. Did not set.", ArchonUserWarning)
+
+        if pixels >= 0:
+            await self.set_param("Pixels", pixels)
+        else:
+            warnings.warn("Pixels value unknown. Did not set.", ArchonUserWarning)
+
         await self.set_param("Pixels", pixels)
         await self.set_param("PreSkipLines", preskiplines)
         await self.set_param("PostSkipLines", postskiplines)
@@ -899,6 +908,9 @@ class ArchonController(Device):
         """
 
         CS = ControllerStatus
+
+        if not (CS.IDLE & self.status):
+            raise ArchonControllerError("The controller is not idle.")
 
         if CS.READOUT_PENDING & self.status:
             raise ArchonControllerError(
