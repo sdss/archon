@@ -21,11 +21,13 @@ from . import parser
 
 @parser.command()
 @click.option("-s", "--simple", is_flag=True, help="Only show status bits.")
+@click.option("-d", "--debug", is_flag=True, help="Uses debug status in outputs..")
 @parallel_controllers()
 async def status(
     command: Command[archon.actor.actor.ArchonActor],
     controller: ArchonController,
     simple: bool = False,
+    debug: bool = False,
 ):
     """Reports the status of the controller."""
 
@@ -34,8 +36,13 @@ async def status(
     except ArchonError as ee:
         return error_controller(command, controller, str(ee))
 
+    if debug:
+        write_func = command.debug
+    else:
+        write_func = command.info
+
     if simple:
-        command.info(
+        write_func(
             status={
                 "controller": controller.name,
                 "status": controller.status.value,
@@ -44,7 +51,7 @@ async def status(
         )
         return True
 
-    command.info(
+    write_func(
         status={
             "controller": controller.name,
             "status": controller.status.value,
