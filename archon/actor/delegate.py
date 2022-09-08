@@ -376,6 +376,8 @@ class ExposureDelegate(Generic[Actor_co]):
         expose_data = self.expose_data
         config = self.actor.config
 
+        excluded_cameras = config.get("excluded_cameras", [])
+
         data_dir = pathlib.Path(config["files"]["data_dir"])
 
         if config["files"].get("use_sjd", False):
@@ -386,8 +388,13 @@ class ExposureDelegate(Generic[Actor_co]):
         path: pathlib.Path = mjd_dir / config["files"]["template"]
 
         write_tasks = []
-        for i, hdu in enumerate(hdus):
+        for _, hdu in enumerate(hdus):
             ccd = hdu.header["ccd"]
+
+            if ccd in excluded_cameras:
+                self.command.warning(f"Not saving image for camera {ccd}.")
+                continue
+
             observatory = str(hdu.header["OBSERVAT"]).lower()
             hemisphere = "n" if observatory == "apo" else "s"
 
