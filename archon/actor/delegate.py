@@ -33,10 +33,10 @@ from archon.tools import gzip_async
 if TYPE_CHECKING:  # pragma: no cover
     from clu import Command
 
-    from .actor import ArchonActor
+    from .actor import ArchonBaseActor
 
 
-Actor_co = TypeVar("Actor_co", bound="ArchonActor", covariant=True)
+Actor_co = TypeVar("Actor_co", bound="ArchonBaseActor", covariant=True)
 
 
 class ExposureDelegate(Generic[Actor_co]):
