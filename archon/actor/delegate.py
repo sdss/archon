@@ -22,6 +22,8 @@ import astropy.time
 import numpy
 from astropy.io import fits
 
+from sdsstools.time import get_sjd
+
 from archon import __version__
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
@@ -375,7 +377,11 @@ class ExposureDelegate(Generic[Actor_co]):
         config = self.actor.config
 
         data_dir = pathlib.Path(config["files"]["data_dir"])
-        mjd_dir = data_dir / str(expose_data.mjd)
+
+        if config["files"].get("use_sjd", False):
+            mjd_dir = data_dir / str(get_sjd())
+        else:
+            mjd_dir = data_dir / str(expose_data.mjd)
 
         path: pathlib.Path = mjd_dir / config["files"]["template"]
 
