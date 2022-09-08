@@ -232,7 +232,7 @@ class ExposureDelegate(Generic[Actor_co]):
         config = self.actor.config
 
         now = astropy.time.Time.now()
-        mjd = int(now.mjd)
+        mjd = get_sjd() if config["files"].get("use_sjd", False) else int(now.mjd)
         self.expose_data.mjd = mjd
 
         # Get data directory or create it if it doesn't exist.
@@ -246,11 +246,6 @@ class ExposureDelegate(Generic[Actor_co]):
             next_exp_file.touch()
 
         self.next_exp_file = next_exp_file
-
-        # Get the directory for this MJD or create it.
-        mjd_dir = data_dir / str(mjd)
-        if not mjd_dir.exists():
-            mjd_dir.mkdir(parents=True)
 
         return next_exp_file
 
@@ -380,10 +375,9 @@ class ExposureDelegate(Generic[Actor_co]):
 
         data_dir = pathlib.Path(config["files"]["data_dir"])
 
-        if config["files"].get("use_sjd", False):
-            mjd_dir = data_dir / str(get_sjd())
-        else:
-            mjd_dir = data_dir / str(expose_data.mjd)
+        mjd_dir = data_dir / str(expose_data.mjd)
+        if not mjd_dir.exists():
+            mjd_dir.mkdir(parents=True)
 
         path: pathlib.Path = mjd_dir / config["files"]["template"]
 
