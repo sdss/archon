@@ -507,6 +507,17 @@ class ExposureDelegate(Generic[Actor_co]):
         vbin = window_params.get("vbin", 1)
         header["CCDSUM"] = (f"{hbin} {vbin}", "Horizontal and vertical binning")
 
+        # Archon information.
+        try:
+            system_data = await controller.get_system()
+            header["ARCHBACK"] = (system_data["backplane_id"], "Archon backplane ID")
+            header["ARCHBVER"] = (
+                system_data["backplane_version"],
+                "Archon backplane version",
+            )
+        except Exception as err:
+            self.command.warning(text=f"Could not get Archon system information: {err}")
+
         if controller.acf_file:
             acf = os.path.basename(controller.acf_file)
         elif "archon" in config and "acf_file" in config["archon"]:
