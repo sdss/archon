@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.2 - September 15, 2022
+
+### ✨ Improved
+
+* Add backplane ID and version to header.
+* Allow to exclude some cameras from writing.
+* Allow to use SJD for path.
+* Add status `--debug` flag to change message level.
+
+### 🔧 Fixed
+
+* Deal with controller without Lines or Pixels params.
+
+
 ## 0.6.1 - May 28, 2022
 
 ### 🚀 New
