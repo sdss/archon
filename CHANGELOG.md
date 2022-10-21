@@ -1,6 +1,5 @@
 # Changelog
 
-
 ## Next version
 
 ### ✨ Improved
