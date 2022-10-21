@@ -11,10 +11,12 @@ from __future__ import annotations
 import asyncio
 import os
 import pathlib
+import shutil
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
 from time import time
+from uuid import uuid4
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
 
@@ -409,26 +411,48 @@ class ExposureDelegate(Generic[Actor_co]):
 
             write_tasks.append(self._write_to_file(hdu, file_path))
 
-        await asyncio.gather(*write_tasks)
+        try:
+            await asyncio.gather(*write_tasks)
+        except Exception as err:
+            self.command.error(f"Failed writing HDUs to disk: {err}")
 
         return
 
     async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
-        """Writes the HDU to file using an executor."""
+        """Writes the HDU to file using an executor.
+
+        The file is first written to a temporary file with the same path and
+        name as the final file but with a random suffix, and then renamed.
+
+        """
 
         loop = asyncio.get_running_loop()
 
         writeto = partial(hdu.writeto, checksum=True)
 
+        temp_uuid = uuid4().hex[:8]
+        temp_file = file_path + f".{temp_uuid}"
+
         if file_path.endswith(".gz"):
             # Astropy compresses with gzip -9 which takes forever.
             # Instead we compress manually with -1, which is still pretty good.
             await loop.run_in_executor(None, writeto, file_path[:-3])
-            await gzip_async(file_path[:-3], complevel=1)
+            await gzip_async(file_path[:-3], complevel=1, suffix=f".gz.{temp_uuid}")
         else:
-            await loop.run_in_executor(None, writeto, file_path)
+            await loop.run_in_executor(None, writeto, temp_file)
 
-        assert os.path.exists(file_path), "Failed writing image to disk."
+        print(f"Written temp file {temp_file}")
+        assert os.path.exists(temp_file), "Failed writing image to disk."
+
+        # Rename to final file.
+        try:
+            shutil.move(temp_file, file_path)
+        except Exception:
+            self.command.error(
+                f"Failed renaming temporary file {temp_file}. "
+                "The original file is still available."
+            )
+            return
 
         self.command.info(filename=file_path)
 

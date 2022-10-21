@@ -93,7 +93,7 @@ async def subprocess_run_async(*args, shell=False):
         return stdout.decode()
 
 
-async def gzip_async(file: pathlib.Path | str, complevel=1):
+async def gzip_async(file: pathlib.Path | str, complevel=1, suffix: str | None = None):
     """Compresses a file with gzip asynchronously."""
 
     file = str(file)
@@ -101,11 +101,14 @@ async def gzip_async(file: pathlib.Path | str, complevel=1):
         raise FileNotFoundError(f"File not found: {file!r}")
 
     try:
-        await subprocess_run_async(
+        parts = [
             "gzip",
             "-" + str(complevel),
             file,
-        )
+        ]
+        if suffix is not None:
+            parts += [f"--suffix={suffix}"]
+        await subprocess_run_async(*parts)
     except Exception as err:
         raise OSError(f"Failed compressing file {file}: {err}")
 

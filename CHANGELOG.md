@@ -1,5 +1,13 @@
 # Changelog
 
+
+## Next version
+
+### ✨ Improved
+
+* HDUs are now written to a temporary file first which is then renamed to the final file name.
+
+
 ## 0.6.2 - September 15, 2022
 
 ### ✨ Improved
