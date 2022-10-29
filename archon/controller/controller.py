@@ -642,6 +642,8 @@ class ArchonController(Device):
             if cmd_apply.status == ArchonCommandStatus.FAILED:
                 raise ArchonControllerError(f"Failed applying changes to {mod}.")
 
+            log.info(f"{self.name}: {keyword}={value_str}")
+
     async def power(self, mode: bool | None = None):
         """Handles power to the CCD(s). Sets the power status bit.
 
@@ -693,12 +695,16 @@ class ArchonController(Device):
         """Enables or disables autoflushing."""
 
         await self.set_param("AutoFlush", int(mode))
+        log.info(f"{self.name}: autoflush is {'on' if mode else 'off'}.")
+
         self.auto_flush = mode
 
     async def reset(self, autoflush=True, restart_timing=True):
         """Resets timing and discards current exposures."""
 
         self._parse_params()
+
+        log.info(f"{self.name}: resetting controller.")
 
         await self.send_command("HOLDTIMING")
 
@@ -716,6 +722,7 @@ class ArchonController(Device):
                 await self.set_param(param, default_parameters[param])
 
         if restart_timing:
+            log.info(f"{self.name}: restarting timing .")
             for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
                 cmd = await self.send_command(cmd_str, timeout=1)
                 if not cmd.succeeded():
@@ -769,7 +776,11 @@ class ArchonController(Device):
             "vbin": int(self.parameters.get("VERTICALBINNING", 1)),
         }
 
+        log.info(f"{self.name}: default window: {self.default_window}")
+
         self.current_window = self.default_window.copy()
+
+        log.info(f"{self.name}: current window: {self.current_window}")
 
         if reset:
             await self.reset_window()
@@ -800,6 +811,8 @@ class ArchonController(Device):
             raise ArchonControllerError(
                 f"Failed setting parameter {param!r} ({cmd.status.name})."
             )
+
+        log.debug(f"{self.name}: {param}={value}")
 
         self.parameters[param] = value
 
@@ -892,6 +905,8 @@ class ArchonController(Device):
             "vbin": vbin,
         }
 
+        log.info(f"{self.name}: current window: {self.current_window}")
+
         return self.current_window
 
     async def expose(
@@ -906,6 +921,8 @@ class ArchonController(Device):
         `~asyncio.Task` waits until the integration is done and, if ``readout``, checks
         that the readout has started.
         """
+
+        log.info(f"{self.name}: exposing with exposure time {exposure_time}.")
 
         CS = ControllerStatus
 
@@ -963,6 +980,8 @@ class ArchonController(Device):
         Aborting does not flush the charge.
         """
 
+        log.info(f"{self.name}: aborting controller.")
+
         CS = ControllerStatus
 
         if not self.status & ControllerStatus.EXPOSING:
@@ -981,6 +1000,8 @@ class ArchonController(Device):
 
     async def flush(self, count: int = 2, wait_for: Optional[float] = None):
         """Resets and flushes the detector. Blocks until flushing completes."""
+
+        log.info(f"{self.name}: flushing.")
 
         await self.reset()
         await self.send_command("HOLDTIMING")
@@ -1012,6 +1033,8 @@ class ArchonController(Device):
         returns immediately. A ``delay`` can be passed to slow down the readout by as
         many seconds (useful for creating photon transfer frames).
         """
+
+        log.info(f"{self.name}: reading out controller.")
 
         if not force and not (
             (self.status & ControllerStatus.READOUT_PENDING)
@@ -1122,6 +1145,8 @@ class ArchonController(Device):
             the buffer number.
 
         """
+
+        log.info(f"{self.name}: fetching controller.")
 
         if self.status & ControllerStatus.FETCHING:
             raise ArchonControllerError("Controller is already fetching.")
