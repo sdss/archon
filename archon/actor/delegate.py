@@ -441,7 +441,6 @@ class ExposureDelegate(Generic[Actor_co]):
         else:
             await loop.run_in_executor(None, writeto, temp_file)
 
-        print(f"Written temp file {temp_file}")
         assert os.path.exists(temp_file), "Failed writing image to disk."
 
         # Rename to final file.
