@@ -347,7 +347,10 @@ class ExposureDelegate(Generic[Actor_co]):
 
         # Fetch buffer
         self.command.debug(text=f"Fetching {controller.name} buffer.")
-        data, buffer_no = await controller.fetch(return_buffer=True)
+        data, buffer_no = await controller.fetch(
+            return_buffer=True,
+            notifier=self.command.info,
+        )
 
         assert self.expose_data
         self.expose_data.header["BUFFER"] = (buffer_no, "The buffer number read")
