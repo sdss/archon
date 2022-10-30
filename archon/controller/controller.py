@@ -723,7 +723,7 @@ class ArchonController(Device):
 
         if restart_timing:
             log.info(f"{self.name}: restarting timing .")
-            for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
+            for cmd_str in ["RELEASETIMING"]:
                 cmd = await self.send_command(cmd_str, timeout=1)
                 if not cmd.succeeded():
                     self.update_status(ControllerStatus.ERROR)
@@ -947,7 +947,6 @@ class ArchonController(Device):
         await self.set_param("IntMS", int(exposure_time * 1000))
         await self.set_param("Exposures", 1)
 
-        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
@@ -1004,10 +1003,10 @@ class ArchonController(Device):
         log.info(f"{self.name}: flushing.")
 
         await self.reset()
-        await self.send_command("HOLDTIMING")
+        # await self.send_command("HOLDTIMING")
         await self.set_param("FlushCount", int(count))
         await self.set_param("DoFlush", 1)
-        await self.send_command("RELEASETIMING")
+        # await self.send_command("RELEASETIMING")
 
         self.update_status(ControllerStatus.FLUSHING)
 
@@ -1044,15 +1043,10 @@ class ArchonController(Device):
 
         delay = int(delay)
 
-        await self.send_command("HOLDTIMING")
-
         await self.set_param("ReadOut", 1)
 
         if delay > 0:
             await self.set_param("WaitCount", delay)
-
-        await self.send_command("RESETTIMING")
-        await self.send_command("RELEASETIMING")
 
         self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)
         self.update_status(ControllerStatus.READING)
