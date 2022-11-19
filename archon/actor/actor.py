@@ -51,6 +51,7 @@ class ArchonBaseActor(BaseActor):
 
     BASE_CONFIG: ClassVar[str | Dict | None] = None
     DELEGATE_CLASS: ClassVar[Type[ExposureDelegate]] = ExposureDelegate
+    CONTROLLER_CLASS: ClassVar[Type[ArchonController]] = ArchonController
 
     def __init__(
         self,
@@ -156,7 +157,7 @@ class ArchonBaseActor(BaseActor):
 
         if "controllers" in instance.config:
             controllers = (
-                ArchonController(
+                cls.CONTROLLER_CLASS(
                     ctrname,
                     ctr["host"],
                     ctr["port"],
