@@ -135,8 +135,8 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail(f"Invalid window mode {window_mode!r}.")
 
         self.expose_data = ExposeData(
-            exposure_time=exposure_time,
-            flavour=flavour,
+            exposure_time,
+            flavour,
             controllers=controllers,
             window_params=window_params,
             window_mode=window_mode,
