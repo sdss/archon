@@ -29,8 +29,17 @@ __all__ = ["expose", "read", "abort"]
 
 @parser.command()
 @controller
-@click.argument("EXPOSURE-TIME", type=float, nargs=1, required=False)
-@click.option("--window-mode", type=str, help="Exposure window profile.")
+@click.argument(
+    "EXPOSURE-TIME",
+    type=float,
+    nargs=1,
+    required=False,
+)
+@click.option(
+    "--window-mode",
+    type=str,
+    help="Exposure window profile.",
+)
 @click.option(
     "--bias",
     "flavour",
@@ -93,8 +102,22 @@ __all__ = ["expose", "read", "abort"]
     default=1,
     help="Number of images to take.",
 )
-@click.option("--no-shutter", is_flag=True, help="Do not trigger the shutter.")
-@click.option("--with-dark", is_flag=True, help="Take a matching dark exposure.")
+@click.option(
+    "--no-write",
+    "-W",
+    is_flag=True,
+    help="Do not write image after reading.",
+)
+@click.option(
+    "--no-shutter",
+    is_flag=True,
+    help="Do not trigger the shutter.",
+)
+@click.option(
+    "--with-dark",
+    is_flag=True,
+    help="Take a matching dark exposure.",
+)
 async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
@@ -108,6 +131,7 @@ async def expose(
     count: int = 1,
     no_shutter: bool = False,
     with_dark: bool = False,
+    no_write: bool = False,
 ):
     """Exposes the cameras."""
 
@@ -152,6 +176,7 @@ async def expose(
                 extra_header=extra_header,
                 delay_readout=delay_readout,
                 window_mode=window_mode,
+                write=not no_write,
             )
 
             if not result:

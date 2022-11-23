@@ -195,9 +195,6 @@ class ExposureDelegate(Generic[Actor_co]):
             if not (await self.shutter(True)):
                 return self.fail("Shutter failed to open.")
 
-        with open(next_exp_file, "w") as fd:
-            fd.write(str(next_exp_no + 1))
-
         await asyncio.sleep(exposure_time)
 
         # Close shutter.
@@ -206,6 +203,11 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail("Shutter failed to close.")
 
         if readout:
+
+            if readout_params.get("write", True):
+                with open(next_exp_file, "w") as fd:
+                    fd.write(str(next_exp_no + 1))
+
             return await self.readout(self.command, **readout_params)
 
         return True
@@ -261,6 +263,7 @@ class ExposureDelegate(Generic[Actor_co]):
         command: Command[Actor_co],
         extra_header={},
         delay_readout: int = 0,
+        write: bool = True,
     ):
         """Reads the exposure, fetches the buffer, and writes to disk."""
 
@@ -305,6 +308,11 @@ class ExposureDelegate(Generic[Actor_co]):
             return self.fail(f"Failed reading out: {err}")
 
         self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
+
+        if write is False:
+            self.command.warning("Not saving images to disk.")
+            self.reset()
+            return True
 
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
