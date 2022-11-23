@@ -201,6 +201,7 @@ class ArchonController(Device):
         self.__running_commands[command_id] = command
 
         self.write(command.raw)
+        log.debug(f"{self.name} -> {command.raw}")
 
         return command
 
