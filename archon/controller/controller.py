@@ -22,6 +22,7 @@ import numpy
 from clu.device import Device
 
 from archon import config as lib_config
+from archon import log
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
 from archon.controller.maskbits import ArchonPower, ControllerStatus, ModType
 from archon.exceptions import (
@@ -1022,7 +1023,7 @@ class ArchonController(Device):
 
         self.update_status(ControllerStatus.FLUSHING)
 
-        wait_for = wait_for or config["timeouts"]["flushing"]
+        wait_for = wait_for or self.config["timeouts"]["flushing"]
         assert wait_for
 
         await asyncio.sleep(wait_for * count)
@@ -1035,6 +1036,7 @@ class ArchonController(Device):
         block: bool = True,
         delay: int = 0,
         wait_for: float | None = None,
+        force_restart_timing: bool = False,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Reads the detector into a buffer.
@@ -1055,11 +1057,14 @@ class ArchonController(Device):
 
         delay = int(delay)
 
-        await self.reset(autoflush=False, restart_timing=False)
+        if force_restart_timing:
+            await self.reset(autoflush=False, restart_timing=False)
 
         await self.set_param("ReadOut", 1)
-        await self.send_command("RESETTIMING")
-        await self.send_command("RELEASETIMING")
+
+        if force_restart_timing:
+            await self.send_command("RESETTIMING")
+            await self.send_command("RELEASETIMING")
 
         if delay > 0:
             await self.set_param("WaitCount", delay)

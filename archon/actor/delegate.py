@@ -203,7 +203,6 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail("Shutter failed to close.")
 
         if readout:
-
             if readout_params.get("write", True):
                 with open(next_exp_file, "w") as fd:
                     fd.write(str(next_exp_no + 1))
@@ -296,6 +295,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 controller.readout(
                     delay=self.expose_data.delay_readout,
                     notifier=self.command.info,
+                    force_restart_timing=True,
                 )
                 for controller in controllers
             ]
