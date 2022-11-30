@@ -710,7 +710,7 @@ class ArchonController(Device):
 
         self.auto_flush = mode
 
-    async def reset(self, autoflush=True, restart_timing=True):
+    async def reset(self, autoflush=True, release_timing=True):
         """Resets timing and discards current exposures."""
 
         self._parse_params()
@@ -732,9 +732,9 @@ class ArchonController(Device):
             for param in default_parameters:
                 await self.set_param(param, default_parameters[param])
 
-        if restart_timing:
+        if release_timing:
             log.info(f"{self.name}: restarting timing .")
-            for cmd_str in ["RELEASETIMING", "RESETTIMING"]:
+            for cmd_str in ["RELEASETIMING"]:
                 cmd = await self.send_command(cmd_str, timeout=1)
                 if not cmd.succeeded():
                     self.update_status(ControllerStatus.ERROR)
@@ -948,7 +948,7 @@ class ArchonController(Device):
         if (not (CS.POWERON & self.status)) or (CS.POWERBAD & self.status):
             raise ArchonControllerError("Controller power is off or invalid.")
 
-        await self.reset(autoflush=False, restart_timing=False)
+        await self.reset(autoflush=False, release_timing=False)
 
         if readout is False:
             await self.set_param("ReadOut", 0)
@@ -959,7 +959,6 @@ class ArchonController(Device):
         await self.set_param("Exposures", 1)
 
         await self.send_command("RELEASETIMING")
-        await self.send_command("RESETTIMING")
 
         self.update_status([CS.EXPOSING, CS.READOUT_PENDING])
 
@@ -1014,11 +1013,10 @@ class ArchonController(Device):
 
         log.info(f"{self.name}: flushing.")
 
-        await self.reset(restart_timing=False)
+        await self.reset(release_timing=False)
 
         await self.set_param("FlushCount", int(count))
         await self.set_param("DoFlush", 1)
-        await self.send_command("RESETTIMING")
         await self.send_command("RELEASETIMING")
 
         self.update_status(ControllerStatus.FLUSHING)
@@ -1036,7 +1034,6 @@ class ArchonController(Device):
         block: bool = True,
         delay: int = 0,
         wait_for: float | None = None,
-        force_restart_timing: bool = False,
         notifier: Optional[Callable[[str], None]] = None,
     ):
         """Reads the detector into a buffer.
@@ -1057,14 +1054,9 @@ class ArchonController(Device):
 
         delay = int(delay)
 
-        if force_restart_timing:
-            await self.reset(autoflush=False, restart_timing=False)
-
+        await self.reset(autoflush=False, release_timing=False)
         await self.set_param("ReadOut", 1)
-
-        if force_restart_timing:
-            await self.send_command("RESETTIMING")
-            await self.send_command("RELEASETIMING")
+        await self.send_command("RELEASETIMING")
 
         if delay > 0:
             await self.set_param("WaitCount", delay)

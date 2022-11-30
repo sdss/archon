@@ -295,7 +295,6 @@ class ExposureDelegate(Generic[Actor_co]):
                 controller.readout(
                     delay=self.expose_data.delay_readout,
                     notifier=self.command.info,
-                    force_restart_timing=True,
                 )
                 for controller in controllers
             ]
