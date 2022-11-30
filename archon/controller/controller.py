@@ -21,7 +21,7 @@ from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 import numpy
 from clu.device import Device
 
-from archon import config, log
+from archon import config as lib_config
 from archon.controller.command import ArchonCommand, ArchonCommandStatus
 from archon.controller.maskbits import ArchonPower, ControllerStatus, ModType
 from archon.exceptions import (
@@ -48,12 +48,20 @@ class ArchonController(Device):
     port
         The port on which the Archon listens to incoming connections.
         Defaults to 4242.
+    config
+        Configuration data. Otherwise uses default configuration.
     """
 
     __running_commands: dict[int, ArchonCommand] = {}
     _id_pool = set(range(MAX_COMMAND_ID))
 
-    def __init__(self, name: str, host: str, port: int = 4242):
+    def __init__(
+        self,
+        name: str,
+        host: str,
+        port: int = 4242,
+        config: dict | None = None,
+    ):
         Device.__init__(self, host, port)
 
         self.name = name
@@ -69,6 +77,7 @@ class ArchonController(Device):
         self.current_window: dict[str, int] = {}
         self.default_window: dict[str, int] = {}
 
+        self.config = config or lib_config
         self.acf_file: str | None = None
         self.acf_config: configparser.ConfigParser | None = None
 
@@ -477,8 +486,8 @@ class ArchonController(Device):
 
         notifier("Reading configuration file")
 
-        timeout = timeout or config["timeouts"]["write_config_timeout"]
-        delay: float = config["timeouts"]["write_config_delay"]
+        timeout = timeout or self.config["timeouts"]["write_config_timeout"]
+        delay: float = self.config["timeouts"]["write_config_delay"]
 
         cp = configparser.ConfigParser()
 
@@ -717,8 +726,8 @@ class ArchonController(Device):
         await self.set_param("WaitCount", 0)
 
         # Reset parameters to their default values.
-        if "default_parameters" in config["archon"]:
-            default_parameters = config["archon"]["default_parameters"]
+        if "default_parameters" in self.config["archon"]:
+            default_parameters = self.config["archon"]["default_parameters"]
             for param in default_parameters:
                 await self.set_param(param, default_parameters[param])
 
@@ -1061,7 +1070,7 @@ class ArchonController(Device):
         if not block:
             return
 
-        max_wait = config["timeouts"]["readout_max"] + delay
+        max_wait = self.config["timeouts"]["readout_max"] + delay
 
         wait_for = wait_for or 3  # Min delay to ensure the new frame starts filling.
         await asyncio.sleep(wait_for)

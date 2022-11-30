@@ -161,6 +161,7 @@ class ArchonBaseActor(BaseActor):
                     ctrname,
                     ctr["host"],
                     ctr["port"],
+                    config=instance.config,
                 )
                 for (ctrname, ctr) in instance.config["controllers"].items()
                 if enabled_controllers is not None and ctrname in enabled_controllers
