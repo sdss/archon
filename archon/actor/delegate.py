@@ -99,6 +99,11 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return False
 
+    async def pre_expose(self, controllers: List[ArchonController]):
+        """A routine that runs before integration begins."""
+
+        return
+
     async def expose(
         self,
         command: Command[Actor_co],
@@ -160,6 +165,8 @@ class ExposureDelegate(Generic[Actor_co]):
         # the shutter to open and close it and control the exposure time that way.
         if exposure_time == 0.0 or flavour == "bias":
             exposure_time = 0.0
+
+        await self.pre_expose(controllers)
 
         try:
             self.command.debug("Setting exposure window.")
