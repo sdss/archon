@@ -147,8 +147,11 @@ class ArchonController(Device):
         # Make sure that we don't have IDLE and ACTIVE states at the same time.
         if ControllerStatus.IDLE in bits:
             status &= ~ControllerStatus.ACTIVE
-        elif status & ControllerStatus.ACTIVE:
+
+        if status & ControllerStatus.ACTIVE:
             status &= ~ControllerStatus.IDLE
+        else:
+            status |= ControllerStatus.IDLE
 
         # Handle incompatible power bits.
         if ControllerStatus.POWERBAD in bits:
@@ -159,6 +162,10 @@ class ArchonController(Device):
                 status &= ~ControllerStatus.POWEROFF
             else:
                 status &= ~ControllerStatus.POWERON
+
+        # Remove UNKNOWN bit if any other status has been set.
+        if status != ControllerStatus.UNKNOWN:
+            status &= ~ControllerStatus.UNKNOWN
 
         self._status = status
 
