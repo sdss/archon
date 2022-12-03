@@ -116,8 +116,8 @@ async def test_start_with_reset(controller: ArchonController):
 async def test_update_status_toggle(controller: ArchonController):
 
     assert controller.status & ControllerStatus.IDLE
-    controller.update_status(ControllerStatus.IDLE, "toggle")
-    assert not (controller.status & ControllerStatus.IDLE)
+    controller.update_status(ControllerStatus.POWERON, "toggle")
+    assert not (controller.status & ControllerStatus.POWERON)
 
 
 async def test_update_status_invalid(controller: ArchonController):
