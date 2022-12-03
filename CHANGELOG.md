@@ -1,10 +1,17 @@
 # Changelog
 
-## Next version
+## 0.7.0 - December 2, 2022
+
+### 🚀 New
+
+* `RESETTIMING` is no longer user, which should prevent race conditions in some circumstances.
+* Add a `pre_exposure` hook to the delegate.
+* Added `--no-write` flag to `expose`.
 
 ### ✨ Improved
 
 * HDUs are now written to a temporary file first which is then renamed to the final file name.
+* It is now possible to defined the controller class in the actor and to pass the configuration to use to the controller.
 
 
 ## 0.6.2 - September 15, 2022
