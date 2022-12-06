@@ -428,12 +428,19 @@ class ExposureDelegate(Generic[Actor_co]):
 
             write_tasks.append(self._write_to_file(hdu, file_path))
 
-        try:
-            await asyncio.gather(*write_tasks)
-        except Exception as err:
-            self.command.error(f"Failed writing HDUs to disk: {err}")
+        filenames = await asyncio.gather(*write_tasks, return_exceptions=True)
+        valid = [fn for fn in filenames if isinstance(fn, str)]
 
-        return
+        if len(valid) > 0:
+            self.command.info(filenames=valid)
+
+        if len(valid) != len(filenames):
+            for fn in filenames:
+                if isinstance(fn, Exception):
+                    self.command.error(f"HDUs failed to write to disk: {fn!s}")
+                    return False
+
+        return True
 
     async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
         """Writes the HDU to file using an executor.
@@ -470,7 +477,7 @@ class ExposureDelegate(Generic[Actor_co]):
             )
             return
 
-        self.command.info(filename=file_path)
+        return file_path
 
     async def post_process(
         self,
