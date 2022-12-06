@@ -200,11 +200,12 @@ class ArchonBaseActor(BaseActor):
 
         async for status in controller.yield_status():
             self.write(
+                message_code="d",
                 status=dict(
                     controller=controller.name,
                     status=status.value,
                     status_names=[flag.name for flag in status.get_flags()],
-                )
+                ),
             )
 
 

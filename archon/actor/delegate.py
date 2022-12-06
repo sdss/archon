@@ -185,7 +185,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         try:
             c_list = ", ".join([controller.name for controller in controllers])
-            self.command.debug(text=f"Starting exposure in controllers: {c_list}.")
+            self.command.info(text=f"Starting exposure in controllers: {c_list}.")
             await asyncio.gather(*expose_jobs)
         except BaseException as err:
             self.command.error(error=str(err))
@@ -297,11 +297,11 @@ class ExposureDelegate(Generic[Actor_co]):
             ]
             await asyncio.gather(*jobs)
 
-            command.debug(text="Reading out CCDs.")
+            command.info(text="Reading out CCDs.")
             readout_tasks = [
                 controller.readout(
                     delay=self.expose_data.delay_readout,
-                    notifier=self.command.info,
+                    notifier=self.command.debug,
                 )
                 for controller in controllers
             ]
@@ -313,7 +313,7 @@ class ExposureDelegate(Generic[Actor_co]):
         except Exception as err:
             return self.fail(f"Failed reading out: {err}")
 
-        self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
+        self.command.info(f"Readout completed in {time()-t0:.1f} seconds.")
 
         if write is False:
             self.command.warning("Not saving images to disk.")
