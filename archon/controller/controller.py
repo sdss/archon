@@ -457,6 +457,7 @@ class ArchonController(Device):
         self,
         input: str | os.PathLike[str],
         applyall: bool = False,
+        loadtiming: bool = False,
         poweron: bool = False,
         timeout: float | None = None,
         overrides: dict = {},
@@ -472,6 +473,8 @@ class ArchonController(Device):
             configuration itself.
         applyall
             Whether to run ``APPLYALL`` after successfully sending the configuration.
+        loadtiming
+            Whether to run ``LOADTIMING`` after successfully sending the configuration.
         poweron
             Whether to run ``POWERON`` after successfully sending the configuration.
             Requires ``applyall=True``.
@@ -557,6 +560,15 @@ class ArchonController(Device):
 
         # Restore polling
         await self.send_command("POLLON")
+
+        if loadtiming:
+            notifier("Sending LOADTIMING")
+            cmd = await self.send_command("LOADTIMING", timeout=5)
+            if not cmd.succeeded():
+                self.update_status(ControllerStatus.ERROR)
+                raise ArchonControllerError(
+                    f"Failed sending LOADTIMING ({cmd.status.name})"
+                )
 
         if applyall:
             notifier("Sending APPLYALL")

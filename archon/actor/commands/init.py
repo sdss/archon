@@ -44,13 +44,14 @@ def _output(
 
 @parser.command()
 @click.argument("ACF-FILE", type=str, required=False)
+@click.option("--loadtiming", is_flag=True, help="Runs LOADTIMING.")
 @click.option("--power/--no-power", default=True, help="Power the array after init.")
 @parallel_controllers()
 async def init(
     command: ArchonCommandType,
     controller: ArchonController,
     acf_file: str | None = None,
-    hdr: bool = False,
+    loadtiming: bool = False,
     power: bool = True,
 ):
     """Initialises a controller."""
@@ -109,7 +110,8 @@ async def init(
         data = open(acf_file).read()
         await controller.write_config(
             data,
-            applyall=True,
+            applyall=not loadtiming,
+            loadtiming=loadtiming,
             poweron=False,
             overrides=overrides,
         )
@@ -136,7 +138,7 @@ async def init(
         )
 
     # Power on
-    if power:
+    if not loadtiming and power:
         _output(command, controller, "Powering on")
         acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
         if not acmd.succeeded():
