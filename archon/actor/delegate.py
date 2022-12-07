@@ -313,7 +313,7 @@ class ExposureDelegate(Generic[Actor_co]):
         except Exception as err:
             return self.fail(f"Failed reading out: {err}")
 
-        self.command.info(f"Readout completed in {time()-t0:.1f} seconds.")
+        self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
 
         if write is False:
             self.command.warning("Not saving images to disk.")
@@ -363,7 +363,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self.command.debug(text=f"Fetching {controller.name} buffer.")
         data, buffer_no = await controller.fetch(
             return_buffer=True,
-            notifier=self.command.info,
+            notifier=self.command.debug,
         )
 
         assert self.expose_data
