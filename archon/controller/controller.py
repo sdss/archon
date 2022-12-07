@@ -250,6 +250,7 @@ class ArchonController(Device):
             available command ids in the pool.
         timeout
             Timeout for each single command.
+
         """
 
         # Copy the strings so that we can pop them. Also reverse it because
@@ -284,6 +285,37 @@ class ArchonController(Device):
                 return done, failed
 
         return (done, [])
+
+    async def send_and_wait(
+        self,
+        command_string: str,
+        raise_error: bool = True,
+        **kwargs,
+    ):
+        """Sends a command to the controller and waits for it to complete.
+
+        Parameters
+        ----------
+        command_string
+            The command to send to the Archon. Will be converted to uppercase.
+        raise_error
+            Whether to raise an error if the command fails. If `False`, a
+            warning will be issued.
+        kwargs
+            Other arguments to be sent to `.send_command`.
+
+        """
+
+        command_string = command_string.upper()
+
+        command = await self.send_command(command_string, **kwargs)
+
+        if not command.succeeded():
+            if raise_error:
+                self.update_status(ControllerStatus.ERROR)
+                raise ArchonControllerError(f"Failed running {command_string}.")
+            else:
+                warnings.warn(f"Failed running {command_string}.", ArchonUserWarning)
 
     async def process_message(self, line: bytes) -> None:
         """Processes a message from the Archon and associates it with its command."""
