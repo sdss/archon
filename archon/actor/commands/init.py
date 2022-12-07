@@ -44,17 +44,26 @@ def _output(
 
 @parser.command()
 @click.argument("ACF-FILE", type=str, required=False)
-@click.option("--loadtiming", is_flag=True, help="Runs LOADTIMING.")
+@click.option(
+    "--applymod",
+    "-a",
+    type=str,
+    multiple=True,
+    help="Apply command to send. Multiple instances are allowed. "
+    "If none is provided, APPLYALL will be sent, followed by a power cycle.",
+)
 @click.option("--power/--no-power", default=True, help="Power the array after init.")
 @parallel_controllers()
 async def init(
     command: ArchonCommandType,
     controller: ArchonController,
     acf_file: str | None = None,
-    loadtiming: bool = False,
+    applymod: list[str] = [],
     power: bool = True,
 ):
     """Initialises a controller."""
+
+    applyall = True if len(applymod) == 0 else False
 
     assert command.actor
 
@@ -110,8 +119,8 @@ async def init(
         data = open(acf_file).read()
         await controller.write_config(
             data,
-            applyall=not loadtiming,
-            loadtiming=loadtiming,
+            applyall=applyall,
+            applymods=applymod,
             poweron=False,
             overrides=overrides,
         )
@@ -138,7 +147,7 @@ async def init(
         )
 
     # Power on
-    if not loadtiming and power:
+    if applyall and power:
         _output(command, controller, "Powering on")
         acmd: ArchonCommand = await controller.send_command("POWERON", timeout=10)
         if not acmd.succeeded():
@@ -148,8 +157,8 @@ async def init(
                 f"Failed while powering on ({acmd.status.name})",
             )
 
-        # Sometimes if we reset immediately after POWERON the power is in intermediate
-        # state. Let's give it a few seconsd.
+        # Sometimes if we reset immediately after POWERON the power
+        # is in intermediate state. Let's give it a few seconds.
         await asyncio.sleep(3)
 
     await controller.reset()

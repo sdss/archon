@@ -11,6 +11,8 @@
 
 import inspect
 
+from archon.controller.maskbits import ControllerStatus
+
 
 class ArchonError(Exception):
     """A custom core Archon exception"""
@@ -27,9 +29,10 @@ class ArchonControllerError(ArchonError):
         f_locals = stack[1][0].f_locals
 
         if "self" in f_locals:
-            class_ = f_locals["self"]
-            if isinstance(class_, archon.controller.ArchonController):
-                controller_name = f_locals["self"].name
+            instance = f_locals["self"]
+            if isinstance(instance, archon.controller.ArchonController):
+                instance.update_status(ControllerStatus.ERROR)
+                controller_name = instance.name
                 if controller_name is None or controller_name == "":
                     controller_name = "unnamed"
             else:

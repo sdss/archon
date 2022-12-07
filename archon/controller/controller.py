@@ -489,7 +489,7 @@ class ArchonController(Device):
         self,
         input: str | os.PathLike[str],
         applyall: bool = False,
-        loadtiming: bool = False,
+        applymods: list[str] = [],
         poweron: bool = False,
         timeout: float | None = None,
         overrides: dict = {},
@@ -505,8 +505,9 @@ class ArchonController(Device):
             configuration itself.
         applyall
             Whether to run ``APPLYALL`` after successfully sending the configuration.
-        loadtiming
-            Whether to run ``LOADTIMING`` after successfully sending the configuration.
+        applymods
+            A list of apply commands to send to modules (e.g.,
+            ``['LOADTIMING', 'APPLYMOD2']``).
         poweron
             Whether to run ``POWERON`` after successfully sending the configuration.
             Requires ``applyall=True``.
@@ -524,6 +525,8 @@ class ArchonController(Device):
             progress to the users.
 
         """
+
+        ACS = ArchonCommandStatus
 
         notifier = notifier or (lambda x: None)
 
@@ -547,17 +550,12 @@ class ArchonController(Device):
 
         # Undo the INI format: revert \ to / and remove quotes around values.
         aconfig = cp["CONFIG"]
-        lines = list(
-            map(
-                lambda k: k.upper().replace("\\", "/") + "=" + aconfig[k].strip('"'),
-                aconfig,
-            )
-        )
+        lines = []
+        for key in aconfig:
+            lines.append(key.upper().replace("\\", "/") + "=" + aconfig[key].strip('"'))
 
         notifier("Clearing previous configuration")
-        if not (await self.send_command("CLEARCONFIG", timeout=timeout)).succeeded():
-            self.update_status(ControllerStatus.ERROR)
-            raise ArchonControllerError("Failed running CLEARCONFIG.")
+        await self.send_and_wait("CLEARCONFIG", timeout=timeout)
 
         notifier("Sending configuration lines")
 
@@ -568,10 +566,7 @@ class ArchonController(Device):
         cmd_strs = [f"WCONFIG{n_line:04X}{line}" for n_line, line in enumerate(lines)]
         for line in cmd_strs:
             cmd = await self.send_command(line, timeout=timeout)
-            if (
-                cmd.status == ArchonCommandStatus.FAILED
-                or cmd.status == ArchonCommandStatus.TIMEDOUT
-            ):
+            if cmd.status == ACS.FAILED or cmd.status == ACS.TIMEDOUT:
                 self.update_status(ControllerStatus.ERROR)
                 await self.send_command("POLLON")
                 raise ArchonControllerError(
@@ -593,23 +588,13 @@ class ArchonController(Device):
         # Restore polling
         await self.send_command("POLLON")
 
-        if loadtiming:
-            notifier("Sending LOADTIMING")
-            cmd = await self.send_command("LOADTIMING", timeout=5)
-            if not cmd.succeeded():
-                self.update_status(ControllerStatus.ERROR)
-                raise ArchonControllerError(
-                    f"Failed sending LOADTIMING ({cmd.status.name})"
-                )
+        for mod in applymods:
+            notifier(f"Sending {mod.upper()}")
+            await self.send_and_wait(mod.upper(), timeout=5)
 
         if applyall:
             notifier("Sending APPLYALL")
-            cmd = await self.send_command("APPLYALL", timeout=5)
-            if not cmd.succeeded():
-                self.update_status(ControllerStatus.ERROR)
-                raise ArchonControllerError(
-                    f"Failed sending APPLYALL ({cmd.status.name})"
-                )
+            await self.send_and_wait("APPLYALL", timeout=5)
 
             # Reset objects that depend on the configuration file.
             self._parse_params()
