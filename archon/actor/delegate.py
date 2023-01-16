@@ -635,8 +635,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         with open(next_exp_file, "r") as fd:
             data = fd.read().strip()
-            next_exp_no: int = int(data) if data != "" else 1
-            exposure_no = next_exp_no
+            self.expose_data.exposure_no = int(data) if data != "" else 1
 
         # Check that files don't exist.
         for controller in controllers:
@@ -648,11 +647,9 @@ class ExposureDelegate(Generic[Actor_co]):
                     self.fail(f"{err} Check the nextExposureNumber file.")
                     return False
 
-        self.expose_data.exposure_no = exposure_no
-
         if increase:
             with open(next_exp_file, "w") as fd:
-                fd.write(str(next_exp_no + 1))
+                fd.write(str(self.expose_data.exposure_no + 1))
 
         return True
 
