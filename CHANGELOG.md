@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🔧 Fixed
+
+* Fix overwriting of images when readout done independently. The `nextExposureFile` was not being increased in that case.
+
+
 ## 0.7.0 - December 2, 2022
 
 ### 🚀 New

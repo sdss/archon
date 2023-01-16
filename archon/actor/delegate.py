@@ -18,7 +18,7 @@ from functools import partial, reduce
 from time import time
 from uuid import uuid4
 
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
 
 import astropy.time
 import numpy
@@ -49,7 +49,6 @@ class ExposureDelegate(Generic[Actor_co]):
         self.actor = actor
 
         self.expose_data: ExposeData | None = None
-        self.next_exp_file: pathlib.Path | None = None
 
         self.use_shutter: bool = True
 
@@ -140,8 +139,8 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail(f"Invalid window mode {window_mode!r}.")
 
         self.expose_data = ExposeData(
-            exposure_time,
-            flavour,
+            exposure_time=exposure_time,
+            flavour=flavour,
             controllers=controllers,
             window_params=window_params,
             window_mode=window_mode,
@@ -150,15 +149,13 @@ class ExposureDelegate(Generic[Actor_co]):
         if not (await self.check_expose()):
             return False
 
-        next_exp_file = self._prepare_directories()
-
         # Lock until the exposure is done.
         await self.lock.acquire()
 
-        with open(next_exp_file, "r") as fd:
-            data = fd.read().strip()
-            next_exp_no: int = int(data) if data != "" else 1
-            self.expose_data.exposure_no = next_exp_no
+        will_write = readout_params.get("write", True)
+
+        if not self._set_exposure_no(controllers, increase=will_write):
+            return False
 
         # If the exposure is a bias or dark we don't open the shutter, but
         # otherwise we add an extra timeout to allow for the code that handles
@@ -210,10 +207,6 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail("Shutter failed to close.")
 
         if readout:
-            if readout_params.get("write", True):
-                with open(next_exp_file, "w") as fd:
-                    fd.write(str(next_exp_no + 1))
-
             return await self.readout(self.command, **readout_params)
 
         return True
@@ -233,31 +226,6 @@ class ExposureDelegate(Generic[Actor_co]):
                 return self.fail(f"Controller {cname} has status ERROR.")
 
         return True
-
-    def _prepare_directories(self) -> pathlib.Path:
-        """Prepares directories."""
-
-        assert self.expose_data
-
-        config = self.actor.config
-
-        now = astropy.time.Time.now()
-        mjd = get_sjd() if config["files"].get("use_sjd", False) else int(now.mjd)
-        self.expose_data.mjd = mjd
-
-        # Get data directory or create it if it doesn't exist.
-        data_dir = pathlib.Path(config["files"]["data_dir"])
-        if not data_dir.exists():
-            data_dir.mkdir(parents=True)
-
-        # We store the next exposure number in a file at the root of the data directory.
-        next_exp_file = data_dir / "nextExposureNumber"
-        if not next_exp_file.exists():
-            next_exp_file.touch()
-
-        self.next_exp_file = next_exp_file
-
-        return next_exp_file
 
     async def shutter(self, open=False) -> bool:
         """Operate the shutter."""
@@ -392,32 +360,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
         excluded_cameras = config.get("excluded_cameras", [])
 
-        data_dir = pathlib.Path(config["files"]["data_dir"])
-
-        mjd_dir = data_dir / str(expose_data.mjd)
-        if not mjd_dir.exists():
-            mjd_dir.mkdir(parents=True)
-
-        path: pathlib.Path = mjd_dir / config["files"]["template"]
-
         write_tasks = []
         for _, hdu in enumerate(hdus):
-            ccd = hdu.header["ccd"]
+            ccd = cast(str, hdu.header["ccd"])
 
             if ccd in excluded_cameras:
                 self.command.warning(f"Not saving image for camera {ccd}.")
                 continue
 
-            observatory = str(hdu.header["OBSERVAT"]).lower()
-            hemisphere = "n" if observatory == "apo" else "s"
-
-            file_path = str(path.absolute()).format(
-                exposure_no=expose_data.exposure_no,
-                controller=controller.name,
-                observatory=observatory,
-                hemisphere=hemisphere,
-                ccd=ccd,
-            )
+            file_path = self._get_ccd_filepath(controller, ccd)
 
             hdu.header["filename"] = os.path.basename(file_path)
             hdu.header.insert(
@@ -449,6 +400,9 @@ class ExposureDelegate(Generic[Actor_co]):
         name as the final file but with a random suffix, and then renamed.
 
         """
+
+        if os.path.exists(file_path):
+            raise FileExistsError(f"Cannot overwrite file {file_path}.")
 
         loop = asyncio.get_running_loop()
 
@@ -651,6 +605,86 @@ class ExposureDelegate(Generic[Actor_co]):
         header.update(extra_header)
 
         return header
+
+    def _set_exposure_no(
+        self,
+        controllers: list[ArchonController],
+        increase: bool = True,
+    ):
+        """Gets the exposure number for this exposure."""
+
+        assert self.expose_data
+
+        config = self.actor.config
+
+        now = astropy.time.Time.now()
+        mjd = get_sjd() if config["files"].get("use_sjd", False) else int(now.mjd)
+        self.expose_data.mjd = mjd
+
+        # Get data directory or create it if it doesn't exist.
+        data_dir = pathlib.Path(config["files"]["data_dir"])
+        if not data_dir.exists():
+            data_dir.mkdir(parents=True)
+
+        # We store the next exposure number in a file at the root of the data directory.
+        next_exp_file = data_dir / "nextExposureNumber"
+        if not next_exp_file.exists():
+            self.command.warning(f"{next_exp_file} not found. Creating it.")
+            next_exp_file.touch()
+
+        with open(next_exp_file, "r") as fd:
+            data = fd.read().strip()
+            next_exp_no: int = int(data) if data != "" else 1
+            exposure_no = next_exp_no
+
+        # Check that files don't exist.
+        for controller in controllers:
+            ccds = list(config["controllers"][controller.name]["detectors"].keys())
+            for ccd in ccds:
+                try:
+                    self._get_ccd_filepath(controller, ccd)
+                except FileExistsError as err:
+                    self.fail(f"{err} Check the nextExposureNumber file.")
+                    return False
+
+        self.expose_data.exposure_no = exposure_no
+
+        if increase:
+            with open(next_exp_file, "w") as fd:
+                fd.write(str(next_exp_no + 1))
+
+        return True
+
+    def _get_ccd_filepath(self, controller: ArchonController, ccd: str):
+        """Returns the path for an exposure."""
+
+        assert self.command.actor and self.expose_data
+
+        config = self.actor.config
+
+        data_dir = pathlib.Path(config["files"]["data_dir"])
+
+        mjd_dir = data_dir / str(self.expose_data.mjd)
+        if not mjd_dir.exists():
+            mjd_dir.mkdir(parents=True)
+
+        path: pathlib.Path = mjd_dir / config["files"]["template"]
+
+        observatory = self.command.actor.observatory.lower()
+        hemisphere = "n" if observatory == "apo" else "s"
+
+        file_path = str(path.absolute()).format(
+            exposure_no=self.expose_data.exposure_no,
+            controller=controller.name,
+            observatory=observatory,
+            hemisphere=hemisphere,
+            ccd=ccd,
+        )
+
+        if os.path.exists(file_path):
+            raise FileExistsError(f"File {file_path} already exists.")
+
+        return file_path
 
     def _get_ccd_data(
         self,
