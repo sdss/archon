@@ -289,13 +289,14 @@ class ExposureDelegate(Generic[Actor_co]):
             self.reset()
             return True
 
+        c_to_hdus: dict[ArchonController, list[fits.PrimaryHDU]]
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
         post_process_jobs = []
         for controller, hdus in c_to_hdus.items():
             post_process_jobs.append(self.post_process(controller, hdus))
 
-        c_to_hdus = dict(await asyncio.gather(*post_process_jobs))
+        c_to_hdus = dict(list(await asyncio.gather(*post_process_jobs)))
         self.command.debug(text="Writing HDUs to file.")
         await asyncio.gather(*[self.write_hdus(c, h) for c, h in c_to_hdus.items()])
 
@@ -437,8 +438,8 @@ class ExposureDelegate(Generic[Actor_co]):
     async def post_process(
         self,
         controller: ArchonController,
-        hdus: List[fits.PrimaryHDU],
-    ):
+        hdus: list[fits.PrimaryHDU],
+    ) -> tuple[ArchonController, list[fits.PrimaryHDU]]:
         """Custom post-processing."""
 
         return (controller, hdus)
