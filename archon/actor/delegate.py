@@ -153,9 +153,10 @@ class ExposureDelegate(Generic[Actor_co]):
         await self.lock.acquire()
 
         will_write = readout_params.get("write", True)
-
         if not self._set_exposure_no(controllers, increase=will_write):
             return False
+
+        self.command.debug(next_exposure_no=self.expose_data.exposure_no)
 
         # If the exposure is a bias or dark we don't open the shutter, but
         # otherwise we add an extra timeout to allow for the code that handles
