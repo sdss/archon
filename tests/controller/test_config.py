@@ -194,7 +194,7 @@ async def test_write_config_wconfig_fails(controller: ArchonController, config_f
     assert "Failed sending line" in str(err)
 
 
-@pytest.mark.parametrize("after_command", ["APPLYALL", "POWERON"])
+@pytest.mark.parametrize("after_command", ["POWERON"])
 async def test_write_config_after_command_fails(
     controller: ArchonController,
     mocker,

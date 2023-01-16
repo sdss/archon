@@ -98,7 +98,8 @@
       "additionalProperties": false,
       "required": ["controller", "command", "response"]
     },
-    "filename": { "type": "string" },
+    "next_exposure_no": { "type": "integer" },
+    "filenames": { "type": "array", "items": { "type": "string" } },
     "lines": { "type": "integer" },
     "pixels": { "type": "integer" },
     "preskiplines": { "type": "integer" },

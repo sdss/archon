@@ -35,9 +35,9 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
 
     assert result
 
-    assert delegate.actor.model and delegate.actor.model["filename"] is not None
+    assert delegate.actor.model and delegate.actor.model["filenames"] is not None
 
-    filename = delegate.actor.model["filename"].value
+    filename = delegate.actor.model["filenames"].value[0]
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
@@ -67,7 +67,7 @@ async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
 
     assert result
 
-    filename = delegate.actor.model["filename"].value
+    filename = delegate.actor.model["filenames"].value[0]
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
@@ -246,7 +246,7 @@ async def test_delegate_expose_window_mode(delegate: ExposureDelegate, window_mo
 
     assert result
 
-    filename = delegate.actor.model["filename"].value
+    filename = delegate.actor.model["filenames"].value[0]
     hdu = fits.open(filename)
 
     if window_mode == "test_mode":

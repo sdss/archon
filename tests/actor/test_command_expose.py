@@ -103,7 +103,7 @@ async def test_expose_read_header(delegate, actor: ArchonActor):
 
     assert read.status.did_succeed
 
-    filename = delegate.actor.model["filename"].value
+    filename = delegate.actor.model["filenames"].value[0]
     assert os.path.exists(filename)
 
     hdu: Any = fits.open(filename)
@@ -240,7 +240,7 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
 
     assert command.status.did_succeed
 
-    filename = delegate.actor.model["filename"].value
+    filename = delegate.actor.model["filenames"].value[0]
     hdu = fits.open(filename)
     assert hdu[0].data.shape == (200, 200)
 
