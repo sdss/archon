@@ -12,7 +12,6 @@ from archon.actor import ArchonActor
 
 
 async def test_get_window(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("get-window")
     await command
 
@@ -21,7 +20,6 @@ async def test_get_window(actor: ArchonActor):
 
 
 async def test_get_window_no_controllers(actor: ArchonActor):
-
     actor.controllers.pop("sp1")
 
     command = await actor.invoke_mock_command("get-window")
@@ -31,7 +29,6 @@ async def test_get_window_no_controllers(actor: ArchonActor):
 
 
 async def test_set_window(actor: ArchonActor, mocker):
-
     command = await actor.invoke_mock_command("set-window  --lines 50")
     await command
 
@@ -41,7 +38,6 @@ async def test_set_window(actor: ArchonActor, mocker):
 
 @pytest.mark.parametrize("window_mode", ["default", ""])
 async def test_set_window_default(actor: ArchonActor, window_mode: str, mocker):
-
     reset = mocker.patch.object(actor.controllers["sp1"], "reset_window")
 
     command = await actor.invoke_mock_command(f"set-window {window_mode}")
@@ -52,7 +48,6 @@ async def test_set_window_default(actor: ArchonActor, window_mode: str, mocker):
 
 
 async def test_set_window_mode(actor: ArchonActor, mocker):
-
     set_window = mocker.patch.object(actor.controllers["sp1"], "set_window")
 
     command = await actor.invoke_mock_command("set-window test_mode")
@@ -63,7 +58,6 @@ async def test_set_window_mode(actor: ArchonActor, mocker):
 
 
 async def test_set_window_mode_bad_mode(actor: ArchonActor, mocker):
-
     set_window = mocker.patch.object(actor.controllers["sp1"], "set_window")
 
     command = await actor.invoke_mock_command("set-window bad_mode")

@@ -14,7 +14,6 @@ from archon.exceptions import ArchonControllerError, ArchonControllerWarning
 
 
 async def test_archon_controller_error_unnamed(controller):
-
     controller.name = None
 
     with pytest.raises(ArchonControllerError) as err:
@@ -35,7 +34,6 @@ async def test_archon_controller_error_no_controller():
 
 
 async def test_archon_controller_error_no_class():
-
     with pytest.raises(ArchonControllerError) as err:
         raise ArchonControllerError("test error")
 
@@ -43,7 +41,6 @@ async def test_archon_controller_error_no_class():
 
 
 async def test_archon_controller_warning_unnamed(controller):
-
     controller.name = None
 
     with pytest.warns(ArchonControllerWarning) as warn:
@@ -64,7 +61,6 @@ async def test_archon_controller_warning_no_controller():
 
 
 async def test_archon_controller_warning_no_class():
-
     with pytest.warns(ArchonControllerWarning) as warn:
         warnings.warn("test warning", ArchonControllerWarning)
 

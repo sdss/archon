@@ -23,7 +23,6 @@ from archon.exceptions import ArchonControllerError, ArchonError
 
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
 async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -46,7 +45,6 @@ async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
 
 
 async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
-
     # For framemode=top
     mocker.patch.object(
         delegate.actor.controllers["sp1"],
@@ -76,7 +74,6 @@ async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
 
 
 async def test_delegate_expose_locked(delegate: ExposureDelegate):
-
     await delegate.lock.acquire()
 
     command = Command("", actor=delegate.actor)
@@ -92,7 +89,6 @@ async def test_delegate_expose_locked(delegate: ExposureDelegate):
 
 
 async def test_delegate_no_use_shutter(delegate: ExposureDelegate, mocker):
-
     shutter = mocker.patch.object(delegate, "shutter")
 
     delegate.use_shutter = False
@@ -112,7 +108,6 @@ async def test_delegate_no_use_shutter(delegate: ExposureDelegate, mocker):
 
 
 async def test_delegate_fetch_fails(delegate: ExposureDelegate, mocker):
-
     mocker.patch.object(delegate, "fetch_hdus", side_effect=ArchonError)
 
     command = Command("", actor=delegate.actor)
@@ -128,7 +123,6 @@ async def test_delegate_fetch_fails(delegate: ExposureDelegate, mocker):
 
 
 async def test_delegate_expose_no_exptime(delegate: ExposureDelegate):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -143,7 +137,6 @@ async def test_delegate_expose_no_exptime(delegate: ExposureDelegate):
 
 @pytest.mark.parametrize("status", [CS.EXPOSING, CS.READOUT_PENDING, CS.ERROR])
 async def test_delegate_check_expose_fails(delegate: ExposureDelegate, status: CS):
-
     delegate.actor.controllers["sp1"]._status = status
 
     command = Command("", actor=delegate.actor)
@@ -160,7 +153,6 @@ async def test_delegate_check_expose_fails(delegate: ExposureDelegate, status: C
 
 
 async def test_delegate_expose_fails(delegate: ExposureDelegate, mocker):
-
     mocker.patch.object(
         delegate.actor.controllers["sp1"],
         "expose",
@@ -181,7 +173,6 @@ async def test_delegate_expose_fails(delegate: ExposureDelegate, mocker):
 
 
 async def test_delegate_readout_not_locked(delegate: ExposureDelegate):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -199,7 +190,6 @@ async def test_delegate_readout_not_locked(delegate: ExposureDelegate):
 
 
 async def test_delegate_readout_no_expose_data(delegate: ExposureDelegate):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -217,7 +207,6 @@ async def test_delegate_readout_no_expose_data(delegate: ExposureDelegate):
 
 
 async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
-
     mocker.patch.object(delegate, "shutter", return_value=False)
 
     command = Command("", actor=delegate.actor)
@@ -233,7 +222,6 @@ async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
 
 @pytest.mark.parametrize("window_mode", ["test_mode", "default"])
 async def test_delegate_expose_window_mode(delegate: ExposureDelegate, window_mode):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -256,7 +244,6 @@ async def test_delegate_expose_window_mode(delegate: ExposureDelegate, window_mo
 
 
 async def test_delegate_expose_bad_window_mode(delegate: ExposureDelegate):
-
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,
@@ -271,7 +258,6 @@ async def test_delegate_expose_bad_window_mode(delegate: ExposureDelegate):
 
 
 async def test_delegate_expose_set_window_fails(delegate: ExposureDelegate, mocker):
-
     mocker.patch.object(
         delegate.actor.controllers["sp1"],
         "set_window",

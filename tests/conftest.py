@@ -68,7 +68,7 @@ async def controller(request, unused_tcp_port: int, mocker):
             cid, com = matched.groups()
 
             found_command = False
-            for (command, replies) in commands:
+            for command, replies in commands:
                 if command.upper() == com.upper():
                     if isinstance(replies, str):
                         replies = [replies]

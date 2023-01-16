@@ -24,14 +24,12 @@ from archon.controller.controller import ArchonController
 
 @pytest.fixture()
 def test_config():
-
     extra = read_yaml_file(os.path.join(os.path.dirname(__file__), "config.yaml"))
     yield merge_config(extra, config)
 
 
 @pytest_asyncio.fixture()
 async def actor(test_config: dict, controller: ArchonController, mocker):
-
     # We need to call the actor .start() method to force it to create the
     # controllers and to start the tasks, but we don't want to run .start()
     # on the actor.
@@ -57,7 +55,6 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
 
 @pytest.fixture()
 def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "readout")
 
     # For framemode=top

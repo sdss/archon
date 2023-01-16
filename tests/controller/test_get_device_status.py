@@ -35,7 +35,6 @@ async def test_get_device_status_error(controller: ArchonController):
 
 
 def test_controller_status_flags():
-
     flags = ControllerStatus.EXPOSING | ControllerStatus.READOUT_PENDING
 
     assert ControllerStatus.EXPOSING & flags

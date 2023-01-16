@@ -162,10 +162,8 @@ async def expose(
         return command.fail(error="--count > 1 requires readout.")
 
     for n in range(1, count + 1):
-
         flavours = [flavour, "dark"] if with_dark else [flavour]
         for this_flavour in flavours:
-
             delegate.use_shutter = not no_shutter
             result = await delegate.expose(
                 command,

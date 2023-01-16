@@ -11,7 +11,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_system(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("system")
     await command
 
@@ -20,7 +19,6 @@ async def test_system(actor: ArchonActor):
 
 
 async def test_system_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("system")
@@ -30,7 +28,6 @@ async def test_system_fail_controller(actor: ArchonActor):
 
 
 async def test_system_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "get_system", side_effect=ArchonError)
 
     command = await actor.invoke_mock_command("system")

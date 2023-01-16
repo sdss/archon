@@ -12,14 +12,12 @@ from archon.actor import ArchonActor
 
 
 async def test_actor(actor: ArchonActor):
-
     assert actor
     assert len(actor.controllers) == 1
     assert actor.controllers["sp1"].is_connected()
 
 
 async def test_ping(actor):
-
     command = await actor.invoke_mock_command("ping")
     await command
 
@@ -29,6 +27,5 @@ async def test_ping(actor):
 
 
 async def test_actor_no_config():
-
     with pytest.raises(RuntimeError):
         ArchonActor.from_config(None)

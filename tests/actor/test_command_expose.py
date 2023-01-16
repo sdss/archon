@@ -18,7 +18,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_expose_start(delegate, actor: ArchonActor):
-
     command = await actor.invoke_mock_command("expose --no-readout 0.01")
     await command
 
@@ -26,7 +25,6 @@ async def test_expose_start(delegate, actor: ArchonActor):
 
 
 async def test_expose_start_controller_list(delegate, actor: ArchonActor):
-
     command = await actor.invoke_mock_command(
         "expose --no-readout --controller sp1 0.01"
     )
@@ -36,7 +34,6 @@ async def test_expose_start_controller_list(delegate, actor: ArchonActor):
 
 
 async def test_expose_start_controller_list_bad_name(delegate, actor: ArchonActor):
-
     command = await actor.invoke_mock_command(
         "expose --no-readout --controller sp5 0.01"
     )
@@ -46,7 +43,6 @@ async def test_expose_start_controller_list_bad_name(delegate, actor: ArchonActo
 
 
 async def test_expose_start_bad_controller(delegate, actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command(
@@ -58,7 +54,6 @@ async def test_expose_start_bad_controller(delegate, actor: ArchonActor):
 
 
 async def test_expose_start_no_delegate(delegate, actor: ArchonActor):
-
     actor.expose_delegate = None  # type: ignore
 
     command = await actor.invoke_mock_command(
@@ -83,7 +78,6 @@ async def test_expose_start_expose_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_read(delegate, actor: ArchonActor):
-
     await (await actor.invoke_mock_command("expose --no-readout 0.01"))
 
     read = await actor.invoke_mock_command("read")
@@ -93,7 +87,6 @@ async def test_expose_read(delegate, actor: ArchonActor):
 
 
 async def test_expose_read_header(delegate, actor: ArchonActor):
-
     await (await actor.invoke_mock_command("expose --no-readout 0.01"))
 
     read = await actor.invoke_mock_command(
@@ -114,7 +107,6 @@ async def test_expose_read_header(delegate, actor: ArchonActor):
 
 
 async def test_expose_read_no_delegate(delegate, actor: ArchonActor):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -140,7 +132,6 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_abort(delegate, actor: ArchonActor):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -151,7 +142,6 @@ async def test_expose_abort(delegate, actor: ArchonActor):
 
 
 async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -164,7 +154,6 @@ async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
 
 
 async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -177,7 +166,6 @@ async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
 
 
 async def test_expose_abort_no_expose_data_all(delegate, actor: ArchonActor):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -190,7 +178,6 @@ async def test_expose_abort_no_expose_data_all(delegate, actor: ArchonActor):
 
 
 async def test_expose_abort_fails(delegate, actor: ArchonActor, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "abort", side_effect=ArchonError)
 
     await actor.invoke_mock_command("expose --no-readout 1")
@@ -203,7 +190,6 @@ async def test_expose_abort_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_abort_flush(delegate, actor: ArchonActor, mocker):
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
@@ -214,7 +200,6 @@ async def test_expose_abort_flush(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_abort_flush_fails(delegate, actor: ArchonActor, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "flush", side_effect=ArchonError)
 
     await actor.invoke_mock_command("expose --no-readout 1")
@@ -227,7 +212,6 @@ async def test_expose_abort_flush_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_set_window(delegate, actor: ArchonActor):
-
     controller = actor.controllers["sp1"]
 
     await controller.reset_window()
@@ -246,7 +230,6 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
 
 
 async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
-
     expose_mock = mocker.patch.object(delegate, "expose", return_value=True)
 
     command = await actor.invoke_mock_command("expose --with-dark 0.01")
@@ -257,7 +240,6 @@ async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_with_dark_no_readout_fails(delegate, actor: ArchonActor):
-
     command = await actor.invoke_mock_command("expose --with-dark --no-readout 0.01")
     await command
 

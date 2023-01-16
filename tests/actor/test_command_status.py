@@ -11,7 +11,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_status(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("status")
     await command
 
@@ -20,7 +19,6 @@ async def test_status(actor: ArchonActor):
 
 
 async def test_status_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("status")
@@ -30,7 +28,6 @@ async def test_status_fail_controller(actor: ArchonActor):
 
 
 async def test_status_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "get_device_status",

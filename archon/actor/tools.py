@@ -79,7 +79,6 @@ def parallel_controllers(check=True):
             controller: str | None,
             **kwargs,
         ):
-
             if not controller:
                 controller_list = tuple(controllers.keys())
             else:

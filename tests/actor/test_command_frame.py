@@ -11,7 +11,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_config_frame_status(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("frame status sp1")
     await command
 
@@ -19,7 +18,6 @@ async def test_config_frame_status(actor: ArchonActor):
 
 
 async def test_config_frame_status_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "get_frame", side_effect=ArchonError)
 
     command = await actor.invoke_mock_command("frame status sp1")
@@ -29,7 +27,6 @@ async def test_config_frame_status_fails(actor: ArchonActor, mocker):
 
 
 async def test_config_frame_status_bad_controller_name(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("frame status sp5")
     await command
 
@@ -37,7 +34,6 @@ async def test_config_frame_status_bad_controller_name(actor: ArchonActor):
 
 
 async def test_config_frame_status_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("frame status sp1")

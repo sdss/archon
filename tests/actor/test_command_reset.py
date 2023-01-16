@@ -11,7 +11,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_reset(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("reset")
     await command
 
@@ -20,7 +19,6 @@ async def test_reset(actor: ArchonActor):
 
 
 async def test_reset_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("reset")
@@ -30,7 +28,6 @@ async def test_reset_fail_controller(actor: ArchonActor):
 
 
 async def test_reset_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(actor.controllers["sp1"], "reset", side_effect=ArchonError)
 
     command = await actor.invoke_mock_command("reset")

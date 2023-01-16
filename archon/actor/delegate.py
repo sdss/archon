@@ -45,7 +45,6 @@ class ExposureDelegate(Generic[Actor_co]):
     """Handles the exposure workflow."""
 
     def __init__(self, actor: Actor_co):
-
         self.actor = actor
 
         self.expose_data: ExposeData | None = None
@@ -114,7 +113,6 @@ class ExposureDelegate(Generic[Actor_co]):
         window_params: dict = {},
         **readout_params,
     ):
-
         self.command = command
 
         if self.lock.locked():

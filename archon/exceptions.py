@@ -22,7 +22,6 @@ class ArchonControllerError(ArchonError):
     """An exception raised by an `.ArchonController`."""
 
     def __init__(self, message):
-
         import archon.controller
 
         stack = inspect.stack()
@@ -56,7 +55,6 @@ class ArchonControllerWarning(ArchonUserWarning):
     """A warning issued by an `.ArchonController`."""
 
     def __init__(self, message):
-
         import archon.controller
 
         stack = inspect.stack()

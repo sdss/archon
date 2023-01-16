@@ -130,7 +130,7 @@ async def init(
     # Set parameters
     _output(command, controller, "Setting initial parameters")
     initial_params = {"Exposures": 0, "ReadOut": 0, "DoFlush": 0}
-    for (param, value) in initial_params.items():
+    for param, value in initial_params.items():
         try:
             await controller.set_param(param, value)
         except ArchonError as err:

@@ -227,7 +227,6 @@ async def test_write_config_overrides(
     send_command_mock,
     config_file,
 ):
-
     await controller.write_config(
         config_file,
         applyall=True,

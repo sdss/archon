@@ -13,7 +13,6 @@ from archon.exceptions import ArchonError
 
 
 async def test_reconnect(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("reconnect")
     await command
 
@@ -22,7 +21,6 @@ async def test_reconnect(actor: ArchonActor):
 
 
 async def test_reconnect_stop_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "stop",
@@ -37,7 +35,6 @@ async def test_reconnect_stop_fails(actor: ArchonActor, mocker):
 
 
 async def test_reconnect_not_running(actor: ArchonActor, mocker):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("reconnect")
@@ -48,7 +45,6 @@ async def test_reconnect_not_running(actor: ArchonActor, mocker):
 
 
 async def test_reconnect_start_timesout(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "start",

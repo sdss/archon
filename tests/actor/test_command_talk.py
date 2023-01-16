@@ -12,7 +12,6 @@ from archon.actor import ArchonActor
 
 
 async def test_talk(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("talk STATUS")
     await command
 
@@ -22,7 +21,6 @@ async def test_talk(actor: ArchonActor):
 
 @pytest.mark.commands([["PING", ["?{cid}"]]])
 async def test_talk_error(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("talk PING")
     await command
 
@@ -32,7 +30,6 @@ async def test_talk_error(actor: ArchonActor):
 
 
 async def test_talk_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("talk STATUS")

@@ -21,7 +21,6 @@ PARAMETER2="Pixels=100"
 
 
 async def test_config_read(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "read_config",
@@ -36,7 +35,6 @@ async def test_config_read(actor: ArchonActor, mocker):
 
 
 async def test_config_read_save(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "read_config",
@@ -50,7 +48,6 @@ async def test_config_read_save(actor: ArchonActor, mocker):
 
 
 async def test_config_read_fails(actor: ArchonActor, mocker):
-
     mocker.patch.object(
         actor.controllers["sp1"],
         "read_config",
@@ -64,7 +61,6 @@ async def test_config_read_fails(actor: ArchonActor, mocker):
 
 
 async def test_config_read_bad_controller_name(actor: ArchonActor):
-
     command = await actor.invoke_mock_command("config read sp5")
     await command
 
@@ -72,7 +68,6 @@ async def test_config_read_bad_controller_name(actor: ArchonActor):
 
 
 async def test_config_read_fail_controller(actor: ArchonActor):
-
     await actor.controllers["sp1"].stop()
 
     command = await actor.invoke_mock_command("config read sp1")
@@ -82,7 +77,6 @@ async def test_config_read_fail_controller(actor: ArchonActor):
 
 
 async def test_config_write(actor: ArchonActor, tmp_path):
-
     config_temp = tmp_path / "config.acf"
     config_temp.write_text(SAMPLE_CONFIG)
 
@@ -93,7 +87,6 @@ async def test_config_write(actor: ArchonActor, tmp_path):
 
 
 async def test_config_write_fails(actor: ArchonActor, mocker, tmp_path):
-
     config_temp = tmp_path / "config.acf"
     config_temp.touch()
 
@@ -110,7 +103,6 @@ async def test_config_write_fails(actor: ArchonActor, mocker, tmp_path):
 
 
 async def test_config_write_bad_controller_name(actor: ArchonActor, tmp_path):
-
     config_temp = tmp_path / "config.acf"
     config_temp.touch()
 
@@ -121,7 +113,6 @@ async def test_config_write_bad_controller_name(actor: ArchonActor, tmp_path):
 
 
 async def test_config_write_fail_controller(actor: ArchonActor, tmp_path):
-
     config_temp = tmp_path / "config.acf"
     config_temp.touch()
 

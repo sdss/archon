@@ -62,7 +62,6 @@ class ControllerStatus(enum.Flag):
 
 
 class ArchonPower(enum.Enum):
-
     UNKNOWN = 0
     NOT_CONFIGURED = 1
     OFF = 2

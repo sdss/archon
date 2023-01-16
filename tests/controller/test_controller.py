@@ -106,7 +106,6 @@ async def test_yield_status(controller: ArchonController):
 
 
 async def test_start_with_reset(controller: ArchonController):
-
     await controller.stop()
     await controller.start(reset=True)
 
@@ -114,13 +113,11 @@ async def test_start_with_reset(controller: ArchonController):
 
 
 async def test_update_status_toggle(controller: ArchonController):
-
     assert controller.status & ControllerStatus.IDLE
     controller.update_status(ControllerStatus.POWERON, "toggle")
     assert not (controller.status & ControllerStatus.POWERON)
 
 
 async def test_update_status_invalid(controller: ArchonController):
-
     with pytest.raises(ValueError):
         controller.update_status(ControllerStatus.IDLE, "bad_mode")

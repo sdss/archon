@@ -355,7 +355,7 @@ class ArchonController(Device):
 
         keywords = str(cmd.replies[0].reply).split()
         system = {}
-        for (key, value) in map(lambda k: k.split("="), keywords):
+        for key, value in map(lambda k: k.split("="), keywords):
             system[key.lower()] = value
             if match := re.match(r"^MOD([0-9]{1,2})_TYPE", key, re.IGNORECASE):
                 name_key = f"mod{match.groups()[0]}_name"
