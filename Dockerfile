@@ -6,6 +6,9 @@ WORKDIR /opt
 
 COPY . archon
 
+RUN apt-get -y update
+RUN apt-get -y install build-essential libbz2-dev
+
 RUN pip3 install -U pip setuptools wheel
 RUN cd archon && pip3 install .
 
