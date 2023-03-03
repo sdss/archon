@@ -1,10 +1,22 @@
 # Changelog
 
-## Next version
+## 0.8.0 - March 3, 2023
+
+### ✨ Improved
+
+* Allow to run `LOADTIMING` without `APPLYALL` after an init.
+* Output filenames as a single keyword.
+* Add `ArchonController.send_and_wait()`.
+* Allow choosing what `APPLYXXX` commands to send on init.
 
 ### 🔧 Fixed
 
 * Fix overwriting of images when readout done independently. The `nextExposureFile` was not being increased in that case.
+
+### ⚙️ Engineering
+
+* Support Python 3.11.
+* Update test and docker workflows. The docker image now uses `python:3.11-slim-bullseye`.
 
 
 ## 0.7.0 - December 2, 2022
