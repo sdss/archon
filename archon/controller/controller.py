@@ -1113,7 +1113,7 @@ class ArchonController(Device):
         wbuf = frame["wbuf"]
 
         if notifier:
-            notifier(f"Reading buffer {wbuf}.")
+            notifier(f"Reading frame to buffer {wbuf}.")
 
         while True:
             if waited > max_wait:
