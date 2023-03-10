@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0b1 - March 10, 2023
+
+### 🚀 New
+
+* Upgrade `CLU` to `2.0.0b2` and add the `get-command-model` command.
+
+
 ## 0.8.0 - March 3, 2023
 
 ### ✨ Improved
