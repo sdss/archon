@@ -306,6 +306,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         There is no guarantee that this coroutine will be waited or that
         it will complete before the shutter closes and the readout begins.
+        To ensure that the expose tasks have completed, await the task
+        in ``self._expose_cotasks``.
 
         """
 
