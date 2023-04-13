@@ -29,7 +29,7 @@ from sdsstools.time import get_sjd
 from archon import __version__
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
-from archon.tools import gzip_async
+from archon.tools import gzip_async, subprocess_run_async
 
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -393,6 +393,8 @@ class ExposureDelegate(Generic[Actor_co]):
                     self.command.error(f"HDUs failed to write to disk: {fn!s}")
                     return False
 
+        await self._generate_checksum(valid)
+
         return True
 
     async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
@@ -434,6 +436,45 @@ class ExposureDelegate(Generic[Actor_co]):
             return
 
         return file_path
+
+    async def _generate_checksum(self, filenames: list[str]):
+        """Generates a checksum file for the images written to disk."""
+
+        write_checksum = False
+        if self.actor.config.get("checksum", None):
+            if self.actor.config["checksum"].get("write", False):
+                write_checksum = True
+
+        if not write_checksum:
+            return
+
+        checksum_config = self.actor.config["checksum"]
+
+        checksum_mode = checksum_config.get("mode", "md5")
+        if checksum_mode.startswith("sha1"):
+            sum_command = "sha1sum"
+        elif checksum_mode.startswith("md5"):
+            sum_command = "md5sum"
+        else:
+            self.command.warning(f"Invalid checksum mode {checksum_mode!r}.")
+            return
+
+        checksum_basefile = checksum_config.get("file", f"{{SJD}}.{checksum_mode}sum")
+        checksum_basefile = checksum_basefile.format(SJD=get_sjd())
+
+        for filename in filenames:
+            filename = str(filename)
+            dirname = os.path.dirname(os.path.realpath(filename))
+            basename = os.path.basename(filename)
+
+            try:
+                await subprocess_run_async(
+                    f"{sum_command} {basename} >> {checksum_basefile}",
+                    shell=True,
+                    cwd=dirname,
+                )
+            except Exception as err:
+                self.command.warning(f"Failed to generate checksum: {err}")
 
     async def post_process(
         self,

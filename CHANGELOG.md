@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🚀 New
+
+* [DT-4](https://jira.sdss.org/browse/DT-4) Allow to create checksum files for each newly written images. To enable, add a `checksum` section to the configuration file with `checksum.write: true`. The mode of the checksum can be set with `checksum.mode` to `md5` (default) or `sha1`. The file to which the checksum is appended can be defined with `checksum.file`, which default to the SJD with extension `.sha1sum` or `.md5sum` depending on the checksum mode.
+
+
 ## 0.9.0b1 - March 10, 2023
 
 ### 🚀 New

@@ -56,7 +56,7 @@ class Timer:
         self._task = self._loop.create_task(self._job())
 
 
-async def subprocess_run_async(*args, shell=False):
+async def subprocess_run_async(*args, shell=False, cwd=None):
     """Runs a command asynchronously.
 
     If ``shell=True`` the command will be executed through the shell. In that case
@@ -69,6 +69,7 @@ async def subprocess_run_async(*args, shell=False):
             args[0],
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            cwd=cwd,
         )
         cmd_str = args[0]
 
