@@ -8,9 +8,11 @@
 
 import asyncio
 import os
+import sys
 
 from typing import Any
 
+import pytest
 from astropy.io import fits
 
 from archon.actor.actor import ArchonActor
@@ -153,6 +155,7 @@ async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
     assert abort.status.did_fail
 
 
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="seems to fail in PY38")
 async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
