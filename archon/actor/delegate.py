@@ -491,7 +491,7 @@ class ExposureDelegate(Generic[Actor_co]):
         assert self.command.actor and self.expose_data
 
         expose_data = self.expose_data
-        assert expose_data.end_time
+        assert expose_data.end_time is not None
 
         header = fits.Header()
 
