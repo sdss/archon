@@ -111,6 +111,7 @@ class ExposureDelegate(Generic[Actor_co]):
         readout: bool = True,
         window_mode: str | None = None,
         window_params: dict = {},
+        seqno: int | None = None,
         **readout_params,
     ):
         self.command = command
@@ -151,7 +152,7 @@ class ExposureDelegate(Generic[Actor_co]):
         await self.lock.acquire()
 
         will_write = readout_params.get("write", True)
-        if not self._set_exposure_no(controllers, increase=will_write):
+        if not self._set_exposure_no(controllers, increase=will_write, seqno=seqno):
             return False
 
         self.command.debug(next_exposure_no=self.expose_data.exposure_no)
@@ -653,6 +654,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self,
         controllers: list[ArchonController],
         increase: bool = True,
+        seqno: int | None = None,
     ):
         """Gets the exposure number for this exposure."""
 
@@ -675,9 +677,12 @@ class ExposureDelegate(Generic[Actor_co]):
             self.command.warning(f"{next_exp_file} not found. Creating it.")
             next_exp_file.touch()
 
-        with open(next_exp_file, "r") as fd:
-            data = fd.read().strip()
-            self.expose_data.exposure_no = int(data) if data != "" else 1
+        if seqno is None:
+            with open(next_exp_file, "r") as fd:
+                data = fd.read().strip()
+                self.expose_data.exposure_no = int(data) if data != "" else 1
+        else:
+            self.expose_data.exposure_no = seqno
 
         # Check that files don't exist.
         for controller in controllers:
@@ -705,8 +710,7 @@ class ExposureDelegate(Generic[Actor_co]):
         data_dir = pathlib.Path(config["files"]["data_dir"])
 
         mjd_dir = data_dir / str(self.expose_data.mjd)
-        if not mjd_dir.exists():
-            mjd_dir.mkdir(parents=True)
+        mjd_dir.mkdir(parents=True, exist_ok=True)
 
         path: pathlib.Path = mjd_dir / config["files"]["template"]
 

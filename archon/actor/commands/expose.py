@@ -118,6 +118,12 @@ __all__ = ["expose", "read", "abort"]
     is_flag=True,
     help="Take a matching dark exposure.",
 )
+@click.option(
+    "-s",
+    "--seqno",
+    type=int,
+    help="Sequence number for the expossure.",
+)
 async def expose(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
@@ -132,6 +138,7 @@ async def expose(
     no_shutter: bool = False,
     with_dark: bool = False,
     no_write: bool = False,
+    seqno: int | None = None,
 ):
     """Exposes the cameras."""
 
@@ -175,6 +182,7 @@ async def expose(
                 delay_readout=delay_readout,
                 window_mode=window_mode,
                 write=not no_write,
+                seqno=seqno,
             )
 
             if not result:
