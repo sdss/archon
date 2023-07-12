@@ -18,13 +18,14 @@ from clu.command import Command
 
 import archon.actor
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
 from ..tools import check_controller, controller
 from . import parser
 
 
-__all__ = ["expose", "read", "abort"]
+__all__ = ["expose", "read", "abort", "wait_until_idle"]
 
 
 @parser.command()
@@ -305,3 +306,33 @@ async def abort(
     command.actor.expose_delegate.reset()
 
     return command.finish()
+
+
+@parser.command()
+@click.option(
+    "--allow-errored",
+    is_flag=True,
+    help="Returns even if the spectrograph status is ERROR as long as it is IDLE.",
+)
+async def wait_until_idle(
+    command: Command[archon.actor.actor.ArchonActor],
+    controllers: dict[str, ArchonController],
+    allow_errored: bool = False,
+):
+    """Wait and return when the spectrograph status is IDLE."""
+
+    while True:
+        await asyncio.sleep(1)
+
+        statuses = [controller.status for controller in controllers.values()]
+
+        is_idle = [status & ControllerStatus.IDLE for status in statuses]
+        is_errored = [status & ControllerStatus.ERRORED for status in statuses]
+
+        if not all(is_idle):
+            continue
+
+        if allow_errored or not any(is_errored):
+            if any(is_errored):
+                command.warning("Some controllers are ERRORED.")
+            return command.finish("All controllers are IDLE.")
