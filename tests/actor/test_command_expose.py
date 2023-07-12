@@ -235,9 +235,12 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
 
 async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
     expose_mock = mocker.patch.object(delegate, "expose", return_value=True)
+    mocker.patch.object(delegate, "readout", return_value=True)
 
     command = await actor.invoke_mock_command("expose --with-dark 0.01")
     await command
+
+    assert command.status.did_succeed
 
     expose_mock.assert_called()
     assert expose_mock.call_count == 2
