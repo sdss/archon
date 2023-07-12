@@ -197,21 +197,22 @@ async def expose(
                 # expose will fail the command.
                 return
 
-            readout_task = asyncio.create_task(
-                delegate.readout(
-                    command,
-                    extra_header=extra_header,
-                    delay_readout=delay_readout,
+            if readout is True:
+                readout_task = asyncio.create_task(
+                    delegate.readout(
+                        command,
+                        extra_header=extra_header,
+                        delay_readout=delay_readout,
+                    )
                 )
-            )
 
-            if async_readout and n == count and n_flavour == len(flavours) - 1:
-                return command.finish("Returning while readout is ongoing.")
+                if async_readout and n == count and n_flavour == len(flavours) - 1:
+                    return command.finish("Returning while readout is ongoing.")
 
-            readout_result = await readout_task
+                readout_result = await readout_task
 
-            if not readout_result:
-                return
+                if not readout_result:
+                    return
 
     return command.finish()
 
