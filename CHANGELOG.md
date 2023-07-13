@@ -14,7 +14,7 @@
 
 ### 🔧 Fixed
 
-* Prevent controller state to briefly go to `IDLE` before chaning to a non-idle status.
+* Prevent controller state to briefly go to `IDLE` before changing to a non-idle status.
 
 
 ## 0.9.0 - April 13, 2023
