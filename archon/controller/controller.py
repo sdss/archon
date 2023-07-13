@@ -15,7 +15,6 @@ import os
 import re
 import warnings
 from collections.abc import AsyncIterator
-from time import time
 
 from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 

@@ -259,8 +259,6 @@ async def test_expose_with_dark_no_readout_fails(delegate, actor: ArchonActor):
 
 
 async def test_expose_async_readout(delegate: ExposureDelegate, actor: ArchonActor):
-    controller = actor.controllers["sp1"]
-
     command = await actor.invoke_mock_command("expose --async-readout 0.01")
     await command
 
