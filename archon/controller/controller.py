@@ -750,7 +750,7 @@ class ArchonController(Device):
 
         self.auto_flush = mode
 
-    async def reset(self, autoflush=True, release_timing=True):
+    async def reset(self, autoflush=True, release_timing=True, update_status=True):
         """Resets timing and discards current exposures."""
 
         self._parse_params()
@@ -782,8 +782,9 @@ class ArchonController(Device):
                         f"Failed sending {cmd_str} ({cmd.status.name})"
                     )
 
-        self._status = ControllerStatus.IDLE
-        await self.power()  # Sets power bit.
+        if update_status:
+            self._status = ControllerStatus.IDLE
+            await self.power()  # Sets power bit.
 
     def _parse_params(self):
         """Reads the ACF file and constructs a dictionary of parameters."""
@@ -1094,15 +1095,15 @@ class ArchonController(Device):
 
         delay = int(delay)
 
-        await self.reset(autoflush=False, release_timing=False)
+        await self.reset(autoflush=False, release_timing=False, update_status=False)
         await self.set_param("ReadOut", 1)
         await self.send_command("RELEASETIMING")
 
         if delay > 0:
             await self.set_param("WaitCount", delay)
 
-        self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)
-        self.update_status(ControllerStatus.READING)
+        self.update_status(ControllerStatus.READING, notify=False)
+        self.update_status(ControllerStatus.READOUT_PENDING, "off")
 
         if not block:
             return
