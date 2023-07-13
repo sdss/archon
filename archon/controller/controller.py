@@ -347,7 +347,7 @@ class ArchonController(Device):
     async def get_system(self) -> dict[str, Any]:
         """Returns a dictionary with the output of the ``SYSTEM`` command."""
 
-        cmd = await self.send_command("SYSTEM", timeout=1)
+        cmd = await self.send_command("SYSTEM", timeout=5)
         if not cmd.succeeded():
             error = cmd.status == ArchonCommandStatus.TIMEDOUT
             raise ArchonControllerError(
@@ -373,7 +373,7 @@ class ArchonController(Device):
                 return s[1:].isdigit()
             return s.isdigit()
 
-        cmd = await self.send_command("STATUS", timeout=1)
+        cmd = await self.send_command("STATUS", timeout=5)
         if not cmd.succeeded():
             error = cmd.status == ArchonCommandStatus.TIMEDOUT
             raise ArchonControllerError(
@@ -399,7 +399,7 @@ class ArchonController(Device):
         representation.
         """
 
-        cmd = await self.send_command("FRAME", timeout=1)
+        cmd = await self.send_command("FRAME", timeout=5)
         if not cmd.succeeded():
             raise ArchonControllerError(
                 f"Command FRAME failed with status {cmd.status.name!r}"
