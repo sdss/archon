@@ -232,7 +232,7 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
 
     filename = delegate.actor.model["filenames"].value[0]
     hdu = fits.open(filename)
-    assert hdu[0].data.shape == (200, 200)
+    assert hdu[0].data.shape == (200, 200)  # type: ignore
 
 
 async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
