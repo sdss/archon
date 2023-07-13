@@ -264,14 +264,13 @@ class ExposureDelegate(Generic[Actor_co]):
 
         t0 = time()
 
-        try:
-            jobs = [
-                c.abort(readout=False)
-                for c in controllers
-                if c.status & ControllerStatus.EXPOSING
-            ]
-            await asyncio.gather(*jobs)
+        if any([c.status & ControllerStatus.EXPOSING for c in controllers]):
+            return self.fail(
+                "Found controllers exposing. Wait before reading or "
+                "manually abort them."
+            )
 
+        try:
             command.info(text="Reading out CCDs.")
             readout_tasks = [
                 controller.readout(
