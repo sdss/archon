@@ -1,5 +1,13 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* Added `expose --async-readout` flag that finishes the expose command as soon as readout begins.
+* Added `wait-until-idle` command that returns once the spectrographs are idle.
+
+
 ## 0.9.0 - April 13, 2023
 
 ### 🚀 New

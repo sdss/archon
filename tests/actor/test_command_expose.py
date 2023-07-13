@@ -16,6 +16,8 @@ import pytest
 from astropy.io import fits
 
 from archon.actor.actor import ArchonActor
+from archon.actor.delegate import ExposureDelegate
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
 
@@ -230,14 +232,17 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
 
     filename = delegate.actor.model["filenames"].value[0]
     hdu = fits.open(filename)
-    assert hdu[0].data.shape == (200, 200)
+    assert hdu[0].data.shape == (200, 200)  # type: ignore
 
 
 async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
     expose_mock = mocker.patch.object(delegate, "expose", return_value=True)
+    mocker.patch.object(delegate, "readout", return_value=True)
 
     command = await actor.invoke_mock_command("expose --with-dark 0.01")
     await command
+
+    assert command.status.did_succeed
 
     expose_mock.assert_called()
     assert expose_mock.call_count == 2
@@ -251,3 +256,46 @@ async def test_expose_with_dark_no_readout_fails(delegate, actor: ArchonActor):
     assert command.replies[-1].message == {
         "error": "--with-dark cannot be used with --no-readout."
     }
+
+
+async def test_expose_async_readout(delegate: ExposureDelegate, actor: ArchonActor):
+    controller = actor.controllers["sp1"]
+
+    command = await actor.invoke_mock_command("expose --async-readout 0.01")
+    await command
+
+    assert command.status.did_succeed
+
+    assert not controller.status & ControllerStatus.READOUT_PENDING
+
+
+async def test_expose_wait_until_idle(delegate: ExposureDelegate, actor: ArchonActor):
+    controller = actor.controllers["sp1"]
+
+    command = await actor.invoke_mock_command("expose --async-readout 0.01")
+    await command
+
+    assert command.status.did_succeed
+
+    await (await actor.invoke_mock_command("wait-until-idle"))
+    assert controller.status & ControllerStatus.IDLE
+
+
+async def test_expose_wait_until_idle_with_error(
+    delegate: ExposureDelegate,
+    actor: ArchonActor,
+    mocker,
+):
+    mocker.patch.object(actor.controllers["sp1"], "readout", side_effect=ArchonError)
+
+    controller = actor.controllers["sp1"]
+
+    command = await actor.invoke_mock_command("expose --async-readout 0.01")
+    await command
+
+    assert command.status.did_fail
+    controller.update_status(ControllerStatus.ERROR)
+
+    await (await actor.invoke_mock_command("wait-until-idle --allow-errored"))
+    assert controller.status & ControllerStatus.IDLE
+    assert controller.status & ControllerStatus.ERROR

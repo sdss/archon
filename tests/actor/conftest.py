@@ -20,6 +20,7 @@ from sdsstools import merge_config, read_yaml_file
 from archon import config
 from archon.actor import ArchonActor
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 
 
 @pytest.fixture()
@@ -55,7 +56,16 @@ async def actor(test_config: dict, controller: ArchonController, mocker):
 
 @pytest.fixture()
 def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
-    mocker.patch.object(actor.controllers["sp1"], "readout")
+    def reset_status(**kwargs):
+        actor.controllers["sp1"].update_status(ControllerStatus.IDLE)
+        actor.controllers["sp1"].update_status(ControllerStatus.READOUT_PENDING, "off")
+
+    mocker.patch.object(
+        actor.controllers["sp1"],
+        "readout",
+        return_value=True,
+        side_effect=reset_status,
+    )
 
     # For framemode=top
     mocker.patch.object(

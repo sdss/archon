@@ -18,13 +18,14 @@ from clu.command import Command
 
 import archon.actor
 from archon.controller.controller import ArchonController
+from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
 
 from ..tools import check_controller, controller
 from . import parser
 
 
-__all__ = ["expose", "read", "abort"]
+__all__ = ["expose", "read", "abort", "wait_until_idle"]
 
 
 @parser.command()
@@ -83,6 +84,14 @@ __all__ = ["expose", "read", "abort"]
     help="Whether to read out the frame.",
 )
 @click.option(
+    "--async-readout",
+    default=False,
+    is_flag=True,
+    help="When set, readout will be initiated but the command returns "
+    "immediately as readout begins. If multiple exposures are commanded only "
+    "the last one will be read out asynchronously.",
+)
+@click.option(
     "--header",
     type=str,
     default="{}",
@@ -132,6 +141,7 @@ async def expose(
     controller: str | None = None,
     flavour: str = "object",
     readout: bool = True,
+    async_readout: bool = False,
     header: str = "{}",
     delay_readout: int = 0,
     count: int = 1,
@@ -170,24 +180,41 @@ async def expose(
 
     for n in range(1, count + 1):
         flavours = [flavour, "dark"] if with_dark else [flavour]
-        for this_flavour in flavours:
+        for n_flavour, this_flavour in enumerate(flavours):
             delegate.use_shutter = not no_shutter
-            result = await delegate.expose(
+            exposure_result = await delegate.expose(
                 command,
                 selected_controllers,
                 flavour=this_flavour,
                 exposure_time=exposure_time,
-                readout=readout,
-                extra_header=extra_header,
-                delay_readout=delay_readout,
+                readout=False,
                 window_mode=window_mode,
                 write=not no_write,
                 seqno=seqno,
             )
 
-            if not result:
+            if not exposure_result:
                 # expose will fail the command.
                 return
+
+            if readout is True:
+                readout_task = asyncio.create_task(
+                    delegate.readout(
+                        command,
+                        extra_header=extra_header,
+                        delay_readout=delay_readout,
+                    )
+                )
+
+                if async_readout and n == count and n_flavour == len(flavours) - 1:
+                    readout_result = await readout_task
+
+                    return command.finish("Returning while readout is ongoing.")
+
+                readout_result = await readout_task
+
+                if not readout_result:
+                    return
 
     return command.finish()
 
@@ -282,3 +309,40 @@ async def abort(
     command.actor.expose_delegate.reset()
 
     return command.finish()
+
+
+@parser.command()
+@click.option(
+    "--allow-errored",
+    is_flag=True,
+    help="Returns even if the spectrograph status is ERROR as long as it is IDLE.",
+)
+async def wait_until_idle(
+    command: Command[archon.actor.actor.ArchonActor],
+    controllers: dict[str, ArchonController],
+    allow_errored: bool = False,
+):
+    """Wait until the spectrograph status is IDLE and there is no READOUT_PENDING."""
+
+    while True:
+        await asyncio.sleep(1)
+
+        statuses = [controller.status for controller in controllers.values()]
+
+        is_idle = [status & ControllerStatus.IDLE for status in statuses]
+        is_pending = [status & ControllerStatus.READOUT_PENDING for status in statuses]
+        is_errored = [status & ControllerStatus.ERRORED for status in statuses]
+
+        if not all(is_idle):
+            continue
+
+        if allow_errored:
+            if any(is_errored):
+                command.warning("Some controllers are ERRORED.")
+            break
+        else:
+            if any(is_pending):
+                continue
+            break
+
+    return command.finish("All controllers are IDLE.")
