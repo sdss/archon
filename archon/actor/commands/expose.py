@@ -206,7 +206,6 @@ async def expose(
                 # Finish here so that readout receives a done command.
                 if is_async:
                     command.finish("Returning while readout is ongoing.")
-                    await asyncio.sleep(1)
 
                 readout_task = asyncio.create_task(
                     delegate.readout(
