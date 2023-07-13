@@ -266,6 +266,7 @@ async def test_expose_async_readout(delegate: ExposureDelegate, actor: ArchonAct
 
     assert command.status.did_succeed
 
+    await asyncio.sleep(0.1)
     assert not controller.status & ControllerStatus.READOUT_PENDING
 
 
@@ -293,7 +294,7 @@ async def test_expose_wait_until_idle_with_error(
     command = await actor.invoke_mock_command("expose --async-readout 0.01")
     await command
 
-    assert command.status.did_fail
+    assert command.status.did_succeed
     controller.update_status(ControllerStatus.ERROR)
 
     await (await actor.invoke_mock_command("wait-until-idle --allow-errored"))

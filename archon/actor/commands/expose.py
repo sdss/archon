@@ -207,8 +207,6 @@ async def expose(
                 )
 
                 if async_readout and n == count and n_flavour == len(flavours) - 1:
-                    readout_result = await readout_task
-
                     return command.finish("Returning while readout is ongoing.")
 
                 readout_result = await readout_task
