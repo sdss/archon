@@ -16,6 +16,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
 from time import time
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
@@ -242,6 +243,12 @@ class ExposureDelegate(Generic[Actor_co]):
         """Reads the exposure, fetches the buffer, and writes to disk."""
 
         self.command = command
+
+        # The command could be done at this point if we are doing an async readout.
+        # In that case we would see an annoying warning. Instead let's replace the
+        # command with an empty namespace.
+        if self.command.done():
+            self.command.set_status = MagicMock()
 
         if not self.lock.locked():
             return self.fail("Expose delegator is not locked.")

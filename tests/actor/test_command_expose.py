@@ -266,9 +266,6 @@ async def test_expose_async_readout(delegate: ExposureDelegate, actor: ArchonAct
 
     assert command.status.did_succeed
 
-    await asyncio.sleep(0.1)
-    assert not controller.status & ControllerStatus.READOUT_PENDING
-
 
 async def test_expose_wait_until_idle(delegate: ExposureDelegate, actor: ArchonActor):
     controller = actor.controllers["sp1"]

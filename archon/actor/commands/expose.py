@@ -174,13 +174,16 @@ async def expose(
         return command.fail(error="Cannot find expose delegate.")
 
     extra_header = json.loads(header)
+    if not isinstance(extra_header, dict):
+        command.warning("Ignoring invalid header. Header must be a JSON dict string.")
+        extra_header = {}
 
     if count > 1 and readout is False:
         return command.fail(error="--count > 1 requires readout.")
 
-    for n in range(1, count + 1):
+    for nexp in range(1, count + 1):
         flavours = [flavour, "dark"] if with_dark else [flavour]
-        for n_flavour, this_flavour in enumerate(flavours):
+        for nf, this_flavour in enumerate(flavours):
             delegate.use_shutter = not no_shutter
             exposure_result = await delegate.expose(
                 command,
@@ -198,6 +201,13 @@ async def expose(
                 return
 
             if readout is True:
+                is_async = async_readout and nexp == count and nf == len(flavours) - 1
+
+                # Finish here so that readout receives a done command.
+                if is_async:
+                    command.finish("Returning while readout is ongoing.")
+                    await asyncio.sleep(1)
+
                 readout_task = asyncio.create_task(
                     delegate.readout(
                         command,
@@ -206,8 +216,8 @@ async def expose(
                     )
                 )
 
-                if async_readout and n == count and n_flavour == len(flavours) - 1:
-                    return command.finish("Returning while readout is ongoing.")
+                if is_async:
+                    return
 
                 readout_result = await readout_task
 
