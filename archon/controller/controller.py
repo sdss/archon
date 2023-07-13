@@ -15,6 +15,7 @@ import os
 import re
 import warnings
 from collections.abc import AsyncIterator
+from time import time
 
 from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 
@@ -1076,6 +1077,7 @@ class ArchonController(Device):
         delay: int = 0,
         wait_for: float | None = None,
         notifier: Optional[Callable[[str], None]] = None,
+        idle_after: bool = True,
     ):
         """Reads the detector into a buffer.
 
@@ -1128,7 +1130,8 @@ class ArchonController(Device):
                 )
             frame = await self.get_frame()
             if frame[f"buf{wbuf}complete"] == 1:
-                self.update_status(ControllerStatus.IDLE)
+                if idle_after:
+                    self.update_status(ControllerStatus.IDLE)
                 # Reset autoflushing.
                 await self.set_autoflush(True)
                 break
