@@ -207,6 +207,8 @@ async def expose(
                 )
 
                 if async_readout and n == count and n_flavour == len(flavours) - 1:
+                    readout_result = await readout_task
+
                     return command.finish("Returning while readout is ongoing.")
 
                 readout_result = await readout_task
@@ -320,7 +322,7 @@ async def wait_until_idle(
     controllers: dict[str, ArchonController],
     allow_errored: bool = False,
 ):
-    """Wait and return when the spectrograph status is IDLE."""
+    """Wait until the spectrograph status is IDLE and there is no READOUT_PENDING."""
 
     while True:
         await asyncio.sleep(1)
@@ -328,12 +330,19 @@ async def wait_until_idle(
         statuses = [controller.status for controller in controllers.values()]
 
         is_idle = [status & ControllerStatus.IDLE for status in statuses]
+        is_pending = [status & ControllerStatus.READOUT_PENDING for status in statuses]
         is_errored = [status & ControllerStatus.ERRORED for status in statuses]
 
         if not all(is_idle):
             continue
 
-        if allow_errored or not any(is_errored):
+        if allow_errored:
             if any(is_errored):
                 command.warning("Some controllers are ERRORED.")
-            return command.finish("All controllers are IDLE.")
+            break
+        else:
+            if any(is_pending):
+                continue
+            break
+
+    return command.finish("All controllers are IDLE.")

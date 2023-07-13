@@ -1097,6 +1097,7 @@ class ArchonController(Device):
         if delay > 0:
             await self.set_param("WaitCount", delay)
 
+        print("here")
         self.update_status(ControllerStatus.READOUT_PENDING, "off", notify=False)
         self.update_status(ControllerStatus.READING)
 
