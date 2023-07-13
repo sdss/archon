@@ -349,8 +349,10 @@ class ArchonController(Device):
 
         cmd = await self.send_command("SYSTEM", timeout=1)
         if not cmd.succeeded():
+            error = cmd.status == ArchonCommandStatus.TIMEDOUT
             raise ArchonControllerError(
-                f"Command finished with status {cmd.status.name!r}"
+                f"Command STATUS finished with status {cmd.status.name!r}",
+                set_error_status=error,
             )
 
         keywords = str(cmd.replies[0].reply).split()
@@ -373,8 +375,10 @@ class ArchonController(Device):
 
         cmd = await self.send_command("STATUS", timeout=1)
         if not cmd.succeeded():
+            error = cmd.status == ArchonCommandStatus.TIMEDOUT
             raise ArchonControllerError(
-                f"Command finished with status {cmd.status.name!r}"
+                f"Command STATUS finished with status {cmd.status.name!r}",
+                set_error_status=error,
             )
 
         keywords = str(cmd.replies[0].reply).split()

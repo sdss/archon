@@ -21,7 +21,7 @@ class ArchonError(Exception):
 class ArchonControllerError(ArchonError):
     """An exception raised by an `.ArchonController`."""
 
-    def __init__(self, message):
+    def __init__(self, message, set_error_status: bool = True):
         import archon.controller
 
         stack = inspect.stack()
@@ -30,7 +30,8 @@ class ArchonControllerError(ArchonError):
         if "self" in f_locals:
             instance = f_locals["self"]
             if isinstance(instance, archon.controller.ArchonController):
-                instance.update_status(ControllerStatus.ERROR)
+                if set_error_status:
+                    instance.update_status(ControllerStatus.ERROR)
                 controller_name = instance.name
                 if controller_name is None or controller_name == "":
                     controller_name = "unnamed"

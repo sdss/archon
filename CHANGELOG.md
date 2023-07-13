@@ -7,6 +7,10 @@
 * Added `expose --async-readout` flag that finishes the expose command as soon as readout begins.
 * Added `wait-until-idle` command that returns once the spectrographs are idle.
 
+### 🏷️ Changed
+
+* Do not set the `ERROR` status in the controller if `ArchonController.get_device_status()` or `ArchonController.get_system()` time out.
+
 
 ## 0.9.0 - April 13, 2023
 
