@@ -14,7 +14,6 @@ import numpy
 import pytest
 import pytest_asyncio
 from clu.actor import AMQPBaseActor
-from more_itertools import side_effect
 
 from sdsstools import merge_config, read_yaml_file
 
