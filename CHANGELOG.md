@@ -1,6 +1,6 @@
 # Changelog
 
-## Next version
+## 0.10.0 - July 13, 2023
 
 ### ✨ Improved
 
@@ -10,6 +10,11 @@
 ### 🏷️ Changed
 
 * Do not set the `ERROR` status in the controller if `ArchonController.get_device_status()` or `ArchonController.get_system()` time out.
+* `ExposureDelegate.readout()` will fail is any controller is still exposing.
+
+### 🔧 Fixed
+
+* Prevent controller state to briefly go to `IDLE` before chaning to a non-idle status.
 
 
 ## 0.9.0 - April 13, 2023
