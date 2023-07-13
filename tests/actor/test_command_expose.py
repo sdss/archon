@@ -137,7 +137,7 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
 
 async def test_expose_abort(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.5)
 
     abort = await actor.invoke_mock_command("abort")
     await abort
@@ -173,7 +173,7 @@ async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="seems to fail in PY38")
 async def test_expose_abort_no_expose_data_all(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.5)
 
     actor.expose_delegate.expose_data = None
 
