@@ -24,7 +24,7 @@ async def test_expose(controller: ArchonController, mocker):
     )
     task = await controller.expose(0.01)
     set_param_mock.assert_any_call("Exposures", 1)
-    set_param_mock.assert_any_call("IntMS", 10)
+    set_param_mock.assert_any_call("IntCS", 1)
 
     assert controller.status & ControllerStatus.EXPOSING
     assert controller.status & ControllerStatus.READOUT_PENDING
