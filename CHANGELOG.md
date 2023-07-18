@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 💥 Breaking changes
+
+[#44](https://github.com/sdss/archon/issues/44) Allow exposure times longer than 1,000 seconds. This requires a change in how the ACF timing scripts are written to support setting the exposure time in centiseconds. See the PR description for details. Do not update to this version without updating the ACF file as well!
+
+
 ## 0.10.0 - July 13, 2023
 
 ### ✨ Improved

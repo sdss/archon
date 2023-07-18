@@ -996,7 +996,8 @@ class ArchonController(Device):
         else:
             await self.set_param("ReadOut", 1)
 
-        await self.set_param("IntMS", int(exposure_time * 1000))
+        # Set integration time in centiseconds (yep, centiseconds).
+        await self.set_param("IntCS", int(exposure_time * 100))
         await self.set_param("Exposures", 1)
 
         await self.send_command("RELEASETIMING")
