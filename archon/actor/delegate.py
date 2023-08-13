@@ -653,7 +653,16 @@ class ExposureDelegate(Generic[Actor_co]):
                 header.update(detector_header)
 
         # What remains are extra headers to be added to all the detectors.
-        header.update(extra_header)
+        for key, value in extra_header.items():
+            if (
+                key in header
+                and not isinstance(value, (tuple, list))
+                and isinstance(header[key], tuple)
+            ):
+                # Preserve original comment.
+                header[key] = (value, header[key][1])  # type: ignore
+            else:
+                header[key] = value
 
         return header
 

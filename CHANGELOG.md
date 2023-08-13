@@ -1,5 +1,16 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* Extra header values do not overwrite the existing header comments.
+
+### ⚙️ Engineering
+
+* Lint using `ruff`.
+
+
 ## 0.11.0 - July 18, 2023
 
 ### 💥 Breaking changes
