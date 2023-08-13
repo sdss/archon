@@ -17,9 +17,9 @@ from contextlib import suppress
 from typing import ClassVar, Dict, Type
 
 import click
+
 from clu import Command
 from clu.actor import AMQPActor, BaseActor
-
 from sdsstools.configuration import Configuration
 
 from archon import __version__

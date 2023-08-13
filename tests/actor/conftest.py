@@ -9,12 +9,12 @@
 import os
 import pathlib
 
-import clu.testing
 import numpy
 import pytest
 import pytest_asyncio
-from clu.actor import AMQPBaseActor
 
+import clu.testing
+from clu.actor import AMQPBaseActor
 from sdsstools import merge_config, read_yaml_file
 
 from archon import config

@@ -13,6 +13,7 @@ from typing import Any
 import numpy
 import pytest
 from astropy.io import fits
+
 from clu import Command
 
 from archon.actor.actor import ArchonActor

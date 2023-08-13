@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import click
+
 from clu.command import Command
 
 from archon.controller.controller import ArchonController

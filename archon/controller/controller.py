@@ -19,6 +19,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 
 import numpy
+
 from clu.device import Device
 
 from archon import config as lib_config
