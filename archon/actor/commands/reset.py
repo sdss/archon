@@ -29,5 +29,7 @@ async def reset(command: Command, controller: ArchonController):
         command.actor.expose_data = None
     except (ArchonControllerError, ArchonError) as err:
         return error_controller(command, controller, f"Failed resetting: {err}")
+    finally:
+        command.actor.expose_delegate.reset()
 
     return True

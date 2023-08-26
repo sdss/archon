@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🔧 Fixed
+
+* Ensure that the exposure delegate is always unlocked when `abort` or `reset` are called.
+
+
 ## 0.11.1 - August 14, 2023
 
 ### ✨ Improved
