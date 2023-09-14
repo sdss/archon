@@ -345,6 +345,9 @@ async def wait_until_idle(
         if not all(is_idle):
             continue
 
+        if command.actor.expose_delegate.is_writing:
+            continue
+
         if allow_errored:
             if any(is_errored):
                 command.warning("Some controllers are ERRORED.")

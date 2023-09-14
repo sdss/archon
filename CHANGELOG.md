@@ -2,6 +2,10 @@
 
 ## Next version
 
+### ✨ Improved
+
+* `wait-until-idle` won't return until the exposure has been saved to disk.
+
 ### 🔧 Fixed
 
 * Ensure that the exposure delegate is always unlocked when `abort` or `reset` are called.

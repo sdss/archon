@@ -51,6 +51,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self.expose_data: ExposeData | None = None
 
         self.use_shutter: bool = True
+        self.is_writing: bool = False
 
         self.lock = asyncio.Lock()
 
@@ -77,6 +78,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.expose_data = None
         self.command = None
+        self.is_writing = False
 
         if self._expose_cotasks is not None and not self._expose_cotasks.done():
             self._expose_cotasks.cancel()
@@ -344,6 +346,8 @@ class ExposureDelegate(Generic[Actor_co]):
             notifier=self.command.debug,
         )
 
+        self.is_writing = True
+
         assert self.expose_data
         self.expose_data.header["BUFFER"] = (buffer_no, "The buffer number read")
 
@@ -402,6 +406,8 @@ class ExposureDelegate(Generic[Actor_co]):
                     return False
 
         await self._generate_checksum(valid)
+
+        self.is_writing = False
 
         return True
 
