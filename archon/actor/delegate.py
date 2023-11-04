@@ -393,7 +393,18 @@ class ExposureDelegate(Generic[Actor_co]):
 
             write_tasks.append(self._write_to_file(hdu, file_path))
 
-        filenames = await asyncio.gather(*write_tasks, return_exceptions=True)
+        # Determine whether to write all files asynchronously or sequentially
+        write_async = config.get("files", {}).get("write_async", True)
+        if write_async:
+            filenames = await asyncio.gather(*write_tasks, return_exceptions=True)
+        else:
+            filenames = []
+            for wtask in write_tasks:
+                try:
+                    filenames.append(await wtask)
+                except Exception as err:
+                    filenames.append(err)
+
         valid = [fn for fn in filenames if isinstance(fn, str)]
 
         if len(valid) > 0:

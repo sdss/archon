@@ -1,17 +1,17 @@
 # REQUIRED. A dictionary of controller name to Archon controller connection parameters.
 controllers:
-  sp1:                         # Name of the controller.
+  sp1: # Name of the controller.
     host: 10.7.45.26
     port: 4242
-    parameters:                # Parameters for readout and fetching.
-      lines: 2040              # Number of lines per amplifier.
-      pixels: 2040             # Number of pixels per line.
-      overscan_pixels: 20      # Number of overscan pixels.
-      taps_per_detector: 4     # Number of amplifiers per detector.
-      framemode: split         # Archon frame mode. split or top.
-    detectors:                 # List of detector per controller.
-      r1:                      # The names of the detectors are required.
-        serial: STA29687       # The parameters for each of them are optional.
+    parameters: # Parameters for readout and fetching.
+      lines: 2040 # Number of lines per amplifier.
+      pixels: 2040 # Number of pixels per line.
+      overscan_pixels: 20 # Number of overscan pixels.
+      taps_per_detector: 4 # Number of amplifiers per detector.
+      framemode: split # Archon frame mode. split or top.
+    detectors: # List of detector per controller.
+      r1: # The names of the detectors are required.
+        serial: STA29687 # The parameters for each of them are optional.
         gain: 2.82
         readnoise: 3
         type: STA4850
@@ -32,12 +32,10 @@ controllers:
 # the observatory is "apo" and "s" if "lco", {controller} which is replaced with the
 # name of the Archon controller defined above, {ccd} which is the name do the CCD
 # (including the controller identifier), and {exposure} which is a never-repeating
-# sequence identifier. "split" controls whether the CCD frames from each controller are
-# saved as individual files or as different HDU extensions inside the FITS file.
+# sequence identifier.
 files:
-  data_dir: '/data/spectro/lvm'
-  split: true
-  template: 'sdR-{hemisphere}-{ccd}-{exposure_no:08d}.fits.gz'
+  data_dir: '~/'
+  template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
 
 # OPTIONAL. Additional header keywords to be obtained from the SYSTEM and STATUS
 # commands. The {sensor} placeholder will be filled out with the sensor value for the

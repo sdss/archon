@@ -14,5 +14,10 @@ timeouts:
   fetching_max: 10
   flushing: 1.2
 
+files:
+  data_dir: '~/'
+  template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
+  write_async: false
+
 archon:
   default_parameters: {}
