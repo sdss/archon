@@ -4,7 +4,7 @@
 
 ### 🚀 New
 
-* Added a configuration option `files.write_async` (default to `true`) that determines whether all the camera files for a controller are written to disk concurrently or sequentially.
+* Added a configuration option `files.write_async` (defaults to `true`) that determines whether all the camera files for a controller are written to disk concurrently or sequentially.
 
 
 ## 0.11.2 - September 14, 2023
