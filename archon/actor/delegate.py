@@ -597,7 +597,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 acf = acf_file
         else:
             acf = "?"
-        header["ARCHACF"] = (acf, "Archon ACF file loaded")
+        header["ARCHACF"] = (acf, "Archon ACF file")
 
         actor = self.actor
         config = actor.config

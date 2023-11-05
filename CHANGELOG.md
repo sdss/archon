@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🔧 Fixed
+
+* Reduce length of long header comment.
+
+
 ## 0.11.3 - November 5, 2023
 
 ### 🚀 New
