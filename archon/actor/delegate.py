@@ -15,6 +15,7 @@ import shutil
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
+from tempfile import NamedTemporaryFile, TemporaryFile
 from time import time
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -436,15 +437,14 @@ class ExposureDelegate(Generic[Actor_co]):
         loop = asyncio.get_running_loop()
 
         writeto = partial(hdu.writeto, checksum=True)
-
-        temp_uuid = uuid4().hex[:8]
-        temp_file = file_path + f".{temp_uuid}"
+        temp_file = NamedTemporaryFile(suffix=".fits", delete=False).name
 
         if file_path.endswith(".gz"):
             # Astropy compresses with gzip -9 which takes forever.
             # Instead we compress manually with -1, which is still pretty good.
-            await loop.run_in_executor(None, writeto, file_path[:-3])
-            await gzip_async(file_path[:-3], complevel=1, suffix=f".gz.{temp_uuid}")
+            await loop.run_in_executor(None, writeto, temp_file)
+            await gzip_async(temp_file, complevel=1, suffix=".gz")
+            temp_file = temp_file + ".gz"
         else:
             await loop.run_in_executor(None, writeto, temp_file)
 
@@ -452,13 +452,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
         # Rename to final file.
         try:
-            shutil.move(temp_file, file_path)
+            shutil.copyfile(temp_file, file_path)
         except Exception:
             self.command.error(
                 f"Failed renaming temporary file {temp_file}. "
                 "The original file is still available."
             )
             return
+        else:
+            os.unlink(temp_file)
 
         return file_path
 
