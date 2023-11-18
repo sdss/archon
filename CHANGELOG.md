@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.5 - November 18, 2023
+
+### ✨ Improved
+
+* Buffer is written to temporary file (usually in `/tmp`) before it's moved to the final permanent location.
+
+
 ## 0.11.4 - November 5, 2023
 
 ### 🔧 Fixed
