@@ -12,6 +12,7 @@ import asyncio
 import os
 import pathlib
 import shutil
+import subprocess
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
@@ -374,6 +375,9 @@ class ExposureDelegate(Generic[Actor_co]):
 
         excluded_cameras = config.get("excluded_cameras", [])
 
+        # Determine whether to write all files asynchronously or sequentially
+        write_async = config.get("files", {}).get("write_async", True)
+
         write_tasks = []
         for _, hdu in enumerate(hdus):
             ccd = cast(str, hdu.header["ccd"])
@@ -391,10 +395,14 @@ class ExposureDelegate(Generic[Actor_co]):
                 after=True,
             )
 
-            write_tasks.append(self._write_to_file(hdu, file_path))
+            write_tasks.append(
+                self._write_to_file(
+                    hdu,
+                    file_path,
+                    write_async=write_async,
+                )
+            )
 
-        # Determine whether to write all files asynchronously or sequentially
-        write_async = config.get("files", {}).get("write_async", True)
         if write_async:
             filenames = await asyncio.gather(*write_tasks, return_exceptions=True)
         else:
@@ -422,7 +430,12 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return True
 
-    async def _write_to_file(self, hdu: fits.PrimaryHDU, file_path: str):
+    async def _write_to_file(
+        self,
+        hdu: fits.PrimaryHDU,
+        file_path: str,
+        write_async: bool = True,
+    ):
         """Writes the HDU to file using an executor.
 
         The file is first written to a temporary file with the same path and
@@ -438,14 +451,23 @@ class ExposureDelegate(Generic[Actor_co]):
         writeto = partial(hdu.writeto, checksum=True)
         temp_file = NamedTemporaryFile(suffix=".fits", delete=False).name
 
-        if file_path.endswith(".gz"):
-            # Astropy compresses with gzip -9 which takes forever.
-            # Instead we compress manually with -1, which is still pretty good.
-            await loop.run_in_executor(None, writeto, temp_file)
-            await gzip_async(temp_file, complevel=1, suffix=".gz")
-            temp_file = temp_file + ".gz"
+        if write_async:
+            if file_path.endswith(".gz"):
+                # Astropy compresses with gzip -9 which takes forever.
+                # Instead we compress manually with -1, which is still pretty good.
+                await loop.run_in_executor(None, writeto, temp_file)
+                await gzip_async(temp_file, complevel=1, suffix=".gz")
+                temp_file = temp_file + ".gz"
+            else:
+                await loop.run_in_executor(None, writeto, temp_file)
+
         else:
-            await loop.run_in_executor(None, writeto, temp_file)
+            if file_path.endswith(".gz"):
+                writeto(temp_file)
+                subprocess.run(f"gzip -1 {temp_file}", shell=True)
+                temp_file = temp_file + ".gz"
+            else:
+                await loop.run_in_executor(None, writeto, temp_file)
 
         assert os.path.exists(temp_file), "Failed writing image to disk."
 
