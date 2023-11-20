@@ -15,10 +15,9 @@ import shutil
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial, reduce
-from tempfile import NamedTemporaryFile, TemporaryFile
+from tempfile import NamedTemporaryFile
 from time import time
 from unittest.mock import MagicMock
-from uuid import uuid4
 
 from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
 
