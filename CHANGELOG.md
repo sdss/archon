@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.6 - November 24, 2023
+
+### 🏷️ Changed
+
+* If `write_async=False` do not use an executor to write images to disk.
+
+
 ## 0.11.5 - November 18, 2023
 
 ### ✨ Improved
