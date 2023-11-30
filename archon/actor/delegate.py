@@ -20,12 +20,13 @@ from tempfile import NamedTemporaryFile
 from time import time
 from unittest.mock import MagicMock
 
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Sequence, TypeVar, cast
 
 import astropy.time
 import numpy
 from astropy.io import fits
 
+from sdsstools.configuration import Configuration
 from sdsstools.time import get_sjd
 
 from archon import __version__
@@ -58,6 +59,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self._command: Command[Actor_co] | None = None
         self._expose_cotasks: asyncio.Task | None = None
+
+        self._check_fitsio()
 
     @property
     def command(self):
@@ -298,19 +301,20 @@ class ExposureDelegate(Generic[Actor_co]):
             self.reset()
             return True
 
-        c_to_hdus: dict[ArchonController, list[fits.PrimaryHDU]]
+        c_to_hdus: dict[ArchonController, list[dict[str, Any]]]
         c_to_hdus = {controllers[ii]: hdus[ii] for ii in range(len(controllers))}
 
         post_process_jobs = []
         for controller, hdus in c_to_hdus.items():
             post_process_jobs.append(self.post_process(controller, hdus))
-
         c_to_hdus = dict(list(await asyncio.gather(*post_process_jobs)))
+
         self.command.debug(text="Writing HDUs to file.")
-        await asyncio.gather(*[self.write_hdus(c, h) for c, h in c_to_hdus.items()])
+        coros = [self.write_hdus(c, h) for c, h in c_to_hdus.items()]
+        results = await asyncio.gather(*coros)
 
         self.reset()
-        return True
+        return all(results)
 
     async def expose_cotasks(self):
         """Tasks that will be executed concurrently with readout.
@@ -353,25 +357,25 @@ class ExposureDelegate(Generic[Actor_co]):
         self.expose_data.header["BUFFER"] = (buffer_no, "The buffer number read")
 
         controller_info = config["controllers"][controller.name]
-        hdus = []
+        hdus: list[dict[str, Any]] = []
         for ccd_name in controller_info["detectors"]:
             header = await self.build_base_header(controller, ccd_name)
             ccd_data = self._get_ccd_data(data, controller, ccd_name, controller_info)
-            hdus.append(fits.PrimaryHDU(data=ccd_data, header=header))
+            hdus.append({"data": ccd_data, "header": header})
 
         return hdus
 
     async def write_hdus(
         self,
         controller: ArchonController,
-        hdus: List[fits.PrimaryHDU],
+        hdus: list[dict[str, Any]],
     ):
         """Writes HDUs to disk."""
 
         assert self.expose_data
 
         expose_data = self.expose_data
-        config = self.actor.config
+        config = Configuration(self.actor.config)
 
         excluded_cameras = config.get("excluded_cameras", [])
 
@@ -380,7 +384,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         write_tasks = []
         for _, hdu in enumerate(hdus):
-            ccd = cast(str, hdu.header["ccd"])
+            ccd = cast(str, hdu["header"]["CCD"][0])
 
             if ccd in excluded_cameras:
                 self.command.warning(f"Not saving image for camera {ccd}.")
@@ -388,12 +392,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
             file_path = self._get_ccd_filepath(controller, ccd)
 
-            hdu.header["filename"] = os.path.basename(file_path)
-            hdu.header.insert(
-                "filename",
-                ("EXPOSURE", expose_data.exposure_no, "Exposure number"),
-                after=True,
-            )
+            hdu["header"]["FILENAME"][0] = os.path.basename(file_path)
+            hdu["header"]["EXPOSURE"][0] = expose_data.exposure_no
 
             write_tasks.append(
                 self._write_to_file(
@@ -432,11 +432,11 @@ class ExposureDelegate(Generic[Actor_co]):
 
     async def _write_to_file(
         self,
-        hdu: fits.PrimaryHDU,
+        data: dict[str, Any],
         file_path: str,
         write_async: bool = True,
     ):
-        """Writes the HDU to file using an executor.
+        """Writes the HDU to file using astropy or fitsio.
 
         The file is first written to a temporary file with the same path and
         name as the final file but with a random suffix, and then renamed.
@@ -446,10 +446,17 @@ class ExposureDelegate(Generic[Actor_co]):
         if os.path.exists(file_path):
             raise FileExistsError(f"Cannot overwrite file {file_path}.")
 
-        loop = asyncio.get_running_loop()
+        loop = asyncio.get_event_loop()
 
-        writeto = partial(hdu.writeto, checksum=True)
-        temp_file = NamedTemporaryFile(suffix=".fits", delete=False).name
+        write_engine: str = self.actor.config["files"].get("write_engine", "astropy")
+        if write_engine == "astropy":
+            writeto = partial(self._write_file_astropy, data)
+        elif write_engine == "fitsio":
+            writeto = partial(self._write_file_fitsio, data)
+        else:
+            raise ValueError(f"Invalid write engine {write_engine!r}.")
+
+        temp_file = NamedTemporaryFile(suffix=".fits", delete=True).name
 
         if write_async:
             if file_path.endswith(".gz"):
@@ -484,6 +491,36 @@ class ExposureDelegate(Generic[Actor_co]):
             os.unlink(temp_file)
 
         return file_path
+
+    def _write_file_astropy(self, data: dict[str, Any], file_path: str):
+        """Writes the HDU to file using astropy."""
+
+        header = fits.Header()
+        for key, value in data["header"].items():
+            header[key] = tuple(value) if isinstance(value, (list, tuple)) else value
+
+        hdu = fits.PrimaryHDU(data["data"], header=header)
+        hdu.writeto(file_path, checksum=True, overwrite=True)
+
+        return
+
+    def _write_file_fitsio(self, data: dict[str, Any], file_path: str):
+        """Writes the HDU to file using astropy."""
+
+        import fitsio
+
+        header = []
+        for key, value in data["header"].items():
+            if isinstance(value, Sequence):
+                header.append({"name": key, "value": value[0], "comment": value[1]})
+            else:
+                header.append({"name": key, "value": value, "comment": ""})
+
+        with fitsio.FITS(file_path, "rw") as fits_:
+            fits_.write(data["data"], header=header)
+            fits_[-1].write_checksum()
+
+        return
 
     async def _generate_checksum(self, filenames: list[str]):
         """Generates a checksum file for the images written to disk."""
@@ -527,8 +564,8 @@ class ExposureDelegate(Generic[Actor_co]):
     async def post_process(
         self,
         controller: ArchonController,
-        hdus: list[fits.PrimaryHDU],
-    ) -> tuple[ArchonController, list[fits.PrimaryHDU]]:
+        hdus: list[dict[str, Any]],
+    ) -> tuple[ArchonController, list[dict[str, Any]]]:
         """Custom post-processing."""
 
         return (controller, hdus)
@@ -541,11 +578,12 @@ class ExposureDelegate(Generic[Actor_co]):
         expose_data = self.expose_data
         assert expose_data.end_time is not None
 
-        header = fits.Header()
+        header: dict[str, tuple[Any, str] | Any] = {}
 
         # Basic header
         header["V_ARCHON"] = __version__
-        header["FILENAME"] = ("", "File basename")  # Will be filled out later
+        header["FILENAME"] = ["", "File basename"]  # Will be filled out later
+        header["EXPOSURE"] = [None, "Exposure number"]  # Will be filled out later
         header["SPEC"] = (controller.name, "Spectrograph name")
         header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
         header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
@@ -558,15 +596,18 @@ class ExposureDelegate(Generic[Actor_co]):
 
         header["CCD"] = (ccd_name, "CCD name")
 
-        config = self.actor.config
-        if (
-            "controllers" not in config or controller.name not in config["controllers"]
-        ):  # pragma: no cover
+        config = Configuration(self.actor.config)
+        controller_config = config[f"controllers.{controller.name}"]
+        if controller_config is None:  # pragma: no cover
             self.command.warning(text="Cannot retrieve controller information.")
-            controller_config = {"detectors": {ccd_name: {}}, "parameters": {}}
-        else:
-            controller_config = config["controllers"][controller.name]
-        ccd_config = controller_config["detectors"][ccd_name]
+            controller_config = Configuration(
+                {
+                    "detectors": {ccd_name: {}},
+                    "parameters": {},
+                }
+            )
+
+        ccd_config = controller_config[f"detectors.{ccd_name}"]
 
         ccdid = ccd_config.get("serial", "?")
         ccdtype = ccd_config.get("type", "?")
@@ -845,6 +886,19 @@ class ExposureDelegate(Generic[Actor_co]):
             raise ValueError(f"Framemode {framemode} is not supported at this time.")
 
         return ccd_data
+
+    def _check_fitsio(self):
+        """Checks if fitsio is installed and needed."""
+
+        write_engine: str = self.actor.config["files"].get("write_engine", "astropy")
+        if write_engine == "fitsio":
+            try:
+                import fitsio  # noqa: F401
+            except ImportError:
+                raise ImportError(
+                    "fitsio is required to use fitsio. You can install "
+                    "it with 'pip install fitsio' or 'pip install sdss-archon[fitsio]'."
+                )
 
 
 @dataclass

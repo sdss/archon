@@ -114,7 +114,7 @@ async def test_read_config_save(controller: ArchonController, mocker, path):
     assert len(config) == 5
     assert config[0] == "LINE0=0"
 
-    assert open_patch.called_once()
+    open_patch.assert_called_once()
 
 
 @pytest.fixture()

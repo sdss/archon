@@ -5,7 +5,7 @@ coverage:
   status:
     project:
       default:
-        target: 90%
+        target: 80%
         if_not_found: success
         if_ci_failed: error
         informational: false

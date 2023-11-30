@@ -12,7 +12,6 @@ import asyncio
 import configparser
 import os
 import re
-import tempfile
 import types
 
 from typing import Iterable, Tuple, Union
@@ -28,7 +27,7 @@ CommandsType = Iterable[Tuple[str, Iterable[Union[str, bytes]]]]
 
 
 @pytest_asyncio.fixture()
-async def controller(request, unused_tcp_port: int, mocker):
+async def controller(request, unused_tcp_port: int):
     """Mocks a `.ArchonController` that replies to commands with predefined replies.
 
     Tests that use this fixture must be decorated with ``@pytest.mark.commands``. The
@@ -46,7 +45,8 @@ async def controller(request, unused_tcp_port: int, mocker):
         commands: CommandsType = []
 
     async def handle_connection(
-        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
     ) -> None:
         while True:
             try:
@@ -92,13 +92,16 @@ async def controller(request, unused_tcp_port: int, mocker):
                     writer.write(f"<{cid}\n".encode())
                 await writer.drain()
 
+        writer.close()
+        await writer.wait_closed()
+
     server = await asyncio.start_server(handle_connection, "localhost", unused_tcp_port)
 
     async with server:
         archon = ArchonController("sp1", "localhost", unused_tcp_port)
 
         config["archon"]["default_parameters"]["Exposures"] = 0
-        config.CONFIG_FILE = tempfile.NamedTemporaryFile().name
+        # config._CONFIG_FILE = tempfile.NamedTemporaryFile().name
 
         archon.start = types.MethodType(start_archon, archon)
 

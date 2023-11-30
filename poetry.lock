@@ -595,6 +595,19 @@ testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8)", "pyt
 typing = ["typing-extensions (>=4.8)"]
 
 [[package]]
+name = "fitsio"
+version = "1.2.1"
+description = "A full featured python library to read from and write to FITS files."
+optional = true
+python-versions = "*"
+files = [
+    {file = "fitsio-1.2.1.tar.gz", hash = "sha256:c64f60588f25fb2ba499854082bca73b0eda43b32ed6091f09dfcbcb72a911a6"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "furo"
 version = "2023.9.10"
 description = "A clean customisable Sphinx documentation theme."
@@ -797,13 +810,13 @@ format-nongpl = ["fqdn", "idna", "isoduration", "jsonpointer (>1.13)", "rfc3339-
 
 [[package]]
 name = "jsonschema-specifications"
-version = "2023.11.1"
+version = "2023.11.2"
 description = "The JSON Schema meta-schemas and vocabularies, exposed as a Registry"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jsonschema_specifications-2023.11.1-py3-none-any.whl", hash = "sha256:f596778ab612b3fd29f72ea0d990393d0540a5aab18bf0407a46632eab540779"},
-    {file = "jsonschema_specifications-2023.11.1.tar.gz", hash = "sha256:c9b234904ffe02f079bf91b14d79987faa685fd4b39c377a0996954c0090b9ca"},
+    {file = "jsonschema_specifications-2023.11.2-py3-none-any.whl", hash = "sha256:e74ba7c0a65e8cb49dc26837d6cfe576557084a8b423ed16a420984228104f93"},
+    {file = "jsonschema_specifications-2023.11.2.tar.gz", hash = "sha256:9472fc4fea474cd74bea4a2b190daeccb5a9e4db2ea80efcf7a1b582fc9a81b8"},
 ]
 
 [package.dependencies]
@@ -1947,13 +1960,13 @@ websocket = ["websockets (>=11.0.3,<12.0.0)"]
 
 [[package]]
 name = "sdsstools"
-version = "1.4.0"
+version = "1.5.2"
 description = "Small tools for SDSS products"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = ">=3.8,<3.13"
 files = [
-    {file = "sdsstools-1.4.0-py3-none-any.whl", hash = "sha256:3ebd183fe6a7d67c53fbbcbdac192d3263bfefa57955ab0644612a5baeedda29"},
-    {file = "sdsstools-1.4.0.tar.gz", hash = "sha256:cd1920f1d32d1bdf71be68c045d5c288955f947d47fc2cc7ca46debd6d49036a"},
+    {file = "sdsstools-1.5.2-py3-none-any.whl", hash = "sha256:172b618145e2fe45b202582f4905e3d3689756bb99e2aab906bc64c33f1774ee"},
+    {file = "sdsstools-1.5.2.tar.gz", hash = "sha256:d238f65b3562df8af6a3ce3307635799f363bf9c3e7e730ac77b9f67244ef0e6"},
 ]
 
 [package.dependencies]
@@ -2559,7 +2572,10 @@ files = [
 docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (<7.2.5)", "sphinx (>=3.5)", "sphinx-lint"]
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy (>=0.9.1)", "pytest-ruff"]
 
+[extras]
+fitsio = ["fitsio"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.13"
-content-hash = "62b2e8b9f727d3b7b97dc1e30fd510ef7007923527e5d0b7020f0fbc84fb8372"
+content-hash = "d7dc5a16d1b9b5abc0e532aa6fd8fb830261c8270834ccd2714b292b9bfed4f1"
