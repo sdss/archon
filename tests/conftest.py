@@ -12,7 +12,6 @@ import asyncio
 import configparser
 import os
 import re
-import tempfile
 import types
 
 from typing import Iterable, Tuple, Union
