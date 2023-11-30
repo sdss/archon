@@ -1,10 +1,18 @@
 # Changelog
 
-## Next version
+## 0.12.0 - November 30, 2023
+
+### 💥 Breaking changes
+
+* Support for Python 3.8 has been deprecated.
 
 ### 🚀 New
 
 * [#45](https://github.com/sdss/archon/issues/45) Added a new option `files.write_engine` that can be set to `astropy` or `fitsio`. In the latter case it will use fitsio to write images to disk. This requires installing `sdss-archon` with the `fitsio` extra (e.g., `pip install sdss-archon[fitsio]`).
+
+### 🔧 Fixed
+
+* Fix broken tests in 3.12.
 
 
 ## 0.11.6 - November 24, 2023
