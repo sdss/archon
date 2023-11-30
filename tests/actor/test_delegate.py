@@ -26,7 +26,7 @@ from archon.exceptions import ArchonControllerError, ArchonError
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
 @pytest.mark.parametrize("write_engine", ["astropy", "fitsio"])
 async def test_delegate_expose(
-    delegate: ExposureDelegate, flavour: str, write_engine: bool, mocker: MockerFixture
+    delegate: ExposureDelegate, flavour: str, write_engine: bool
 ):
     delegate.actor.config["files"]["write_engine"] = write_engine
 
@@ -295,3 +295,29 @@ async def test_delegate_expose_set_window_fails(delegate: ExposureDelegate, mock
     )
 
     assert result is False
+
+
+async def test_deletage_post_process(delegate: ExposureDelegate, mocker: MockerFixture):
+    async def _post_process(controller, hdus):
+        hdus[0]["header"]["TEST"] = 1
+        return (controller, hdus)
+
+    mocker.patch.object(delegate, "post_process", side_effect=_post_process)
+
+    delegate.actor.config["files"]["write_engine"] = "fitsio"
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        readout=True,
+        flavour="object",
+        exposure_time=0.01,
+    )
+
+    assert result is True
+
+    filename = delegate.actor.model["filenames"].value[0]
+    hdu = fits.open(filename)
+
+    assert hdu[0].header["TEST"] == 1
