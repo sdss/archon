@@ -13,6 +13,7 @@ from typing import Any
 import numpy
 import pytest
 from astropy.io import fits
+from pytest_mock import MockerFixture
 
 from clu import Command
 
@@ -25,9 +26,7 @@ from archon.exceptions import ArchonControllerError, ArchonError
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
 @pytest.mark.parametrize("write_engine", ["astropy", "fitsio"])
 async def test_delegate_expose(
-    delegate: ExposureDelegate,
-    flavour: str,
-    write_engine: bool,
+    delegate: ExposureDelegate, flavour: str, write_engine: bool, mocker: MockerFixture
 ):
     delegate.actor.config["files"]["write_engine"] = write_engine
 
@@ -50,6 +49,20 @@ async def test_delegate_expose(
     hdu: Any = fits.open(filename)
     assert hdu[0].data.shape == (800, 800)
     assert hdu[0].header["CCDTEMP1"] == -110
+
+
+async def test_delegate_expose_invalid_engine(delegate: ExposureDelegate):
+    delegate.actor.config["files"]["write_engine"] = "bad_engine"
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is False
 
 
 async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):

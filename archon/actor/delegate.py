@@ -310,10 +310,11 @@ class ExposureDelegate(Generic[Actor_co]):
         c_to_hdus = dict(list(await asyncio.gather(*post_process_jobs)))
 
         self.command.debug(text="Writing HDUs to file.")
-        await asyncio.gather(*[self.write_hdus(c, h) for c, h in c_to_hdus.items()])
+        coros = [self.write_hdus(c, h) for c, h in c_to_hdus.items()]
+        results = await asyncio.gather(*coros)
 
         self.reset()
-        return True
+        return all(results)
 
     async def expose_cotasks(self):
         """Tasks that will be executed concurrently with readout.
@@ -516,7 +517,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 header.append({"name": key, "value": value, "comment": ""})
 
         with fitsio.FITS(file_path, "rw") as fits_:
-            fits_.write(data["data"], header=header, clobber=True)
+            fits_.write(data["data"], header=header)
             fits_[-1].write_checksum()
 
         return
