@@ -339,7 +339,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return
 
-    async def fetch_hdus(self, controller: ArchonController) -> List[fits.PrimaryHDU]:
+    async def fetch_hdus(self, controller: ArchonController) -> list[dict]:
         """Waits for readout to complete, fetches the buffer, and creates the HDUs."""
 
         config = self.actor.config
@@ -354,7 +354,7 @@ class ExposureDelegate(Generic[Actor_co]):
         self.is_writing = True
 
         assert self.expose_data
-        self.expose_data.header["BUFFER"] = (buffer_no, "The buffer number read")
+        self.expose_data.header["BUFFER"] = [buffer_no, "The buffer number read"]
 
         controller_info = config["controllers"][controller.name]
         hdus: list[dict[str, Any]] = []
@@ -570,7 +570,11 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return (controller, hdus)
 
-    async def build_base_header(self, controller: ArchonController, ccd_name: str):
+    async def build_base_header(
+        self,
+        controller: ArchonController,
+        ccd_name: str,
+    ) -> dict[str, list]:
         """Returns the basic header of the FITS file."""
 
         assert self.command.actor and self.expose_data
@@ -578,23 +582,23 @@ class ExposureDelegate(Generic[Actor_co]):
         expose_data = self.expose_data
         assert expose_data.end_time is not None
 
-        header: dict[str, tuple[Any, str] | Any] = {}
+        header: dict[str, list] = {}
 
         # Basic header
-        header["V_ARCHON"] = __version__
+        header["V_ARCHON"] = [__version__, ""]
         header["FILENAME"] = ["", "File basename"]  # Will be filled out later
         header["EXPOSURE"] = [None, "Exposure number"]  # Will be filled out later
-        header["SPEC"] = (controller.name, "Spectrograph name")
-        header["OBSERVAT"] = (self.command.actor.observatory, "Observatory")
-        header["OBSTIME"] = (expose_data.start_time.isot, "Start of the observation")
-        header["MJD"] = (int(expose_data.start_time.mjd), "Modified Julian Date")
-        header["EXPTIME"] = (expose_data.exposure_time, "Exposure time")
-        header["DARKTIME"] = (expose_data.exposure_time, "Dark time")
-        header["IMAGETYP"] = (expose_data.flavour, "Image type")
-        header["INTSTART"] = (expose_data.start_time.isot, "Start of the integration")
-        header["INTEND"] = (expose_data.end_time.isot, "End of the integration")
+        header["SPEC"] = [controller.name, "Spectrograph name"]
+        header["OBSERVAT"] = [self.command.actor.observatory, "Observatory"]
+        header["OBSTIME"] = [expose_data.start_time.isot, "Start of the observation"]
+        header["MJD"] = [int(expose_data.start_time.mjd), "Modified Julian Date"]
+        header["EXPTIME"] = [expose_data.exposure_time, "Exposure time"]
+        header["DARKTIME"] = [expose_data.exposure_time, "Dark time"]
+        header["IMAGETYP"] = [expose_data.flavour, "Image type"]
+        header["INTSTART"] = [expose_data.start_time.isot, "Start of the integration"]
+        header["INTEND"] = [expose_data.end_time.isot, "End of the integration"]
 
-        header["CCD"] = (ccd_name, "CCD name")
+        header["CCD"] = [ccd_name, "CCD name"]
 
         config = Configuration(self.actor.config)
         controller_config = config[f"controllers.{controller.name}"]
@@ -614,40 +618,40 @@ class ExposureDelegate(Generic[Actor_co]):
         gain = ccd_config.get("gain", "?")
         readnoise = ccd_config.get("readnoise", "?")
 
-        header["CCDID"] = (ccdid, "Unique identifier of the CCD")
-        header["CCDTYPE"] = (ccdtype, "CCD type")
+        header["CCDID"] = [ccdid, "Unique identifier of the CCD"]
+        header["CCDTYPE"] = [ccdtype, "CCD type"]
 
         if isinstance(gain, (list, tuple)):
             for channel_idx in range(len(gain)):
-                header[f"GAIN{channel_idx+1}"] = (
+                header[f"GAIN{channel_idx+1}"] = [
                     gain[channel_idx],
                     f"CCD gain AD{channel_idx+1} [e-/ADU]",
-                )
+                ]
         else:
-            header["GAIN"] = (gain, "CCD gain [e-/ADU]")
+            header["GAIN"] = [gain, "CCD gain [e-/ADU]"]
 
         if isinstance(readnoise, (list, tuple)):
             for channel_idx in range(len(readnoise)):
-                header[f"RDNOISE{channel_idx+1}"] = (
+                header[f"RDNOISE{channel_idx+1}"] = [
                     readnoise[channel_idx],
                     f"CCD read noise AD{channel_idx+1} [e-]",
-                )
+                ]
         else:
-            header["RDNOISE"] = (readnoise, "CCD read noise [e-]")
+            header["RDNOISE"] = [readnoise, "CCD read noise [e-]"]
 
         window_params = expose_data.window_params
         hbin = window_params.get("hbin", 1)
         vbin = window_params.get("vbin", 1)
-        header["CCDSUM"] = (f"{hbin} {vbin}", "Horizontal and vertical binning")
+        header["CCDSUM"] = [f"{hbin} {vbin}", "Horizontal and vertical binning"]
 
         # Archon information.
         try:
             system_data = await controller.get_system()
-            header["ARCHBACK"] = (system_data["backplane_id"], "Archon backplane ID")
-            header["ARCHBVER"] = (
+            header["ARCHBACK"] = [system_data["backplane_id"], "Archon backplane ID"]
+            header["ARCHBVER"] = [
                 system_data["backplane_version"],
                 "Archon backplane version",
-            )
+            ]
         except Exception as err:
             self.command.warning(text=f"Could not get Archon system information: {err}")
 
@@ -661,7 +665,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 acf = acf_file
         else:
             acf = "?"
-        header["ARCHACF"] = (acf, "Archon ACF file")
+        header["ARCHACF"] = [acf, "Archon ACF file"]
 
         actor = self.actor
         config = actor.config
@@ -685,7 +689,7 @@ class ExposureDelegate(Generic[Actor_co]):
                             command_data = await controller.get_system()
                         else:
                             self.command.warning(text=f"Invalid command {hcommand}.")
-                            header[kname] = "N/A"
+                            header[kname] = ["N/A", ""]
                             continue
 
                         if "detectors" in kconfig:
@@ -716,12 +720,12 @@ class ExposureDelegate(Generic[Actor_co]):
                                 comment = params[1]
                             if len(params) > 2:
                                 value = numpy.round(value, params[2])
-                        header[kname] = (value, comment)
+                        header[kname] = [value, comment]
 
         # Convert JSON lists to tuples or astropy fails.
         for key in expose_data.header:
             if isinstance(expose_data.header[key], list):
-                expose_data.header[key] = tuple(expose_data.header[key])
+                expose_data.header[key] = list(expose_data.header[key])
 
         # Copy the extra header and loop over potential keys that match
         # the detector name. If so, add those headers only if the detector
@@ -741,9 +745,12 @@ class ExposureDelegate(Generic[Actor_co]):
                 and isinstance(header[key], tuple)
             ):
                 # Preserve original comment.
-                header[key] = (value, header[key][1])  # type: ignore
+                header[key] = [value, header[key][1]]
             else:
-                header[key] = value
+                if isinstance(value, (tuple, list)):
+                    header[key] = list(value)
+                else:
+                    header[key] = [value, ""]
 
         return header
 
