@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🚀 New
+
+* [#45](https://github.com/sdss/archon/issues/45) Added a new option `files.write_engine` that can be set to `astropy` or `fitsio`. In the latter case it will use fitsio to write images to disk. This requires installing `sdss-archon` with the `fitsio` extra (e.g., `pip install sdss-archon[fitsio]`).
+
+
 ## 0.11.6 - November 24, 2023
 
 ### 🏷️ Changed
