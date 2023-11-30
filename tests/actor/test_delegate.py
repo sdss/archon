@@ -23,7 +23,14 @@ from archon.exceptions import ArchonControllerError, ArchonError
 
 
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
-async def test_delegate_expose(delegate: ExposureDelegate, flavour: str):
+@pytest.mark.parametrize("write_engine", ["astropy", "fitsio"])
+async def test_delegate_expose(
+    delegate: ExposureDelegate,
+    flavour: str,
+    write_engine: bool,
+):
+    delegate.actor.config["files"]["write_engine"] = write_engine
+
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
         command,

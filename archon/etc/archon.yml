@@ -17,7 +17,8 @@ timeouts:
 files:
   data_dir: '~/'
   template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
-  write_async: false
+  write_async: true
+  write_engine: astropy
 
 archon:
   default_parameters: {}

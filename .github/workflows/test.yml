@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade wheel pip setuptools
-          pip install .
+          pip install .[fitsio]
 
       - name: Lint with ruff
         run: |
