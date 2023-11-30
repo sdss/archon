@@ -321,3 +321,11 @@ async def test_deletage_post_process(delegate: ExposureDelegate, mocker: MockerF
     hdu = fits.open(filename)
 
     assert hdu[0].header["TEST"] == 1
+
+
+async def test_delegate_no_fitsio(actor: ArchonActor, mocker: MockerFixture):
+    mocker.patch.dict("sys.modules", {"fitsio": None})
+    actor.config["files"]["write_engine"] = "fitsio"
+
+    with pytest.raises(ImportError):
+        ExposureDelegate(actor)
