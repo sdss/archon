@@ -7,7 +7,7 @@ from sdsstools import get_config, get_logger, get_package_version
 NAME = "sdss-archon"
 
 # Loads config. config name is the package name.
-config = get_config("archon")
+config = get_config("archon", allow_user=False)
 
 # Inits the logging system as NAME. Remove all the handlers. If a client
 # of the library wants the archon logging, it should add its own handler.
