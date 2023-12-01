@@ -557,7 +557,7 @@ class ExposureDelegate(Generic[Actor_co]):
         """Generates a checksum file for the images written to disk."""
 
         if self.config["checksum.write"]:
-            checksum_config = self.actor.config["checksum"]
+            checksum_config = self.config["checksum"]
         else:
             return
 
