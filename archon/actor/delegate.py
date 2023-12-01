@@ -68,6 +68,23 @@ class FetchDataDict(TypedDict):
     filename: str
 
 
+@dataclass
+class ExposeData:
+    """Data about the ongoing exposure."""
+
+    exposure_time: float
+    flavour: str
+    controllers: list[ArchonController]
+    start_time: astropy.time.Time = field(default_factory=astropy.time.Time.now)
+    end_time: astropy.time.Time | None = None
+    mjd: int = 0
+    exposure_no: int = 0
+    header: Dict[str, Any] = field(default_factory=dict)
+    delay_readout: int = 0
+    window_mode: str | None = None
+    window_params: dict = field(default_factory=dict)
+
+
 class ExposureDelegate(Generic[Actor_co]):
     """Handles the exposure workflow."""
 
@@ -917,20 +934,3 @@ class ExposureDelegate(Generic[Actor_co]):
                     "fitsio is required to use fitsio. You can install "
                     "it with 'pip install fitsio' or 'pip install sdss-archon[fitsio]'."
                 )
-
-
-@dataclass
-class ExposeData:
-    """Data about the ongoing exposure."""
-
-    exposure_time: float
-    flavour: str
-    controllers: list[ArchonController]
-    start_time: astropy.time.Time = field(default_factory=astropy.time.Time.now)
-    end_time: astropy.time.Time | None = None
-    mjd: int = 0
-    exposure_no: int = 0
-    header: Dict[str, Any] = field(default_factory=dict)
-    delay_readout: int = 0
-    window_mode: str | None = None
-    window_params: dict = field(default_factory=dict)
