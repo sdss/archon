@@ -1,5 +1,16 @@
 # Changelog
 
+## Next version
+
+### 💥 Breaking changes
+
+* As part of [#46](https://github.com/sdss/archon/issues/46) `ExposureDelegate.post_process()` is now called once for each controller CCD with a `FetchDataDict` as the only argument. The function must modify the input dictionary in place and return `None`.
+
+### ⚙️ Engineering
+
+* [#46](https://github.com/sdss/archon/issues/46) Significant clean-up of the `ExposureDelegate` code.
+
+
 ## 0.12.0 - November 30, 2023
 
 ### 💥 Breaking changes
