@@ -31,6 +31,7 @@ sdss-clu = "^2.0.0b2"
 click-default-group = "^1.2.2"
 astropy = "^6.0"
 fitsio = {version = "^1.2.1", optional = true}
+nptyping = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 ipython = [
@@ -101,7 +102,7 @@ omit = [
 exclude_lines = [
     "# pragma: no cover",
     "def __repr__",
-    "if TYPE_CHECKING:"
+    "if TYPE_CHECKING"
 ]
 
 [build-system]

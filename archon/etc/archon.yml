@@ -20,5 +20,9 @@ files:
   write_async: true
   write_engine: astropy
 
+checksum:
+  write: true
+  mode: md5
+
 archon:
   default_parameters: {}
