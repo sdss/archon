@@ -51,6 +51,8 @@ jobs:
         run: |
           pip install pytest pytest-mock pytest-asyncio pytest-cov
           pytest
+        env:
+          OBSERVATORY: LCO
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

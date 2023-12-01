@@ -27,6 +27,10 @@ files:
   split: true
   template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
 
+checksum:
+  write: true
+  mode: md5
+
 header:
   CCDTEMP1:
     command: status

@@ -25,10 +25,18 @@ from archon.exceptions import ArchonControllerError, ArchonError
 
 @pytest.mark.parametrize("flavour", ["bias", "dark", "object"])
 @pytest.mark.parametrize("write_engine", ["astropy", "fitsio"])
+@pytest.mark.parametrize("write_async", [True, False])
+@pytest.mark.parametrize("checksum_mode", ["md5", "sha1"])
 async def test_delegate_expose(
-    delegate: ExposureDelegate, flavour: str, write_engine: bool
+    delegate: ExposureDelegate,
+    flavour: str,
+    write_engine: bool,
+    write_async: bool,
+    checksum_mode: str,
 ):
-    delegate.actor.config["files"]["write_engine"] = write_engine
+    delegate.config["files"]["write_engine"] = write_engine
+    delegate.config["files"]["write_async"] = write_async
+    delegate.config["checksum"]["mode"] = checksum_mode
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -52,7 +60,7 @@ async def test_delegate_expose(
 
 
 async def test_delegate_expose_invalid_engine(delegate: ExposureDelegate):
-    delegate.actor.config["files"]["write_engine"] = "bad_engine"
+    delegate.config["files"]["write_engine"] = "bad_engine"
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -63,6 +71,21 @@ async def test_delegate_expose_invalid_engine(delegate: ExposureDelegate):
     )
 
     assert result is False
+
+
+async def test_delegate_expose_invalid_checksum(delegate: ExposureDelegate):
+    delegate.config["checksum"]["mode"] = "bad_engine"
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is True
+    assert command.replies[-1].message["text"].startswith("Invalid checksum")
 
 
 async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
@@ -129,7 +152,7 @@ async def test_delegate_no_use_shutter(delegate: ExposureDelegate, mocker):
 
 
 async def test_delegate_fetch_fails(delegate: ExposureDelegate, mocker):
-    mocker.patch.object(delegate, "fetch_hdus", side_effect=ArchonError)
+    mocker.patch.object(delegate, "fetch_data", side_effect=ArchonError)
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -298,13 +321,12 @@ async def test_delegate_expose_set_window_fails(delegate: ExposureDelegate, mock
 
 
 async def test_deletage_post_process(delegate: ExposureDelegate, mocker: MockerFixture):
-    async def _post_process(controller, hdus):
-        hdus[0]["header"]["TEST"] = 1
-        return (controller, hdus)
+    async def _post_process(fdata):
+        fdata["header"]["TEST"] = 1
 
     mocker.patch.object(delegate, "post_process", side_effect=_post_process)
 
-    delegate.actor.config["files"]["write_engine"] = "fitsio"
+    delegate.config["files"]["write_engine"] = "fitsio"
 
     command = Command("", actor=delegate.actor)
     result = await delegate.expose(
@@ -329,3 +351,33 @@ async def test_delegate_no_fitsio(actor: ArchonActor, mocker: MockerFixture):
 
     with pytest.raises(ImportError):
         ExposureDelegate(actor)
+
+
+async def test_delegate_copy_temporary_fail(delegate: ExposureDelegate, mocker):
+    mocker.patch("shutil.copyfile", side_effect=ValueError)
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is False
+
+
+async def test_delegate_write_to_disk_file_exists(delegate: ExposureDelegate, mocker):
+    mocker.patch("os.path.exists", return_value=True)
+
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=True,
+    )
+
+    assert result is False
