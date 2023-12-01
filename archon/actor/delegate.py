@@ -389,7 +389,7 @@ class ExposureDelegate(Generic[Actor_co]):
         await self._generate_checksum(filenames)
 
         self.reset()
-        print(failed_to_write)
+
         return not failed_to_write
 
     async def expose_cotasks(self):
