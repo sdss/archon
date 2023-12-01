@@ -56,7 +56,7 @@ async def test_expose_start_bad_controller(delegate, actor: ArchonActor):
 
 
 async def test_expose_start_no_delegate(delegate, actor: ArchonActor):
-    actor.expose_delegate = None  # type: ignore
+    actor.exposure_delegate = None  # type: ignore
 
     command = await actor.invoke_mock_command(
         "expose --no-readout --controller sp1 0.01"
@@ -71,7 +71,7 @@ async def test_expose_start_expose_fails(delegate, actor: ArchonActor, mocker):
         command.fail()
         return False
 
-    mocker.patch.object(actor.expose_delegate, "expose", side_effect=fail)
+    mocker.patch.object(actor.exposure_delegate, "expose", side_effect=fail)
 
     command = await actor.invoke_mock_command("expose --no-readout sp1 0.01")
     await command
@@ -112,7 +112,7 @@ async def test_expose_read_no_delegate(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
-    actor.expose_delegate = None  # type: ignore
+    actor.exposure_delegate = None  # type: ignore
 
     command = await actor.invoke_mock_command("read")
     await command
@@ -125,7 +125,7 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
         command.fail()
         return False
 
-    mocker.patch.object(actor.expose_delegate, "readout", side_effect=fail)
+    mocker.patch.object(actor.exposure_delegate, "readout", side_effect=fail)
 
     command = await actor.invoke_mock_command("read")
     await command
@@ -147,7 +147,7 @@ async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
-    actor.expose_delegate.expose_data = None
+    actor.exposure_delegate.expose_data = None
 
     abort = await actor.invoke_mock_command("abort")
     await abort
@@ -159,7 +159,7 @@ async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.05)
 
-    actor.expose_delegate.expose_data = None
+    actor.exposure_delegate.expose_data = None
 
     abort = await actor.invoke_mock_command("abort --force")
     await abort
@@ -171,7 +171,7 @@ async def test_expose_abort_no_expose_data_all(delegate, actor: ArchonActor):
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.5)
 
-    actor.expose_delegate.expose_data = None
+    actor.exposure_delegate.expose_data = None
 
     abort = await actor.invoke_mock_command("abort --all")
     await abort

@@ -170,7 +170,7 @@ async def expose(
     if not all([check_controller(command, c) for c in selected_controllers]):
         return command.fail()
 
-    delegate = command.actor.expose_delegate
+    delegate = command.actor.exposure_delegate
     if delegate is None:
         return command.fail(error="Cannot find expose delegate.")
 
@@ -251,7 +251,7 @@ async def read(
 
     assert command.actor
 
-    delegate = command.actor.expose_delegate
+    delegate = command.actor.exposure_delegate
     if delegate is None:
         return command.fail(error="Cannot find expose delegate.")
 
@@ -287,13 +287,13 @@ async def abort(
     if all_:
         force = True
 
-    expose_data = command.actor.expose_delegate.expose_data
+    expose_data = command.actor.exposure_delegate.expose_data
 
     if expose_data is None:
         if force:
             command.warning(error="No exposure found.")
         else:
-            command.actor.expose_delegate.reset()
+            command.actor.exposure_delegate.reset()
             return command.fail(error="No exposure found.")
 
     scontr: list[ArchonController]
@@ -308,7 +308,7 @@ async def abort(
     except ArchonError as err:
         return command.fail(error=f"Failed aborting exposures: {err}")
     finally:
-        command.actor.expose_delegate.reset()
+        command.actor.exposure_delegate.reset()
 
     if flush:
         command.debug(text="Flushing devices")
@@ -345,7 +345,7 @@ async def wait_until_idle(
         if not all(is_idle):
             continue
 
-        if command.actor.expose_delegate.is_writing:
+        if command.actor.exposure_delegate.is_writing:
             continue
 
         if allow_errored:

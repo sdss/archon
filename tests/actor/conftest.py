@@ -96,4 +96,4 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
 
     monkeypatch.setitem(actor.config["files"], "data_dir", str(files_data_dir))
 
-    yield actor.expose_delegate
+    yield actor.exposure_delegate

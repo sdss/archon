@@ -79,7 +79,7 @@ class ArchonBaseActor(BaseActor):
         # self.timed_commands.add_command("status", delay=60)  # type: ignore
         # self.timed_commands.add_command("system", delay=60)  # type: ignore
 
-        self.expose_delegate = self.DELEGATE_CLASS(self)
+        self.exposure_delegate = self.DELEGATE_CLASS(self)
 
         self._fetch_log_jobs = []
         self._status_jobs = []
