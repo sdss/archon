@@ -26,6 +26,7 @@ files:
   data_dir: '/var/tmp'
   split: true
   template: 'sdR-{ccd}-{exposure_no:08d}.fits.gz'
+  use_sjd: true
 
 checksum:
   write: true
