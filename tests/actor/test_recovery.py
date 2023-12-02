@@ -48,26 +48,25 @@ def test_recovery_update_unlink(
 def test_recovery_update_unlink_filename(
     exposure_recovery: ExposureRecovery,
     fetch_data: FetchDataDict,
+    recovery_lockfile: pathlib.Path,
 ):
-    exposure_recovery.update(fetch_data)
-    assert os.path.exists(fetch_data["filename"] + ".lock")
+    assert recovery_lockfile.exists()
 
     exposure_recovery.unlink(fetch_data["filename"])
-    assert not os.path.exists(fetch_data["filename"] + ".lock")
+    assert not recovery_lockfile.exists()
 
 
 async def test_recovery_update_recover(
     exposure_recovery: ExposureRecovery,
     fetch_data: FetchDataDict,
     controller_info: dict,
+    recovery_lockfile: pathlib.Path,
 ):
-    exposure_recovery.update(fetch_data)
-    lock_path = fetch_data["filename"] + ".lock"
-    assert os.path.exists(lock_path)
+    assert os.path.exists(recovery_lockfile)
 
     recovered = await exposure_recovery.recover(
         controller_info,
-        files=[lock_path],
+        files=[recovery_lockfile],
         write_checksum=True,
     )
     assert len(recovered) == 1
@@ -166,15 +165,13 @@ async def test_recovery_excluded_cameras(
     exposure_recovery: ExposureRecovery,
     controller_info: dict,
     actor: ArchonActor,
-    fetch_data: FetchDataDict,
+    recovery_lockfile: pathlib.Path,
 ):
-    exposure_recovery.update(fetch_data)
-
     command = Command("", actor=actor)
     with exposure_recovery.set_command(command):
         results = await exposure_recovery.recover(
             controller_info,
-            path=fetch_data["filename"] + ".lock",
+            path=recovery_lockfile,
             excluded_cameras=["r1"],
         )
 
@@ -186,7 +183,7 @@ async def test_recovery_failed_to_write(
     exposure_recovery: ExposureRecovery,
     controller_info: dict,
     actor: ArchonActor,
-    fetch_data: FetchDataDict,
+    recovery_lockfile: pathlib.Path,
     mocker: MockerFixture,
 ):
     mocker.patch.object(
@@ -195,13 +192,11 @@ async def test_recovery_failed_to_write(
         side_effect=ArchonError,
     )
 
-    exposure_recovery.update(fetch_data)
-
     command = Command("", actor=actor)
     with exposure_recovery.set_command(command):
         results = await exposure_recovery.recover(
             controller_info,
-            path=fetch_data["filename"] + ".lock",
+            path=recovery_lockfile,
         )
 
     assert results == []

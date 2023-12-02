@@ -140,7 +140,7 @@ class ExposureRecovery:
         controller_info: dict,
         path: str | PathLike | None = None,
         files: list[str | PathLike] | None = None,
-        delete_json: bool = True,
+        delete_lock: bool = True,
         write_async: bool = True,
         write_engine: str = "astropy",
         write_checksum: bool = False,
@@ -158,7 +158,7 @@ class ExposureRecovery:
             A directory containing lock files. All lock files found will be recovered.
         files
             A list of lock files to recover.
-        delete_json
+        delete_lock
             If ``True``, the JSON file will be removed after a successful recovery.
         write_async
             Whether to write the FITS file asynchronously.
@@ -263,7 +263,7 @@ class ExposureRecovery:
             self.emit(f"Exposure {filename!r} has been recovered and saved.")
             recovered.append(pathlib.Path(filename))
 
-            if delete_json:
+            if delete_lock:
                 self.unlink(fdata)
 
         self.locker.set()

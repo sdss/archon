@@ -146,3 +146,13 @@ def fetch_data(tmp_path: pathlib.Path):
     }
 
     yield _fetch_data
+
+
+@pytest.fixture()
+def recovery_lockfile(fetch_data: FetchDataDict, exposure_recovery: ExposureRecovery):
+    exposure_recovery.update(fetch_data)
+    lockfile = pathlib.Path(fetch_data["filename"] + ".lock")
+
+    yield lockfile
+
+    lockfile.unlink(missing_ok=True)
