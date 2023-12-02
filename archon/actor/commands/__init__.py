@@ -6,49 +6,21 @@
 # @Filename: __init__.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
-import glob
-import importlib
-import os
+from __future__ import annotations
 
-import click
+from clu.parsers.click import command_parser as parser
 
-from clu.parsers.click import (
-    CluGroup,
-    get_command_model,
-    get_schema,
-    help_,
-    keyword,
-    ping,
-    version,
-)
-
-
-@click.group(cls=CluGroup)
-def parser(*args):
-    pass
-
-
-parser.add_command(ping)
-parser.add_command(version)
-parser.add_command(help_)
-parser.add_command(get_schema)
-parser.add_command(keyword)
-parser.add_command(get_command_model)
-
-
-# Autoimport all modules in this directory so that they are added to the parser.
-
-exclusions = ["__init__.py"]
-
-cwd = os.getcwd()
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
-
-files = [
-    file_ for file_ in glob.glob("**/*.py", recursive=True) if file_ not in exclusions
-]
-
-for file_ in files:
-    modname = file_[0:-3].replace("/", ".")
-    mod = importlib.import_module("archon.actor.commands." + modname)
-
-os.chdir(cwd)
+from .config import config
+from .disconnect import disconnect
+from .expose import abort, expose, read, wait_until_idle
+from .flush import flush
+from .frame import frame
+from .init import init
+from .power import power
+from .reconnect import reconnect
+from .recover import recover
+from .reset import reset
+from .status import status
+from .system import system
+from .talk import talk
+from .window import get_window, set_window

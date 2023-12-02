@@ -16,13 +16,16 @@ from contextlib import suppress
 
 from typing import ClassVar, Dict, Type
 
+import astropy.time
 import click
 
 from clu import Command
 from clu.actor import AMQPActor, BaseActor
+from sdsstools import get_sjd
 from sdsstools.configuration import Configuration
 
 from archon import __version__
+from archon.actor.recovery import ExposureRecovery
 from archon.controller.command import ArchonCommand
 from archon.controller.controller import ArchonController
 from archon.exceptions import ArchonUserWarning
@@ -57,6 +60,7 @@ class ArchonBaseActor(BaseActor):
         self,
         *args,
         controllers: tuple[ArchonController, ...] = (),
+        run_recovery_on_start: bool = True,
         **kwargs,
     ):
         #: dict[str, ArchonController]: A mapping of controller name to controller.
@@ -80,6 +84,9 @@ class ArchonBaseActor(BaseActor):
         # self.timed_commands.add_command("system", delay=60)  # type: ignore
 
         self.exposure_delegate = self.DELEGATE_CLASS(self)
+
+        self.run_recovery_on_start = run_recovery_on_start
+        self.exposure_recovery = ExposureRecovery(self.controllers)
 
         self._fetch_log_jobs = []
         self._status_jobs = []
@@ -118,6 +125,12 @@ class ArchonBaseActor(BaseActor):
             asyncio.create_task(self._report_status(controller))
             for controller in self.controllers.values()
         ]
+
+        # Depending on how the actor is initialised exposure_recovery may not have
+        # been set with the actual controllers.
+        self.exposure_recovery.controllers = self.controllers
+        if self.run_recovery_on_start:
+            await self._recover_exposures()
 
     async def stop(self):
         with suppress(asyncio.CancelledError):
@@ -207,6 +220,29 @@ class ArchonBaseActor(BaseActor):
                     status_names=[flag.name for flag in status.get_flags()],
                 ),
             )
+
+    async def _recover_exposures(self):
+        """Recovers any failed exposures for the current MJD."""
+
+        now = astropy.time.Time.now()
+        mjd = get_sjd() if self.config.get("files.use_sjd", False) else int(now.mjd)
+        data_dir = pathlib.Path(self.config.get("files.data_dir", "/data"))
+
+        mjd_dir = data_dir / str(mjd)
+        if not mjd_dir.exists():
+            self.write("w", f"Cannot find directory for MJD {mjd}. Skipping recovery.")
+            return
+
+        with self.exposure_recovery.set_command(self):
+            recovered = await self.exposure_recovery.recover(
+                self.config["controllers"],
+                path=mjd_dir,
+                write_checksum=self.config["checksum.write"],
+                checksum_mode=self.config["checksum.mode"],
+                checksum_file=self.config["checksum.file"],
+            )
+
+        return recovered
 
 
 class ArchonActor(ArchonBaseActor, AMQPActor):

@@ -59,3 +59,4 @@ actor:
   name: archon
   host: localhost
   port: 5672
+  run_recovery_on_start: false

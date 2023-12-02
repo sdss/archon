@@ -6,21 +6,31 @@
 # @Filename: conftest.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+from __future__ import annotations
+
 import os
 import pathlib
+
+from typing import TYPE_CHECKING, Generator
 
 import numpy
 import pytest
 import pytest_asyncio
+from pytest_mock import MockFixture
 
 import clu.testing
 from clu.actor import AMQPBaseActor
-from sdsstools import merge_config, read_yaml_file
+from sdsstools import get_sjd, merge_config, read_yaml_file
 
 from archon import config
 from archon.actor import ArchonActor
+from archon.actor.recovery import ExposureRecovery
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
+
+
+if TYPE_CHECKING:
+    from archon.actor.delegate import FetchDataDict
 
 
 @pytest.fixture()
@@ -97,3 +107,52 @@ def delegate(actor: ArchonActor, monkeypatch, tmp_path: pathlib.Path, mocker):
     monkeypatch.setitem(actor.config["files"], "data_dir", str(files_data_dir))
 
     yield actor.exposure_delegate
+
+
+@pytest.fixture()
+def exposure_recovery(controller: ArchonController, mocker: MockFixture):
+    mocker.patch.object(
+        controller,
+        "fetch",
+        return_value=numpy.ones((1000, 3000)),
+    )
+
+    _exposure_recovery = ExposureRecovery({"sp1": controller})
+
+    yield _exposure_recovery
+
+
+@pytest.fixture()
+def controller_info(test_config: dict) -> Generator[dict, None, None]:
+    yield test_config["controllers"]
+
+
+@pytest.fixture()
+def fetch_data(tmp_path: pathlib.Path):
+    sjd = get_sjd()
+
+    _fetch_data: FetchDataDict = {
+        "buffer": 1,
+        "ccd": "r1",
+        "controller": "sp1",
+        "exposure_no": 1,
+        "filename": str(tmp_path / str(sjd) / "test.fits"),
+        "data": numpy.array([]),
+        "header": {
+            "KEY1": ["value", "A comment"],
+            "FILENAME": ["", ""],
+            "EXPOSURE": ["", ""],
+        },
+    }
+
+    yield _fetch_data
+
+
+@pytest.fixture()
+def recovery_lockfile(fetch_data: FetchDataDict, exposure_recovery: ExposureRecovery):
+    exposure_recovery.update(fetch_data)
+    lockfile = pathlib.Path(fetch_data["filename"] + ".lock")
+
+    yield lockfile
+
+    lockfile.unlink(missing_ok=True)

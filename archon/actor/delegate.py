@@ -41,6 +41,7 @@ from sdsstools.time import get_sjd
 from archon import __version__
 from archon.controller.controller import ArchonController
 from archon.controller.maskbits import ControllerStatus
+from archon.exceptions import ArchonError
 from archon.tools import gzip_async, subprocess_run_async
 
 
@@ -61,6 +62,7 @@ class FetchDataDict(TypedDict):
     """Dictionary of fetched data."""
 
     controller: str
+    buffer: int
     ccd: str
     data: DataArray
     header: dict[str, list]
@@ -162,7 +164,7 @@ class ExposureDelegate(Generic[Actor_co]):
         window_params: dict = {},
         seqno: int | None = None,
         **readout_params,
-    ):
+    ) -> bool:
         self.command = command
 
         if self.lock.locked():
@@ -348,45 +350,85 @@ class ExposureDelegate(Generic[Actor_co]):
         for cf in c_fdata:
             fdata += cf
 
-        self.command.debug(text="Running post-processing.")
+        self.command.debug(text="Calling post-process routine.")
         post_process_jobs = []
         for fdata_ccd in fdata:
             post_process_jobs.append(self.post_process(fdata_ccd))
         await asyncio.gather(*post_process_jobs)
 
+        # Update save-point file after post-processing.
+        self.actor.exposure_recovery.update(fdata)
+
+        excluded_cameras: list[str] = self.config.get("excluded_cameras", [])
+        write_engine: str = self.config.get("files.write_engine", "astropy")
+        write_async: bool = self.config.get("files.write_async", True)
+
         self.command.debug(text="Writing data to file.")
         write_results: list = []
+        write_coros = [
+            self.write_to_disk(
+                fd,
+                excluded_cameras=excluded_cameras,
+                write_async=write_async,
+                write_engine=write_engine,
+            )
+            for fd in fdata
+        ]
+
+        # Prepare checksum information.
+        write_checksum: bool = self.config["checksum.write"]
+        checksum_mode: str = self.config.get("checksum.mode", "md5")
+        checksum_file = self.config.get("checksum.file", f"{{SJD}}.{checksum_mode}sum")
+        checksum_file: str = checksum_file.format(SJD=get_sjd())
 
         if self.config.get("files.write_async", True):
-            write_results = await asyncio.gather(
-                *map(self.write_to_disk, fdata),
-                return_exceptions=True,
-            )
+            coro_iter = asyncio.as_completed(write_coros)
         else:
-            for fd in fdata:
-                try:
-                    write_results.append(await self.write_to_disk(fd))
-                except Exception as err:
-                    write_results.append(err)
+            coro_iter = write_coros
+
+        for coro in coro_iter:
+            try:
+                result = await coro
+                write_results.append(result)
+
+                # Delete save-point. We do it here because in case one of the
+                # write coroutines crashes the actor.
+                if isinstance(result, str):
+                    fn = result
+                    self.actor.exposure_recovery.unlink(fn)
+
+                    # Update checksum file.
+                    if write_checksum:
+                        try:
+                            await self._generate_checksum(
+                                checksum_file,
+                                [fn],
+                                mode=checksum_mode,
+                            )
+                        except Exception as err:
+                            self.command.warning(str(err))
+                            continue
+
+            except Exception as err:
+                write_results.append(err)
 
         filenames: list[str] = []
         failed_to_write: bool = False
         for ii, result in enumerate(write_results):
             fn = fdata[ii]["filename"]
+            ccd = fdata[ii]["ccd"]
+
             if isinstance(result, str):
                 filenames.append(result)
-            elif result is False:
-                self.command.error(f"Failed writting {fn!s} to disk.")
-                failed_to_write = True
+
             elif isinstance(result, Exception):
                 self.command.error(f"Failed to writting {fn!s} to disk: {result!s}")
                 failed_to_write = True
-            else:
-                # This should mean the CCD was in excluded_cameras.
-                continue
+
+            elif result is None:
+                self.command.warning(f"Not saving image for camera {ccd!r}.")
 
         self.command.info(filenames=filenames)
-        await self._generate_checksum(filenames)
 
         self.reset()
 
@@ -438,6 +480,7 @@ class ExposureDelegate(Generic[Actor_co]):
             ccd_dict.append(
                 {
                     "controller": controller.name,
+                    "buffer": buffer_no,
                     "ccd": ccd_name,
                     "data": ccd_data,
                     "header": ccd_header,
@@ -446,45 +489,42 @@ class ExposureDelegate(Generic[Actor_co]):
                 }
             )
 
+        # Create a save-point file.
+        self.actor.exposure_recovery.update(ccd_dict)
+
         return ccd_dict
 
-    async def write_to_disk(self, ccd_data: FetchDataDict) -> bool | str | None:
+    @staticmethod
+    async def write_to_disk(
+        ccd_data: FetchDataDict,
+        excluded_cameras: list[str] = [],
+        write_async: bool = True,
+        write_engine: str = "astropy",
+    ) -> str | None:
         """Writes ccd data to disk."""
 
-        assert self.expose_data
-        expose_data = self.expose_data
-
-        # Check if the CCD is in the list of excluded cameras. If so, return.
-        excluded_cameras = self.config.get("excluded_cameras", [])
-
+        # Check if the CCD is in the list of excluded cameras. If so, raise.
         ccd = ccd_data["ccd"]
         if ccd in excluded_cameras:
-            self.command.warning(f"Not saving image for camera {ccd}.")
             return None
 
         # Check file path and update header with exposure number and file name.
         file_path = ccd_data["filename"]
 
         if os.path.exists(file_path):
-            self.command.error(f"Cannot overwrite file {file_path}.")
-            return False
+            raise ArchonError(f"Cannot overwrite file {file_path}.")
 
         header = ccd_data["header"]
         header["FILENAME"][0] = os.path.basename(file_path)
-        header["EXPOSURE"][0] = expose_data.exposure_no
+        header["EXPOSURE"][0] = ccd_data["exposure_no"]
 
         # Determine which engine to use to save the data.
-        write_engine: str = self.config.get("files.write_engine", "astropy")
         if write_engine == "astropy":
-            writeto = partial(self._write_file_astropy, ccd_data)
+            writeto = partial(ExposureDelegate._write_file_astropy, ccd_data)
         elif write_engine == "fitsio":
-            writeto = partial(self._write_file_fitsio, ccd_data)
+            writeto = partial(ExposureDelegate._write_file_fitsio, ccd_data)
         else:
-            self.command.error(f"Invalid write engine {write_engine!r}.")
-            return False
-
-        # Determine whether to write the file using an asynchronous executor.
-        write_async = self.config.get("files.write_async", True)
+            raise ArchonError(f"Invalid write engine {write_engine!r}.")
 
         # Name of the temporary file where the data will be written to first.
         temp_file = NamedTemporaryFile(suffix=".fits", delete=True).name
@@ -506,24 +546,23 @@ class ExposureDelegate(Generic[Actor_co]):
                 temp_file = temp_file + ".gz"
 
         if not os.path.exists(temp_file):
-            self.command.error(f"Failed writing image {file_path!s} to disk.")
-            return False
+            raise ArchonError(f"Failed writing image {file_path!s} to disk.")
 
         # Rename to final file.
         try:
             shutil.copyfile(temp_file, file_path)
         except Exception:
-            self.command.error(
+            raise ArchonError(
                 f"Failed renaming temporary file {temp_file}. "
                 "The original file is still available."
             )
-            return False
         else:
             os.unlink(temp_file)
 
         return file_path
 
-    def _write_file_astropy(self, data: FetchDataDict, file_path: str):
+    @staticmethod
+    def _write_file_astropy(data: FetchDataDict, file_path: str):
         """Writes the HDU to file using astropy."""
 
         header = fits.Header()
@@ -535,7 +574,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return
 
-    def _write_file_fitsio(self, data: FetchDataDict, file_path: str):
+    @staticmethod
+    def _write_file_fitsio(data: FetchDataDict, file_path: str):
         """Writes the HDU to file using astropy."""
 
         import fitsio
@@ -553,25 +593,18 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return
 
-    async def _generate_checksum(self, filenames: list[str]):
+    @staticmethod
+    async def _generate_checksum(
+        checksum_file: str, filenames: list[str], mode: str = "md5"
+    ):
         """Generates a checksum file for the images written to disk."""
 
-        if self.config["checksum.write"]:
-            checksum_config = self.config["checksum"]
-        else:
-            return
-
-        checksum_mode = checksum_config.get("mode", "md5")
-        if checksum_mode.startswith("sha1"):
+        if mode.startswith("sha1"):
             sum_command = "sha1sum"
-        elif checksum_mode.startswith("md5"):
+        elif mode.startswith("md5"):
             sum_command = "md5sum"
         else:
-            self.command.warning(f"Invalid checksum mode {checksum_mode!r}.")
-            return
-
-        checksum_basefile = checksum_config.get("file", f"{{SJD}}.{checksum_mode}sum")
-        checksum_basefile = checksum_basefile.format(SJD=get_sjd())
+            raise ArchonError(f"Invalid checksum mode {mode!r}.")
 
         for filename in filenames:
             filename = str(filename)
@@ -580,12 +613,12 @@ class ExposureDelegate(Generic[Actor_co]):
 
             try:
                 await subprocess_run_async(
-                    f"{sum_command} {basename} >> {checksum_basefile}",
+                    f"{sum_command} {basename} >> {checksum_file}",
                     shell=True,
                     cwd=dirname,
                 )
             except Exception as err:
-                self.command.warning(f"Failed to generate checksum: {err}")
+                raise ArchonError(f"Failed to generate checksum: {err}")
 
     async def post_process(self, fdata: FetchDataDict):
         """Custom post-processing.
@@ -749,7 +782,7 @@ class ExposureDelegate(Generic[Actor_co]):
                             if len(params) > 1:
                                 comment = params[1]
                             if len(params) > 2:
-                                value = numpy.round(value, params[2])
+                                value = float(numpy.round(value, params[2]))
                         header[kname] = [value, comment]
 
         # Convert JSON lists to tuples or astropy fails.
@@ -862,16 +895,14 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return file_path
 
+    @staticmethod
     def _get_ccd_data(
-        self,
         data: numpy.ndarray,
         controller: ArchonController,
         ccd_name: str,
         controller_info: Dict[str, Any],
     ) -> numpy.ndarray:
         """Retrieves the CCD data from the buffer frame."""
-
-        assert self.expose_data
 
         assert controller.acf_config
 

@@ -182,6 +182,11 @@ async def expose(
     if count > 1 and readout is False:
         return command.fail(error="--count > 1 requires readout.")
 
+    # Wait for any ongoing recovery to finish.
+    if not command.actor.exposure_recovery.locker.is_set():
+        command.warning("Waiting for image recovery to finish.")
+        await command.actor.exposure_recovery.locker.wait()
+
     for nexp in range(1, count + 1):
         flavours = [flavour, "dark"] if with_dark else [flavour]
         for nf, this_flavour in enumerate(flavours):
@@ -256,6 +261,11 @@ async def read(
         return command.fail(error="Cannot find expose delegate.")
 
     extra_header = json.loads(header)
+
+    # Wait for any ongoing recovery to finish.
+    if not command.actor.exposure_recovery.locker.is_set():
+        command.warning("Waiting for image recovery to finish.")
+        await command.actor.exposure_recovery.locker.wait()
 
     result = await delegate.readout(
         command,
