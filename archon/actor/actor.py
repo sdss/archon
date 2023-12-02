@@ -60,6 +60,7 @@ class ArchonBaseActor(BaseActor):
         self,
         *args,
         controllers: tuple[ArchonController, ...] = (),
+        run_recovery_on_start: bool = True,
         **kwargs,
     ):
         #: dict[str, ArchonController]: A mapping of controller name to controller.
@@ -83,6 +84,8 @@ class ArchonBaseActor(BaseActor):
         # self.timed_commands.add_command("system", delay=60)  # type: ignore
 
         self.exposure_delegate = self.DELEGATE_CLASS(self)
+
+        self.run_recovery_on_start = run_recovery_on_start
         self.exposure_recovery = ExposureRecovery(self.controllers)
 
         self._fetch_log_jobs = []
@@ -126,7 +129,7 @@ class ArchonBaseActor(BaseActor):
         # Depending on how the actor is initialised exposure_recovery may not have
         # been set with the actual controllers.
         self.exposure_recovery.controllers = self.controllers
-        if self.config.get("actor.run_recovery_on_start", True):
+        if self.run_recovery_on_start:
             await self._recover_exposures()
 
     async def stop(self):
