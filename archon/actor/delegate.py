@@ -783,7 +783,7 @@ class ExposureDelegate(Generic[Actor_co]):
                             if len(params) > 1:
                                 comment = params[1]
                             if len(params) > 2:
-                                value = numpy.round(value, params[2])
+                                value = float(numpy.round(value, params[2]))
                         header[kname] = [value, comment]
 
         # Convert JSON lists to tuples or astropy fails.
