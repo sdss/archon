@@ -85,7 +85,7 @@ async def test_delegate_expose_invalid_checksum(delegate: ExposureDelegate):
     )
 
     assert result is True
-    assert command.replies[-1].message["text"].startswith("Invalid checksum")
+    assert command.replies[-2].message["text"].startswith("Invalid checksum")
 
 
 async def test_delegate_expose_top_mode(delegate: ExposureDelegate, mocker):
