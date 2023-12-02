@@ -59,9 +59,7 @@ class ExposureRecovery:
         """Sets the command or actor to use to output messages."""
 
         self._command = command
-
         yield
-
         self._command = None
 
     def emit(self, message_string: str, level: str = "d"):
@@ -246,30 +244,27 @@ class ExposureRecovery:
                 )
             except Exception as err:
                 self.emit(f"Failed to write recovered exposure: {err!r}", "w")
-            else:
-                if result is None:
-                    self.emit(
-                        f"Skipping exposure {filename!r} which is "
-                        "in excluded_cameras.",
-                        "w",
-                    )
-                    continue
+                continue
 
-                # Update checksum file.
-                if write_checksum:
-                    checksum_file = checksum_file or f"{{SJD}}.{checksum_mode}sum"
-                    checksum_file = checksum_file.format(SJD=get_sjd())
-                    await ExposureDelegate._generate_checksum(
-                        checksum_file,
-                        [filename],
-                        mode=checksum_mode,
-                    )
+            if result is None:
+                self.emit(f"Skipping exposure {filename!r} (excluded_cameras).", "w")
+                continue
 
-                self.emit(f"Exposure {filename!r} has been recovered and saved.")
-                recovered.append(pathlib.Path(filename))
+            # Update checksum file.
+            if write_checksum:
+                checksum_file = checksum_file or f"{{SJD}}.{checksum_mode}sum"
+                checksum_file = checksum_file.format(SJD=get_sjd())
+                await ExposureDelegate._generate_checksum(
+                    checksum_file,
+                    [filename],
+                    mode=checksum_mode,
+                )
 
-                if delete_json:
-                    self.unlink(fdata)
+            self.emit(f"Exposure {filename!r} has been recovered and saved.")
+            recovered.append(pathlib.Path(filename))
+
+            if delete_json:
+                self.unlink(fdata)
 
         self.locker.set()
 
