@@ -136,7 +136,7 @@ def fetch_data(tmp_path: pathlib.Path):
         "ccd": "r1",
         "controller": "sp1",
         "exposure_no": 1,
-        "filename": str(tmp_path / str(get_sjd()) / "test.fits"),
+        "filename": str(tmp_path / str(sjd) / "test.fits"),
         "data": numpy.array([]),
         "header": {
             "KEY1": ["value", "A comment"],
