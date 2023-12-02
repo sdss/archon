@@ -11,9 +11,8 @@ from __future__ import annotations
 import os.path
 import pathlib
 
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
-import numpy
 import pytest
 from pytest_mock import MockerFixture
 
@@ -28,44 +27,6 @@ from archon.exceptions import ArchonError
 
 if TYPE_CHECKING:
     from archon.actor.delegate import FetchDataDict
-    from archon.controller.controller import ArchonController
-
-
-@pytest.fixture()
-def exposure_recovery(controller: ArchonController, mocker: MockerFixture):
-    mocker.patch.object(
-        controller,
-        "fetch",
-        return_value=numpy.ones((1000, 3000)),
-    )
-
-    _exposure_recovery = ExposureRecovery({"sp1": controller})
-
-    yield _exposure_recovery
-
-
-@pytest.fixture()
-def controller_info(test_config: dict) -> Generator[dict, None, None]:
-    yield test_config["controllers"]
-
-
-@pytest.fixture()
-def fetch_data(tmp_path: pathlib.Path):
-    _fetch_data: FetchDataDict = {
-        "buffer": 1,
-        "ccd": "r1",
-        "controller": "sp1",
-        "exposure_no": 1,
-        "filename": str(tmp_path / "test.fits"),
-        "data": numpy.array([]),
-        "header": {
-            "KEY1": ["value", "A comment"],
-            "FILENAME": ["", ""],
-            "EXPOSURE": ["", ""],
-        },
-    }
-
-    yield _fetch_data
 
 
 def test_recovery_update_unlink(

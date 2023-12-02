@@ -234,13 +234,15 @@ class ArchonBaseActor(BaseActor):
             return
 
         with self.exposure_recovery.set_command(self):
-            await self.exposure_recovery.recover(
+            recovered = await self.exposure_recovery.recover(
                 self.config["controllers"],
                 path=mjd_dir,
                 write_checksum=self.config["checksum.write"],
                 checksum_mode=self.config["checksum.mode"],
                 checksum_file=self.config["checksum.file"],
             )
+
+        return recovered
 
 
 class ArchonActor(ArchonBaseActor, AMQPActor):
