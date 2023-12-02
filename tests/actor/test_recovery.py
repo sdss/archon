@@ -114,7 +114,7 @@ async def test_recovery_invalid_controller(
         )
 
     assert results == []
-    assert "Cannot find controller" in command.replies[-1].message["text"]
+    assert "Controller 'sp2' not found." in command.replies[-1].message["text"]
 
 
 async def test_recovery_two_files(

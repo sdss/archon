@@ -212,7 +212,11 @@ class ExposureRecovery:
 
             controller_name = fdata["controller"]
             if controller_name not in self.controllers:
-                self.emit(f"Cannot find controller {controller_name!r}.", "w")
+                self.emit(
+                    f"Cannot recover {lock_file!r}. "
+                    f"Controller {controller_name!r} not found.",
+                    "w",
+                )
                 continue
 
             controller = self.controllers[controller_name]
