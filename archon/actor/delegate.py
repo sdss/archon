@@ -357,7 +357,7 @@ class ExposureDelegate(Generic[Actor_co]):
         await asyncio.gather(*post_process_jobs)
 
         # Update save-point file after post-processing.
-        self._update_save_point(fdata)
+        self.actor.exposure_recovery.update(fdata)
 
         excluded_cameras: list[str] = self.config.get("excluded_cameras", [])
         write_engine: str = self.config.get("files.write_engine", "astropy")
@@ -395,8 +395,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 # write coroutines crashes the actor.
                 if isinstance(result, str):
                     fn = result
-                    with self.actor.exposure_recovery.set_command(self.command):
-                        self.actor.exposure_recovery.unlink(fn)
+                    self.actor.exposure_recovery.unlink(fn)
 
                     # Update checksum file.
                     if write_checksum:
@@ -491,7 +490,7 @@ class ExposureDelegate(Generic[Actor_co]):
             )
 
         # Create a save-point file.
-        self._update_save_point(ccd_dict)
+        self.actor.exposure_recovery.update(ccd_dict)
 
         return ccd_dict
 
@@ -966,9 +965,3 @@ class ExposureDelegate(Generic[Actor_co]):
                     "fitsio is required to use fitsio. You can install "
                     "it with 'pip install fitsio' or 'pip install sdss-archon[fitsio]'."
                 )
-
-    def _update_save_point(self, fdata: FetchDataDict | list[FetchDataDict]):
-        """Updates the save-point file for a set of cameras."""
-
-        with self.actor.exposure_recovery.set_command(self.command):
-            self.actor.exposure_recovery.update(fdata)
