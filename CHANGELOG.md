@@ -6,6 +6,10 @@
 
 * As part of [#46](https://github.com/sdss/archon/issues/46) `ExposureDelegate.post_process()` is now called once for each controller CCD with a `FetchDataDict` as the only argument. The function must modify the input dictionary in place and return `None`.
 
+### 🚀 New
+
+* [#47](https://github.com/sdss/archon/issues/47) Added a framework for recovering images when they fail to be written to disk. A lockfile is created when the buffer is read which can be used to recover the original image and header. Recovery happens automatically when the actor starts or via the `recover` command.
+
 ### ⚙️ Engineering
 
 * [#46](https://github.com/sdss/archon/issues/46) Significant clean-up of the `ExposureDelegate` code.
