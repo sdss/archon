@@ -400,11 +400,15 @@ class ExposureDelegate(Generic[Actor_co]):
 
                     # Update checksum file.
                     if write_checksum:
-                        await self._generate_checksum(
-                            checksum_file,
-                            [fn],
-                            mode=checksum_mode,
-                        )
+                        try:
+                            await self._generate_checksum(
+                                checksum_file,
+                                [fn],
+                                mode=checksum_mode,
+                            )
+                        except Exception as err:
+                            self.command.warning(str(err))
+                            continue
 
             except Exception as err:
                 write_results.append(err)
