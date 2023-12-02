@@ -1,6 +1,6 @@
 # archon
 
-![Versions](https://img.shields.io/badge/python->3.8-blue)
+![Versions](https://img.shields.io/badge/python->3.9-blue)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Documentation Status](https://readthedocs.org/projects/sdss-archon/badge/?version=latest)](https://sdss-archon.readthedocs.io/en/latest/?badge=latest)
 [![Test](https://github.com/sdss/archon/actions/workflows/test.yml/badge.svg)](https://github.com/sdss/archon/actions/workflows/test.yml)
@@ -50,45 +50,64 @@ This assumes that RabbitMQ is running on the default port in the host computer a
 poetry install
 ```
 
-Pip does not support editable installs with PEP-517 yet. That means that running `pip install -e .` will fail because `poetry` doesn't use a `setup.py` file. As a workaround, you can use the `create_setup.py` file to generate a temporary `setup.py` file. To install `archon` in editable mode without `poetry`, do
+Or in editable mode
 
 ```console
-pip install --pre poetry
-python create_setup.py
 pip install -e .
 ```
 
-Note that this will only install the production dependencies, not the development ones. You'll need to install those manually (see `pyproject.toml` `[tool.poetry.dev-dependencies]`). You will also need to return `create_setup.py` anytime the dependencies or metadata parameters in `pyproject.toml` change.
+Note that the latter will only install the production dependencies, not the development ones. You'll need to install those manually (see `pyproject.toml` `[tool.poetry.dev-dependencies]`).
 
 ### Style and type checking
 
 This project uses the [black](https://github.com/psf/black) code style with 88-character line lengths for code and docstrings. It is recommended that you run `black` on save. Imports must be sorted using [isort](https://pycqa.github.io/isort/). The GitHub test workflow checks all the Python file to make sure they comply with the black formatting.
 
-Configuration files for [flake8](https://flake8.pycqa.org/en/latest/), [isort](https://pycqa.github.io/isort/), and [black](https://github.com/psf/black) are provided and will be applied by most editors.
+Linting uses [flake8](https://flake8.pycqa.org/en/latest/) and [isort](https://pycqa.github.io/isort/) rules implemented using [ruff](https://github.com/astral-sh/ruff).
 
 For Visual Studio Code, the following project file is compatible with the project configuration:
 
 ```json
 {
-    "python.formatting.provider": "black",
-    "[python]" : {
-        "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-        },
-        "editor.formatOnSave": true
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports.ruff": "explicit"
     },
-    "[markdown]": {
-        "editor.wordWrapColumn": 88
+    "editor.wordWrap": "off",
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "[markdown]": {
+    "editor.wordWrapColumn": 88
+  },
+  "[restructuredtext]": {
+    "editor.wordWrapColumn": 88
+  },
+  "[json]": {
+    "editor.quickSuggestions": {
+      "strings": true
     },
-    "[restructuredtext]": {
-        "editor.wordWrapColumn": 88
-    },
-    "editor.rulers": [88],
-    "editor.wordWrapColumn": 88,
-    "python.analysis.typeCheckingMode": "basic"
+    "editor.suggest.insertMode": "replace",
+    "gitlens.codeLens.scopes": ["document"],
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "gitlens.codeLens.scopes": ["document"]
+  },
+  "prettier.tabWidth": 2,
+  "editor.rulers": [88],
+  "editor.wordWrapColumn": 88,
+  "python.analysis.typeCheckingMode": "basic"
 }
 ```
 
 This assumes that the [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) and [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) extensions are installed.
 
-This project uses [type hints](https://docs.python.org/3/library/typing.html). Typing is enforced by the test workflow using [pyright](https://github.com/microsoft/pyright) (in practice this means that if ``Pylance`` doesn't produce any errors in basic mode, ``pyright`` shouldn't).
+This project uses [type hints](https://docs.python.org/3/library/typing.html).
