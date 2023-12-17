@@ -26,3 +26,4 @@ checksum:
 
 archon:
   default_parameters: {}
+  int_param: IntCS

@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* The parameter used to set the exposure time can be defined using the configuration parameter `archon.int_param`. Valid values are `IntMS` (integration time must be set in milliseconds) and `IntCS` (centiseconds).
+
+
 ## 0.13.0 - December 2, 2023
 
 ### 💥 Breaking changes

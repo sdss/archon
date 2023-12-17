@@ -80,6 +80,7 @@ class ArchonController(Device):
         self.default_window: dict[str, int] = {}
 
         self.config = config or lib_config
+        print(type(self.config))
         self.acf_file: str | None = None
         self.acf_config: configparser.ConfigParser | None = None
 
@@ -997,8 +998,16 @@ class ArchonController(Device):
         else:
             await self.set_param("ReadOut", 1)
 
-        # Set integration time in centiseconds (yep, centiseconds).
-        await self.set_param("IntCS", int(exposure_time * 100))
+        # Determine exposure time in milliseconds or centiseconds.
+        int_param = self.config.get("archon.int_param", "IntCS")
+        if int_param == "IntCS":
+            int_factor = 100
+        elif int_param == "IntMS":
+            int_factor = 1000
+        else:
+            raise ArchonControllerError(f"Invalid archon.int_param {int_param!r}")
+
+        await self.set_param(int_param, int(exposure_time * int_factor))
         await self.set_param("Exposures", 1)
 
         await self.send_command("RELEASETIMING")
