@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import pathlib
+import re
 from contextlib import contextmanager
 from copy import deepcopy
 from os import PathLike
@@ -292,4 +293,7 @@ class ExposureRecovery:
         else:
             fn = fetch_data
 
-        return pathlib.Path(str(fn) + ".lock").absolute()
+        # Remove extension
+        recovery_path = re.sub(r"(.+)(\.fits?(\.gz)?)", r"\1", str(fn))
+
+        return pathlib.Path(str(recovery_path) + ".lock").absolute()

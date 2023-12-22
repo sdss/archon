@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🏷️ Changed
+
+* Remove original extension in recovery file.
+
+
 ## 0.13.1 - December 17, 2023
 
 ### ✨ Improved
