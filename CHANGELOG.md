@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.3 - January 12, 2024
+
+### 🔧 Fixed
+
+* Removed print statement that was left for debugging.
+
+
 ## 0.13.2 - December 22, 2023
 
 ### 🏷️ Changed
