@@ -80,7 +80,7 @@ class ArchonController(Device):
         self.default_window: dict[str, int] = {}
 
         self.config = config or lib_config
-        print(type(self.config))
+
         self.acf_file: str | None = None
         self.acf_config: configparser.ConfigParser | None = None
 
