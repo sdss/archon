@@ -25,8 +25,9 @@ async def test_recover(actor: ArchonActor, recovery_lockfile: pathlib.Path):
     command = await actor.invoke_mock_command(f"recover {recovery_lockfile!s}")
     await command
 
-    fits_file = recovery_lockfile.parent / recovery_lockfile.name.replace(".lock", "")
-    assert fits_file.exists()
+    fits_basename = recovery_lockfile.name.replace(".lock", ".fits")
+    fits_path = recovery_lockfile.parent / fits_basename
+    assert fits_path.exists()
 
     assert command.status.did_succeed
     assert len(command.replies[-1].message["filenames"]) == 1

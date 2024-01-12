@@ -36,13 +36,13 @@ def test_recovery_update_unlink(
     """Tests that the recovery is updated correctly."""
 
     exposure_recovery.update(fetch_data)
-    assert os.path.exists(fetch_data["filename"] + ".lock")
+    assert os.path.exists(fetch_data["filename"].replace(".fits", ".lock"))
 
     with pytest.raises(FileExistsError):
         exposure_recovery.unlink(fetch_data)
 
     exposure_recovery.unlink(fetch_data, force=True)
-    assert not os.path.exists(fetch_data["filename"] + ".lock")
+    assert not os.path.exists(fetch_data["filename"].replace(".fits", ".lock"))
 
 
 def test_recovery_update_unlink_filename(
@@ -110,7 +110,7 @@ async def test_recovery_invalid_controller(
     with exposure_recovery.set_command(command):
         results = await exposure_recovery.recover(
             controller_info,
-            files=[fetch_data["filename"] + ".lock"],
+            files=[fetch_data["filename"].replace(".fits", ".lock")],
         )
 
     assert results == []

@@ -151,7 +151,9 @@ def fetch_data(tmp_path: pathlib.Path):
 @pytest.fixture()
 def recovery_lockfile(fetch_data: FetchDataDict, exposure_recovery: ExposureRecovery):
     exposure_recovery.update(fetch_data)
-    lockfile = pathlib.Path(fetch_data["filename"] + ".lock")
+
+    stem = fetch_data["filename"].replace(".fits", "").replace(".gz", "")
+    lockfile = pathlib.Path(stem + ".lock")
 
     yield lockfile
 
