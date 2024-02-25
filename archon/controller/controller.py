@@ -1157,8 +1157,7 @@ class ArchonController(Device):
         notifier: Optional[Callable[[str], None]] = None,
         *,
         return_buffer: Literal[False],
-    ) -> numpy.ndarray:
-        ...
+    ) -> numpy.ndarray: ...
 
     @overload
     async def fetch(
@@ -1167,8 +1166,7 @@ class ArchonController(Device):
         notifier: Optional[Callable[[str], None]] = None,
         *,
         return_buffer: Literal[True],
-    ) -> tuple[numpy.ndarray, int]:
-        ...
+    ) -> tuple[numpy.ndarray, int]: ...
 
     @overload
     async def fetch(
@@ -1176,8 +1174,7 @@ class ArchonController(Device):
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
         return_buffer: bool = False,
-    ) -> numpy.ndarray:
-        ...
+    ) -> numpy.ndarray: ...
 
     async def fetch(
         self,
@@ -1267,6 +1264,26 @@ class ArchonController(Device):
         # Convert to uint16 array and reshape.
         dtype = f"<u{bytes_per_pixel}"  # Buffer is little-endian
         arr = numpy.frombuffer(frame, dtype=dtype)
+
+        # See yao issue #17. In some cases the buffer size is 2 pixels short. For
+        # now if the buffer size does not match what we expect, just pad with zeros.
+        expected_size = height * width
+        if expected_size != arr.size:
+            message = (
+                "Buffer data size does not match expected size. "
+                f"Buffer size is {arr.size}; expected size is {expected_size}. "
+                "Padding with zeros."
+            )
+            notifier(message)
+            warnings.warn(message, ArchonUserWarning)
+
+            arr0 = arr.copy()
+            arr = numpy.zeros(expected_size, dtype=arr.dtype)
+            arr[: arr0.size] = arr0
+
+        else:
+            notifier(f"Buffer size is {arr.size}; expected size is {expected_size}.")
+
         arr = arr.reshape(height, width)
 
         # Turn off FETCHING bit
