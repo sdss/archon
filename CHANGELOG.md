@@ -2,7 +2,7 @@
 
 ## Next version
 
-* [yao #17](sdss/yao#17): Deal with case when the returned buffer does not match the expected size.
+* [yao #17](https://github.com/sdss/yao/issues/17): Deal with case when the returned buffer does not match the expected size.
 
 
 ## 0.14.3 - January 12, 2024
