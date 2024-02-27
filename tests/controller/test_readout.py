@@ -56,7 +56,7 @@ async def test_readout_delay(controller: ArchonController, mocker):
 
     await controller.readout(delay=60, block=False)
 
-    set_param_mock.assert_any_call("WaitCount", 60)
+    set_param_mock.assert_any_call("WaitCount", 60, silent=True)
     assert controller.status == ControllerStatus.READING | ControllerStatus.POWERON
 
 
