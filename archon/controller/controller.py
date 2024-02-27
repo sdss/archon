@@ -1155,6 +1155,7 @@ class ArchonController(Device):
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
+        is_retry: bool = False,
         *,
         return_buffer: Literal[False],
     ) -> numpy.ndarray: ...
@@ -1164,6 +1165,7 @@ class ArchonController(Device):
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
+        is_retry: bool = False,
         *,
         return_buffer: Literal[True],
     ) -> tuple[numpy.ndarray, int]: ...
@@ -1173,6 +1175,7 @@ class ArchonController(Device):
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
+        is_retry: bool = False,
         return_buffer: bool = False,
     ) -> numpy.ndarray: ...
 
@@ -1180,6 +1183,7 @@ class ArchonController(Device):
         self,
         buffer_no: int = -1,
         notifier: Optional[Callable[[str], None]] = None,
+        is_retry: bool = False,
         return_buffer: bool = False,
     ):
         """Fetches a frame buffer and returns a Numpy array.
@@ -1194,6 +1198,11 @@ class ArchonController(Device):
             `.fetch` is called by the actor to report progress to the users.
         return_buffer
             If `True`, returns the buffer number returned.
+        is_retry
+            Internal keyword to handle retries. If the buffer fetch does not match
+            the expected size the code will automatically retry fetching the buffer
+            once. If that also fails it will pad the buffer with zeros to the expected
+            size.
 
         Returns
         -------
@@ -1269,6 +1278,15 @@ class ArchonController(Device):
         # now if the buffer size does not match what we expect, just pad with zeros.
         expected_size = height * width
         if expected_size != arr.size:
+            if is_retry is False:
+                notifier("Buffer data size does not match expected size. Retrying.")
+                return await self.fetch(
+                    buffer_no=buffer_no,
+                    notifier=notifier,
+                    return_buffer=return_buffer,
+                    is_retry=True,
+                )
+
             message = (
                 "Buffer data size does not match expected size. "
                 f"Buffer size is {arr.size}; expected size is {expected_size}. "
