@@ -1,6 +1,6 @@
 # Changelog
 
-## Next version
+## 0.13.4 - February 27, 2024
 
 ### ✨ Improved
 
@@ -11,7 +11,7 @@
 * [yao #17](https://github.com/sdss/yao/issues/17): Deal with case when the returned buffer does not match the expected size. The `ArchonController.fetch` method will retry fetching buffer once. If that fails again it pads the buffer with zeros to match the expected size.
 
 
-## 0.14.3 - January 12, 2024
+## 0.13.3 - January 12, 2024
 
 ### 🔧 Fixed
 
