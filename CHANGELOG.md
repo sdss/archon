@@ -2,6 +2,12 @@
 
 ## Next version
 
+### ✨ Improved
+
+* Do not raise warnings when trying to set some inexistent Archon parameters.
+
+### 🔧 Fixed
+
 * [yao #17](https://github.com/sdss/yao/issues/17): Deal with case when the returned buffer does not match the expected size. The `ArchonController.fetch` method will retry fetching buffer once. If that fails again it pads the buffer with zeros to match the expected size.
 
 

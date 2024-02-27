@@ -766,7 +766,7 @@ class ArchonController(Device):
         await self.set_param("ReadOut", 0)
         await self.set_param("AbortExposure", 0)
         await self.set_param("DoFlush", 0)
-        await self.set_param("WaitCount", 0)
+        await self.set_param("WaitCount", 0, silent=True)
 
         # Reset parameters to their default values.
         if "default_parameters" in self.config["archon"]:
@@ -840,10 +840,7 @@ class ArchonController(Device):
             await self.reset_window()
 
     async def set_param(
-        self,
-        param: str,
-        value: int,
-        force: bool = False,
+        self, param: str, value: int, force: bool = False, silent: bool = False
     ) -> ArchonCommand | None:
         """Sets the parameter ``param`` to value ``value`` calling ``FASTLOADPARAM``."""
 
@@ -854,10 +851,11 @@ class ArchonController(Device):
 
         param = param.upper()
         if param not in self.parameters and force is False:
-            warnings.warn(
-                f"Trying to set unknown parameter {param}.",
-                ArchonUserWarning,
-            )
+            if not silent:
+                warnings.warn(
+                    f"Trying to set unknown parameter {param}.",
+                    ArchonUserWarning,
+                )
             return
 
         cmd = await self.send_command(f"FASTLOADPARAM {param} {value}")
@@ -1112,7 +1110,7 @@ class ArchonController(Device):
         await self.send_command("RELEASETIMING")
 
         if delay > 0:
-            await self.set_param("WaitCount", delay)
+            await self.set_param("WaitCount", delay, silent=True)
 
         self.update_status(ControllerStatus.READING, notify=False)
         self.update_status(ControllerStatus.READOUT_PENDING, "off")
