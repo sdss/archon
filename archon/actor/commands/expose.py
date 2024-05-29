@@ -314,6 +314,9 @@ async def abort(
         scontr = expose_data.controllers
 
     command.debug(text="Aborting exposures")
+
+    await delegate.shutter(False)  # Close the shutter.
+
     try:
         await asyncio.gather(*[contr.abort(readout=False) for contr in scontr])
     except ArchonError as err:
@@ -321,8 +324,6 @@ async def abort(
     finally:
         # This will also cancel any ongoing exposure or readout.
         delegate.fail("Exposure was aborted")
-
-    await delegate.shutter(False)  # Close the shutter.
 
     if reset:
         command.debug(text="Resetting controllers")
