@@ -6,10 +6,12 @@
 # @Filename: test_command_expose.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
 
+from __future__ import annotations
+
 import asyncio
 import os
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from astropy.io import fits
 
@@ -17,6 +19,12 @@ from archon.actor.actor import ArchonActor
 from archon.actor.delegate import ExposureDelegate
 from archon.controller.maskbits import ControllerStatus
 from archon.exceptions import ArchonError
+
+
+if TYPE_CHECKING:
+    from pytest_mock import MockFixture
+
+    from archon.controller.controller import ArchonController
 
 
 async def test_expose_start(delegate, actor: ArchonActor):
@@ -133,12 +141,15 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
     assert command.status.did_fail
 
 
-async def test_expose_abort(delegate, actor: ArchonActor):
+async def test_expose_abort(
+    delegate, actor: ArchonActor, controller: ArchonController, mocker: MockFixture
+):
+    reset_mock = mocker.patch.object(controller, "reset", return_value=True)
 
     expose_command = await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.5)
 
-    abort = await actor.invoke_mock_command("abort")
+    abort = await actor.invoke_mock_command("abort --reset")
     await abort
 
     await asyncio.sleep(0.5)
@@ -147,6 +158,9 @@ async def test_expose_abort(delegate, actor: ArchonActor):
     assert expose_command.status.did_fail
 
     assert delegate._current_task is None
+
+    reset_mock.assert_called()
+    reset_mock.assert_called_with(reset_timing=True)
 
 
 async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):

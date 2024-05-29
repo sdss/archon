@@ -285,10 +285,17 @@ async def read(
 
 @parser.command()
 @click.option("--flush", is_flag=True, help="Flush the device after aborting.")
+@click.option(
+    "--reset",
+    is_flag=True,
+    help="Reset the controllers after aborting. This will discard any "
+    "ongoing exposures or pending readouts.",
+)
 async def abort(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
-    flush: bool,
+    flush: bool = False,
+    reset: bool = False,
 ):
     """Aborts the current exposure."""
 
@@ -314,6 +321,13 @@ async def abort(
     finally:
         # This will also cancel any ongoing exposure or readout.
         delegate.fail("Exposure was aborted")
+
+    if reset:
+        command.debug(text="Resetting controllers")
+        try:
+            await asyncio.gather(*[contr.reset(reset_timing=True) for contr in scontr])
+        except ArchonError as err:
+            return command.fail(error=f"Failed resetting devices: {err}")
 
     if flush:
         command.debug(text="Flushing devices")
