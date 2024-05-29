@@ -160,7 +160,7 @@ async def test_expose_abort(
     assert abort.status.did_succeed
 
     assert expose_command.status.did_fail
-    assert expose_command.replies[-1].message == "Exposure was aborted"
+    assert expose_command.replies[-1].message["error"] == "Exposure was aborted"
 
     assert delegate._current_task is None
 
