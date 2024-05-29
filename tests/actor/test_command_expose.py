@@ -158,7 +158,9 @@ async def test_expose_abort(
     await asyncio.sleep(0.5)
 
     assert abort.status.did_succeed
+
     assert expose_command.status.did_fail
+    assert expose_command.replies[-1].message == "Exposure was aborted"
 
     assert delegate._current_task is None
 
@@ -172,10 +174,10 @@ async def test_expose_abort_reset_fails(
     controller: ArchonController,
     mocker: MockFixture,
 ):
-    mocker.patch.object(controller, "reset", side_effect=ArchonError)
-
     await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.5)
+
+    mocker.patch.object(controller, "reset", side_effect=ArchonError)
 
     abort = await actor.invoke_mock_command("abort --reset")
     await abort
