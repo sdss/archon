@@ -134,13 +134,19 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_abort(delegate, actor: ArchonActor):
-    await actor.invoke_mock_command("expose --no-readout 1")
+
+    expose_command = await actor.invoke_mock_command("expose --no-readout 1")
     await asyncio.sleep(0.5)
 
     abort = await actor.invoke_mock_command("abort")
     await abort
 
+    await asyncio.sleep(0.5)
+
     assert abort.status.did_succeed
+    assert expose_command.status.did_fail
+
+    assert delegate._current_task is None
 
 
 async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
@@ -152,7 +158,7 @@ async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):
     abort = await actor.invoke_mock_command("abort")
     await abort
 
-    assert abort.status.did_fail
+    assert abort.status.did_succeed
 
 
 async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
@@ -161,19 +167,7 @@ async def test_expose_abort_no_expose_data_force(delegate, actor: ArchonActor):
 
     actor.exposure_delegate.expose_data = None
 
-    abort = await actor.invoke_mock_command("abort --force")
-    await abort
-
-    assert abort.status.did_succeed
-
-
-async def test_expose_abort_no_expose_data_all(delegate, actor: ArchonActor):
-    await actor.invoke_mock_command("expose --no-readout 1")
-    await asyncio.sleep(0.5)
-
-    actor.exposure_delegate.expose_data = None
-
-    abort = await actor.invoke_mock_command("abort --all")
+    abort = await actor.invoke_mock_command("abort")
     await abort
 
     assert abort.status.did_succeed

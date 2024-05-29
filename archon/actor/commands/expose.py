@@ -191,15 +191,17 @@ async def expose(
         flavours = [flavour, "dark"] if with_dark else [flavour]
         for nf, this_flavour in enumerate(flavours):
             delegate.use_shutter = not no_shutter
-            exposure_result = await delegate.expose(
-                command,
-                selected_controllers,
-                flavour=this_flavour,
-                exposure_time=exposure_time,
-                readout=False,
-                window_mode=window_mode,
-                write=not no_write,
-                seqno=seqno,
+            exposure_result = await delegate.set_task(
+                delegate.expose(
+                    command,
+                    selected_controllers,
+                    flavour=this_flavour,
+                    exposure_time=exposure_time,
+                    readout=False,
+                    window_mode=window_mode,
+                    write=not no_write,
+                    seqno=seqno,
+                )
             )
 
             if not exposure_result:
@@ -213,7 +215,7 @@ async def expose(
                 if is_async:
                     command.finish("Returning while readout is ongoing.")
 
-                readout_task = asyncio.create_task(
+                readout_task = delegate.set_task(
                     delegate.readout(
                         command,
                         extra_header=extra_header,
@@ -267,10 +269,12 @@ async def read(
         command.warning("Waiting for image recovery to finish.")
         await command.actor.exposure_recovery.locker.wait()
 
-    result = await delegate.readout(
-        command,
-        extra_header=extra_header,
-        delay_readout=delay_readout,
+    result = await delegate.set_task(
+        delegate.readout(
+            command,
+            extra_header=extra_header,
+            delay_readout=delay_readout,
+        )
     )
 
     if result is True:
@@ -281,33 +285,23 @@ async def read(
 
 @parser.command()
 @click.option("--flush", is_flag=True, help="Flush the device after aborting.")
-@click.option("--force", is_flag=True, help="Forces abort.")
-@click.option("--all", "all_", is_flag=True, help="Aborts all the controllers.")
 async def abort(
     command: Command[archon.actor.actor.ArchonActor],
     controllers: dict[str, ArchonController],
     flush: bool,
-    force: bool,
-    all_: bool,
 ):
-    """Aborts the exposure."""
+    """Aborts the current exposure."""
 
     assert command.actor
 
-    if all_:
-        force = True
+    delegate = command.actor.exposure_delegate
+    expose_data = delegate.expose_data
 
-    expose_data = command.actor.exposure_delegate.expose_data
-
-    if expose_data is None:
-        if force:
-            command.warning(error="No exposure found.")
-        else:
-            command.actor.exposure_delegate.reset()
-            return command.fail(error="No exposure found.")
+    if delegate is None or delegate.command is None:
+        return command.fail(error="Expose command is not running.")
 
     scontr: list[ArchonController]
-    if all_ or not expose_data:
+    if not expose_data:
         scontr = list(controllers.values())
     else:
         scontr = expose_data.controllers
@@ -318,7 +312,8 @@ async def abort(
     except ArchonError as err:
         return command.fail(error=f"Failed aborting exposures: {err}")
     finally:
-        command.actor.exposure_delegate.reset()
+        # This will also cancel any ongoing exposure or readout.
+        delegate.fail("Exposure was aborted")
 
     if flush:
         command.debug(text="Flushing devices")
