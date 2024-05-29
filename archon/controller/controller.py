@@ -752,7 +752,13 @@ class ArchonController(Device):
 
         self.auto_flush = mode
 
-    async def reset(self, autoflush=True, release_timing=True, update_status=True):
+    async def reset(
+        self,
+        autoflush: bool = True,
+        release_timing: bool = True,
+        reset_timing: bool = False,
+        update_status: bool = True,
+    ):
         """Resets timing and discards current exposures."""
 
         self._parse_params()
@@ -774,9 +780,15 @@ class ArchonController(Device):
             for param in default_parameters:
                 await self.set_param(param, default_parameters[param])
 
+        timing_commands: list[str] = []
+        if reset_timing:
+            release_timing = True
+            timing_commands.append("RESETTIMING")
+
         if release_timing:
             log.info(f"{self.name}: restarting timing .")
-            for cmd_str in ["RELEASETIMING"]:
+            timing_commands.append("RELEASETIMING")
+            for cmd_str in timing_commands:
                 cmd = await self.send_command(cmd_str, timeout=1)
                 if not cmd.succeeded():
                     self.update_status(ControllerStatus.ERROR)

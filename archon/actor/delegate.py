@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 from typing import (
     TYPE_CHECKING,
     Any,
+    Coroutine,
     Dict,
     Generic,
     List,
@@ -104,6 +105,8 @@ class ExposureDelegate(Generic[Actor_co]):
         self._command: Command[Actor_co] | None = None
         self._expose_cotasks: asyncio.Task | None = None
 
+        self._current_task: asyncio.Task | None = None
+
         self._check_fitsio()
 
     @property
@@ -139,6 +142,10 @@ class ExposureDelegate(Generic[Actor_co]):
     def fail(self, message: str | None = None):
         """Fails a command."""
 
+        if self._current_task:
+            self._current_task.cancel()
+            self._current_task = None
+
         if message:
             self.command.fail(error=message)
         else:
@@ -147,6 +154,13 @@ class ExposureDelegate(Generic[Actor_co]):
         self.reset()
 
         return False
+
+    def set_task(self, coro: Coroutine):
+        """Schedules a coroutine as a task. The current task is cancelled by `.fail`."""
+
+        self._current_task = asyncio.create_task(coro)
+
+        return self._current_task
 
     async def pre_expose(self, controllers: List[ArchonController]):
         """A routine that runs before integration begins."""

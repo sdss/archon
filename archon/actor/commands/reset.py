@@ -25,7 +25,7 @@ async def reset(command: Command, controller: ArchonController):
     assert command.actor
 
     try:
-        await controller.reset()
+        await controller.reset(reset_timing=True)
         command.actor.expose_data = None
     except (ArchonControllerError, ArchonError) as err:
         return error_controller(command, controller, f"Failed resetting: {err}")
