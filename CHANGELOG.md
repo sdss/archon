@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* [#49](https://github.com/sdss/archon/pull/49) Improve the `abort` command. When an integration or readout is ongoing, the current task is stored in the delegate and cancelled if an abort happens. This should immediately cancel the command and any controller action. To perform a full abort, one should also run the `reset` command, which will reset the controller, including a reset timings, or call `abort --reset`.
+
+
 ## 0.13.4 - February 27, 2024
 
 ### ✨ Improved
