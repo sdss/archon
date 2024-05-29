@@ -142,7 +142,10 @@ async def test_expose_read_expose_fails(delegate, actor: ArchonActor, mocker):
 
 
 async def test_expose_abort(
-    delegate, actor: ArchonActor, controller: ArchonController, mocker: MockFixture
+    delegate,
+    actor: ArchonActor,
+    controller: ArchonController,
+    mocker: MockFixture,
 ):
     reset_mock = mocker.patch.object(controller, "reset", return_value=True)
 
@@ -161,6 +164,35 @@ async def test_expose_abort(
 
     reset_mock.assert_called()
     reset_mock.assert_called_with(reset_timing=True)
+
+
+async def test_expose_abort_reset_fails(
+    delegate,
+    actor: ArchonActor,
+    controller: ArchonController,
+    mocker: MockFixture,
+):
+    mocker.patch.object(controller, "reset", side_effect=ArchonError)
+
+    await actor.invoke_mock_command("expose --no-readout 1")
+    await asyncio.sleep(0.5)
+
+    abort = await actor.invoke_mock_command("abort --reset")
+    await abort
+
+    assert abort.status.did_fail
+
+
+async def test_expose_abort_no_command(delegate, actor: ArchonActor):
+    delegate._command = None
+
+    abort = await actor.invoke_mock_command("abort --reset")
+    await abort
+
+    assert abort.status.did_fail
+
+    error = abort.replies[-1].message
+    assert error["error"] == "Expose command is not running."
 
 
 async def test_expose_abort_no_expose_data(delegate, actor: ArchonActor):

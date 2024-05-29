@@ -304,7 +304,7 @@ async def abort(
     delegate = command.actor.exposure_delegate
     expose_data = delegate.expose_data
 
-    if delegate is None or delegate.command is None:
+    if delegate is None or delegate._command is None:
         return command.fail(error="Expose command is not running.")
 
     scontr: list[ArchonController]
