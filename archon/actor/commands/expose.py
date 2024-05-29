@@ -322,6 +322,8 @@ async def abort(
         # This will also cancel any ongoing exposure or readout.
         delegate.fail("Exposure was aborted")
 
+    await delegate.shutter(False)  # Close the shutter.
+
     if reset:
         command.debug(text="Resetting controllers")
         try:
