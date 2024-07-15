@@ -264,6 +264,25 @@ async def test_delegate_shutter_fails(delegate: ExposureDelegate, mocker):
     assert result is False
 
 
+async def test_delegate_readout_no_fetch_data(delegate: ExposureDelegate):
+    command = Command("", actor=delegate.actor)
+    result = await delegate.expose(
+        command,
+        [delegate.actor.controllers["sp1"]],
+        flavour="object",
+        exposure_time=0.01,
+        readout=False,
+    )
+    assert result is True
+
+    assert delegate.expose_data
+    delegate.expose_data.controllers = []
+
+    result = await delegate.readout(command)
+    assert result is False
+    assert delegate.command.replies[-1].body["error"] == "No data was fetched."
+
+
 @pytest.mark.parametrize("window_mode", ["test_mode", "default"])
 async def test_delegate_expose_window_mode(delegate: ExposureDelegate, window_mode):
     command = Command("", actor=delegate.actor)
