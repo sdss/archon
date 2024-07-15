@@ -2,9 +2,14 @@
 
 ## Next version
 
+### 🔥 Breaking changes
+
+* Dropped support for Python 3.9.
+
 ### ⚙️ Engineering
 
 * Lint and format using `ruff`.
+* Updated Numpy to 2.0.
 
 
 ## 0.13.5 - May 29, 2024
