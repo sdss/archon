@@ -15,7 +15,7 @@ on:
       - '**.rst'
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,16 +36,6 @@ jobs:
         run: |
           pip install --upgrade wheel pip setuptools
           pip install .[fitsio]
-
-      - name: Lint with ruff
-        run: |
-          pip install ruff
-          ruff check archon/ tests/
-
-      - name: Lint with black
-        run: |
-          pip install black
-          black --check archon/ tests/
 
       - name: Test with pytest
         run: |

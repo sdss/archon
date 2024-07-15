@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### ⚙️ Engineering
+
+* Lint and format using `ruff`.
+
+
 ## 0.13.5 - May 29, 2024
 
 ### ✨ Improved
