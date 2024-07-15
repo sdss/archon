@@ -17,6 +17,9 @@ async def test_status(actor: ArchonActor):
     assert command.status.did_succeed
     assert len(command.replies) == 3
 
+    assert "last_exposure_no" in command.replies[1].body["status"]
+    assert command.replies[1].body["status"]["last_exposure_no"] == -1
+
 
 async def test_status_fail_controller(actor: ArchonActor):
     await actor.controllers["sp1"].stop()

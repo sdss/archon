@@ -97,6 +97,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.expose_data: ExposeData | None = None
 
+        self.last_exposure_no: int = -1
+
         self.use_shutter: bool = True
         self.is_writing: bool = False
 
@@ -388,6 +390,9 @@ class ExposureDelegate(Generic[Actor_co]):
             )
             for fd in fdata
         ]
+
+        if len(fdata) > 0:
+            self.last_exposure_no = fdata[0]["exposure_no"]
 
         # Prepare checksum information.
         write_checksum: bool = self.config["checksum.write"]

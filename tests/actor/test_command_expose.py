@@ -272,6 +272,12 @@ async def test_expose_set_window(delegate, actor: ArchonActor):
     hdu = fits.open(filename)
     assert hdu[0].data.shape == (200, 200)  # type: ignore
 
+    command_status = await actor.invoke_mock_command("status -s")
+    await command_status
+
+    assert command_status.status.did_succeed
+    assert command_status.replies[-2].body["status"]["last_exposure_no"] != -1
+
 
 async def test_expose_with_dark(delegate, actor: ArchonActor, mocker):
     expose_mock = mocker.patch.object(delegate, "expose", return_value=True)

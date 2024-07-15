@@ -48,6 +48,7 @@ async def status(
                 "controller": controller.name,
                 "status": controller.status.value,
                 "status_names": [flag.name for flag in controller.status.get_flags()],
+                "last_exposure_no": command.actor.exposure_delegate.last_exposure_no,
             }
         )
         return True
@@ -57,6 +58,7 @@ async def status(
             "controller": controller.name,
             "status": controller.status.value,
             "status_names": [flag.name for flag in controller.status.get_flags()],
+            "last_exposure_no": command.actor.exposure_delegate.last_exposure_no,
             **status,
         }
     )
