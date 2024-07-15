@@ -47,13 +47,13 @@ from archon.tools import gzip_async, subprocess_run_async
 
 
 if TYPE_CHECKING:
-    import nptyping
+    import numpy.typing as nptyping
 
     from clu import Command
 
     from .actor import ArchonBaseActor
 
-    DataArray = nptyping.NDArray[nptyping.Shape["*,*"], nptyping.UInt16]
+    DataArray = nptyping.NDArray[numpy.uint16]
 
 
 Actor_co = TypeVar("Actor_co", bound="ArchonBaseActor", covariant=True)

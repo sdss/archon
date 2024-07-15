@@ -26,12 +26,13 @@ from archon.controller.controller import ArchonController
 
 
 if TYPE_CHECKING:
-    import nptyping
+    import numpy
+    import numpy.typing as nptyping
 
     from archon.actor.actor import ArchonBaseActor
     from archon.actor.delegate import FetchDataDict
 
-    BufferDataType = nptyping.NDArray[nptyping.Shape["*,*"], nptyping.UInt]
+    BufferDataType = nptyping.NDArray[numpy.uint]
 
 
 class ExposureRecovery:
