@@ -25,7 +25,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10,<3.13"
+python = "^3.10,<4"
 sdsstools = "^1.8.1"
 numpy = "^2.0.0"
 sdss-clu = "^2.2.7"
