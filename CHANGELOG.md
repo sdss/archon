@@ -6,6 +6,10 @@
 
 * Dropped support for Python 3.9.
 
+### 🚀 New
+
+* [#50](https://github.com/sdss/archon/pull/50) Added `last_exposure_no` to the output of the `status` command.
+
 ### ⚙️ Engineering
 
 * Lint and format using `ruff`.

@@ -38,7 +38,8 @@
       "properties": {
         "controller": { "type": "string" },
         "status": { "type": "integer" },
-        "status_names": { "type": "array", "items": { "type": "string" } }
+        "status_names": { "type": "array", "items": { "type": "string" } },
+        "last_exposure_no": { "type": "integer" }
       },
       "additionalProperties": true,
       "required": ["controller", "status", "status_names"]
