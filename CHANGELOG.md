@@ -2,6 +2,10 @@
 
 ## Next version
 
+### 🔥 Breaking changes
+
+* Deleted the Docker image creation workflow. I don't think it makes sense anymore to have a Docker image since archon is a general-use library.
+
 ### ⚙️ Engineering
 
 * Migrate to using `uv` for packaging.
