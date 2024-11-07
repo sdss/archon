@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --no-dev --frozen
+          uv sync --no-dev --frozen --extra fitsio
 
       - name: Test with pytest
         run: |
