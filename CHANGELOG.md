@@ -1,5 +1,13 @@
 # Changelog
 
+## Next version
+
+### ⚙️ Engineering
+
+* Migrate to using `uv` for packaging.
+* Update workflows.
+
+
 ## 0.14.0 - July 14, 2024
 
 ### 🔥 Breaking changes
