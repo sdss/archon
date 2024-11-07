@@ -6,6 +6,10 @@
 
 * Deleted the Docker image creation workflow. I don't think it makes sense anymore to have a Docker image since archon is a general-use library.
 
+### 🔧 Fixed
+
+* Prevent `wait-until-idle` from returning while the delegate is locked.
+
 ### ⚙️ Engineering
 
 * Migrate to using `uv` for packaging.

@@ -367,6 +367,9 @@ async def wait_until_idle(
         if not all(is_idle):
             continue
 
+        if command.actor.exposure_delegate.lock.locked():
+            continue
+
         if command.actor.exposure_delegate.is_writing:
             continue
 
