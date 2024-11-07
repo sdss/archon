@@ -74,7 +74,7 @@ typing = ["typing"]
 sdss = ["sdsstools", "clu"]
 
 [tool.pyright]
-include = ["archon", "test"]
+include = ["archon", "tests"]
 typeCheckingMode = "standard"
 
 [tool.pytest.ini_options]
