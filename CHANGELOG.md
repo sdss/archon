@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### 🔧 Fixed
+
+* [#51](https://github.com/sdss/archon/pull/51) Fix an issue in which when an exposure was cancelled during integration, the task that updates the completion of the exposure and sets the `IDLE` state could be left running and affect a future exposure.
+
+
 ## 0.15.0 - November 7, 2024
 
 ### 🔥 Breaking changes
