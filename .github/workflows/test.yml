@@ -28,7 +28,7 @@ jobs:
       - name: Install cfitsio
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcfitsio libcfitsio-dev
+          sudo apt-get install -y cfitsio libcfitsio-dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
