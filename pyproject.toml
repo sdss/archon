@@ -10,9 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10,<4"
 
 dependencies = [
-    "sdsstools>=1.8.1",
+    "sdsstools>=1.9.1",
     "numpy>=2.0.0",
-    "sdss-clu>=2.2.7",
+    "sdss-clu>=2.4.3",
     "click-default-group>=1.2.2",
     "astropy>=6.0"
 ]
@@ -83,7 +83,7 @@ markers = [
     "commands: commands and replies for the test Archon"
 ]
 asyncio_mode = "auto"
-syncio_default_fixture_loop_scope = "function"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
 branch = true

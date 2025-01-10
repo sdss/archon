@@ -21,6 +21,7 @@ from typing import Any, Callable, Iterable, Literal, Optional, cast, overload
 import numpy
 
 from clu.device import Device
+from sdsstools.utils import cancel_task
 
 from archon import config as lib_config
 from archon import log
@@ -87,6 +88,8 @@ class ArchonController(Device):
         # TODO: asyncio recommends using asyncio.create_task directly, but that
         # call get_running_loop() which fails in iPython.
         self._job = asyncio.get_event_loop().create_task(self.__track_commands())
+
+        self._update_state_task: asyncio.Task | None = None
 
     async def start(self, reset: bool = True, read_acf: bool = True):
         """Starts the controller connection. If ``reset=True``, resets the status."""
@@ -319,7 +322,7 @@ class ArchonController(Device):
             else:
                 warnings.warn(f"Failed running {command_string}.", ArchonUserWarning)
 
-    async def process_message(self, line: bytes) -> None:
+    async def process_message(self, line: bytes) -> None:  # type: ignore
         """Processes a message from the Archon and associates it with its command."""
 
         match = re.match(b"^[<|?]([0-9A-F]{2})", line)
@@ -796,6 +799,10 @@ class ArchonController(Device):
                         f"Failed sending {cmd_str} ({cmd.status.name})"
                     )
 
+        # If we are exposing, we have reset everything so we cancel the
+        # task that waits until the exposure is done.
+        self._update_state_task = await cancel_task(self._update_state_task)
+
         if update_status:
             self._status = ControllerStatus.IDLE
             await self.power()  # Sets power bit.
@@ -1043,7 +1050,8 @@ class ArchonController(Device):
             else:
                 raise ArchonControllerError("Controller is not reading.")
 
-        return asyncio.create_task(update_state())
+        self._update_state_task = asyncio.create_task(update_state())
+        return self._update_state_task
 
     async def abort(self, readout: bool = False):
         """Aborts the current exposure.
@@ -1053,6 +1061,9 @@ class ArchonController(Device):
         """
 
         log.info(f"{self.name}: aborting controller.")
+
+        # First cancel the exposing task, if it exists.
+        self._update_state_task = await cancel_task(self._update_state_task)
 
         CS = ControllerStatus
 

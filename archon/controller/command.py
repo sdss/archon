@@ -210,7 +210,7 @@ class ArchonCommandReply:
         parsed = REPLY_RE.match(raw_reply)
         if not parsed:
             raise ArchonError(
-                f"Received unparseable reply to command " f"{command.raw}: {raw_reply}"
+                f"Received unparseable reply to command {command.raw}: {raw_reply}"
             )
 
         self.command = command
