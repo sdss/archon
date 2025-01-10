@@ -55,19 +55,15 @@ async def test_expose_no_readout(controller: ArchonController, mocker):
 
 
 async def test_abort(controller: ArchonController, mocker):
-    task = await controller.expose(0.01)
-
+    await controller.expose(0.01)
     await controller.abort(readout=True)
-    await task
 
     assert controller.status & ControllerStatus.READING
 
 
 async def test_abort_no_readout(controller: ArchonController, mocker):
-    task = await controller.expose(0.01)
-
+    await controller.expose(0.01)
     await controller.abort(readout=False)
-    await task
 
     assert controller.status & ControllerStatus.IDLE
     assert controller.status & ControllerStatus.READOUT_PENDING

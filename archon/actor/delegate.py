@@ -38,6 +38,7 @@ from astropy.io import fits
 
 from sdsstools.configuration import Configuration
 from sdsstools.time import get_sjd
+from sdsstools.utils import cancel_task
 
 from archon import __version__
 from archon.controller.controller import ArchonController
@@ -126,34 +127,29 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self._command = value
 
-    def reset(self):
+    async def reset(self):
         """Resets the exposure delegate."""
 
         self.expose_data = None
         self.command = None
         self.is_writing = False
 
-        if self._expose_cotasks is not None and not self._expose_cotasks.done():
-            self._expose_cotasks.cancel()
-
-        self._expose_cotasks = None
+        self._expose_cotasks = await cancel_task(self._expose_cotasks)
 
         if self.lock.locked():
             self.lock.release()
 
-    def fail(self, message: str | None = None):
+    async def fail(self, message: str | None = None):
         """Fails a command."""
 
-        if self._current_task:
-            self._current_task.cancel()
-            self._current_task = None
+        self._current_task = await cancel_task(self._current_task)
 
         if message:
             self.command.fail(error=message)
         else:
             self.command.fail()
 
-        self.reset()
+        await self.reset()
 
         return False
 
@@ -184,13 +180,15 @@ class ExposureDelegate(Generic[Actor_co]):
         self.command = command
 
         if self.lock.locked():
-            return self.fail("The expose delegate is locked.")
+            await self.fail("The expose delegate is locked.")
+            return False
 
         if flavour == "bias":
             exposure_time = 0.0
         else:
             if exposure_time is None:
-                return self.fail(f"Exposure time required for flavour {flavour!r}.")
+                await self.fail(f"Exposure time required for flavour {flavour!r}.")
+                return False
 
         if window_mode:
             if window_mode == "default":
@@ -200,7 +198,8 @@ class ExposureDelegate(Generic[Actor_co]):
                 window_params = self.config["window_modes"][window_mode]
                 window_params.update(extra_window_params)
             else:
-                return self.fail(f"Invalid window mode {window_mode!r}.")
+                await self.fail(f"Invalid window mode {window_mode!r}.")
+                return False
 
         self.expose_data = ExposeData(
             exposure_time=exposure_time,
@@ -217,7 +216,11 @@ class ExposureDelegate(Generic[Actor_co]):
         await self.lock.acquire()
 
         will_write = readout_params.get("write", True)
-        if not self._set_exposure_no(controllers, increase=will_write, seqno=seqno):
+        if not await self._set_exposure_no(
+            controllers,
+            increase=will_write,
+            seqno=seqno,
+        ):
             return False
 
         self.command.debug(next_exposure_no=self.expose_data.exposure_no)
@@ -236,7 +239,7 @@ class ExposureDelegate(Generic[Actor_co]):
         except BaseException as err:
             self.command.error("One controller failed setting the exposure window.")
             self.command.error(error=str(err))
-            return self.fail()
+            return await self.fail()
 
         self._expose_cotasks = asyncio.create_task(self.expose_cotasks())
 
@@ -257,19 +260,19 @@ class ExposureDelegate(Generic[Actor_co]):
                     with suppress(asyncio.CancelledError):
                         job.cancel()
                         await job
-            return self.fail()
+            return await self.fail()
 
         # Operate the shutter
         if self.use_shutter:
             if not (await self.shutter(True)):
-                return self.fail("Shutter failed to open.")
+                return await self.fail("Shutter failed to open.")
 
         await asyncio.sleep(exposure_time)
 
         # Close shutter.
         if self.use_shutter:
             if not (await self.shutter(False)):
-                return self.fail("Shutter failed to close.")
+                return await self.fail("Shutter failed to close.")
 
         if readout:
             return await self.readout(self.command, **readout_params)
@@ -284,11 +287,11 @@ class ExposureDelegate(Generic[Actor_co]):
         for controller in self.expose_data.controllers:
             cname = controller.name
             if controller.status & ControllerStatus.EXPOSING:
-                return self.fail(f"Controller {cname} is exposing.")
+                return await self.fail(f"Controller {cname} is exposing.")
             elif controller.status & ControllerStatus.READOUT_PENDING:
-                return self.fail(f"Controller {cname} has a read out pending.")
+                return await self.fail(f"Controller {cname} has a read out pending.")
             elif controller.status & ControllerStatus.ERROR:
-                return self.fail(f"Controller {cname} has status ERROR.")
+                return await self.fail(f"Controller {cname} has status ERROR.")
 
         return True
 
@@ -303,7 +306,7 @@ class ExposureDelegate(Generic[Actor_co]):
         extra_header={},
         delay_readout: int = 0,
         write: bool = True,
-    ):
+    ) -> bool:
         """Reads the exposure, fetches the buffer, and writes to disk."""
 
         self.command = command
@@ -315,10 +318,10 @@ class ExposureDelegate(Generic[Actor_co]):
             self.command.set_status = MagicMock()
 
         if not self.lock.locked():
-            return self.fail("Expose delegator is not locked.")
+            return await self.fail("Expose delegator is not locked.")
 
         if self.expose_data is None:
-            return self.fail("No exposure data found.")
+            return await self.fail("No exposure data found.")
 
         controllers = self.expose_data.controllers
 
@@ -329,7 +332,7 @@ class ExposureDelegate(Generic[Actor_co]):
         t0 = time()
 
         if any([c.status & ControllerStatus.EXPOSING for c in controllers]):
-            return self.fail(
+            return await self.fail(
                 "Found controllers exposing. Wait before reading or "
                 "manually abort them."
             )
@@ -350,17 +353,17 @@ class ExposureDelegate(Generic[Actor_co]):
             c_fdata = await asyncio.gather(*[self.fetch_data(c) for c in controllers])
 
         except Exception as err:
-            return self.fail(f"Failed reading out: {err}")
+            return await self.fail(f"Failed reading out: {err}")
 
         if len(c_fdata) == 0:
             self.command.error("No data was fetched.")
             return False
 
-        self.command.debug(f"Readout completed in {time()-t0:.1f} seconds.")
+        self.command.debug(f"Readout completed in {time() - t0:.1f} seconds.")
 
         if write is False:
             self.command.warning("Not saving images to disk.")
-            self.reset()
+            await self.reset()
             return True
 
         # c_fdata is a list of lists. The top level list is one per controller,
@@ -452,7 +455,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         self.command.info(filenames=filenames)
 
-        self.reset()
+        await self.reset()
 
         return not failed_to_write
 
@@ -712,18 +715,18 @@ class ExposureDelegate(Generic[Actor_co]):
 
         if isinstance(gain, (list, tuple)):
             for channel_idx in range(len(gain)):
-                header[f"GAIN{channel_idx+1}"] = [
+                header[f"GAIN{channel_idx + 1}"] = [
                     gain[channel_idx],
-                    f"CCD gain AD{channel_idx+1} [e-/ADU]",
+                    f"CCD gain AD{channel_idx + 1} [e-/ADU]",
                 ]
         else:
             header["GAIN"] = [gain, "CCD gain [e-/ADU]"]
 
         if isinstance(readnoise, (list, tuple)):
             for channel_idx in range(len(readnoise)):
-                header[f"RDNOISE{channel_idx+1}"] = [
+                header[f"RDNOISE{channel_idx + 1}"] = [
                     readnoise[channel_idx],
-                    f"CCD read noise AD{channel_idx+1} [e-]",
+                    f"CCD read noise AD{channel_idx + 1} [e-]",
                 ]
         else:
             header["RDNOISE"] = [readnoise, "CCD read noise [e-]"]
@@ -839,7 +842,7 @@ class ExposureDelegate(Generic[Actor_co]):
 
         return header
 
-    def _set_exposure_no(
+    async def _set_exposure_no(
         self,
         controllers: list[ArchonController],
         increase: bool = True,
@@ -878,7 +881,7 @@ class ExposureDelegate(Generic[Actor_co]):
                 try:
                     self._get_ccd_filepath(controller, ccd)
                 except FileExistsError as err:
-                    self.fail(f"{err} Check the nextExposureNumber file.")
+                    await self.fail(f"{err} Check the nextExposureNumber file.")
                     return False
 
         if increase:

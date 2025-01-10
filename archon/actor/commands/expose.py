@@ -323,7 +323,7 @@ async def abort(
         return command.fail(error=f"Failed aborting exposures: {err}")
     finally:
         # This will also cancel any ongoing exposure or readout.
-        delegate.fail("Exposure was aborted")
+        await delegate.fail("Exposure was aborted")
 
     if reset:
         command.debug(text="Resetting controllers")
