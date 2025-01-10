@@ -25,6 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install cfitsio
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcfitsio libcfitsio-dev
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -43,8 +48,6 @@ jobs:
         run: |
           uv pip install pytest pytest-mock pytest-asyncio pytest-cov
           uv run pytest
-        env:
-          OBSERVATORY: LCO
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
