@@ -1,6 +1,6 @@
 # Changelog
 
-## Next version
+## 0.15.1 - January 11, 2025
 
 ### 🔧 Fixed
 
