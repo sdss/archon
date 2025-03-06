@@ -672,8 +672,8 @@ class ExposureDelegate(Generic[Actor_co]):
 
         assert self.command.actor and self.expose_data
 
-        expose_data = self.expose_data
-        assert expose_data.end_time is not None
+        edata = self.expose_data
+        assert edata.end_time is not None
 
         header: dict[str, list] = {}
 
@@ -683,13 +683,13 @@ class ExposureDelegate(Generic[Actor_co]):
         header["EXPOSURE"] = [None, "Exposure number"]  # Will be filled out later
         header["SPEC"] = [controller.name, "Spectrograph name"]
         header["OBSERVAT"] = [self.command.actor.observatory, "Observatory"]
-        header["OBSTIME"] = [expose_data.start_time.isot, "Start of the observation"]
-        header["MJD"] = [int(expose_data.start_time.mjd), "Modified Julian Date"]
-        header["EXPTIME"] = [expose_data.exposure_time, "Exposure time"]
-        header["DARKTIME"] = [expose_data.exposure_time, "Dark time"]
-        header["IMAGETYP"] = [expose_data.flavour, "Image type"]
-        header["INTSTART"] = [expose_data.start_time.isot, "Start of the integration"]
-        header["INTEND"] = [expose_data.end_time.isot, "End of the integration"]
+        header["OBSTIME"] = [edata.start_time.isot, "Start of the observation [UTC]"]
+        header["MJD"] = [int(edata.start_time.mjd), "Modified Julian Date"]
+        header["EXPTIME"] = [edata.exposure_time, "Exposure time"]
+        header["DARKTIME"] = [edata.exposure_time, "Dark time"]
+        header["IMAGETYP"] = [edata.flavour, "Image type"]
+        header["INTSTART"] = [edata.start_time.isot, "Start of the integration"]
+        header["INTEND"] = [edata.end_time.isot, "End of the integration"]
 
         header["CCD"] = [ccd_name, "CCD name"]
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## Next version
+
+### ✨ Improved
+
+* Add comment to `OBSTIME` indicating the time is UTC.
+
+
 ## 0.15.1 - January 11, 2025
 
 ### 🔧 Fixed
