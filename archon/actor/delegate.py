@@ -830,7 +830,7 @@ class ExposureDelegate(Generic[Actor_co]):
             if (
                 key in header
                 and not isinstance(value, (tuple, list))
-                and isinstance(header[key], tuple)
+                and isinstance(header[key], (tuple, list))
             ):
                 # Preserve original comment.
                 header[key] = [value, header[key][1]]
