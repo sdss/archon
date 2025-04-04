@@ -731,7 +731,7 @@ class ExposureDelegate(Generic[Actor_co]):
         else:
             header["RDNOISE"] = [readnoise, "CCD read noise [e-]"]
 
-        window_params = expose_data.window_params
+        window_params = edata.window_params
         hbin = window_params.get("hbin", 1)
         vbin = window_params.get("vbin", 1)
         header["CCDSUM"] = [f"{hbin} {vbin}", "Horizontal and vertical binning"]
@@ -811,15 +811,15 @@ class ExposureDelegate(Generic[Actor_co]):
                         header[kname] = [value, comment]
 
         # Convert JSON lists to tuples or astropy fails.
-        for key in expose_data.header:
-            if isinstance(expose_data.header[key], list):
-                expose_data.header[key] = list(expose_data.header[key])
+        for key in edata.header:
+            if isinstance(edata.header[key], list):
+                edata.header[key] = list(edata.header[key])
 
         # Copy the extra header and loop over potential keys that match
         # the detector name. If so, add those headers only if the detector
         # name matches the current ccd_name.
         detectors = self.config["controllers"][controller.name]["detectors"]
-        extra_header = expose_data.header.copy()
+        extra_header = edata.header.copy()
         for detector in detectors:
             detector_header = extra_header.pop(detector, {})
             if detector == ccd_name:
