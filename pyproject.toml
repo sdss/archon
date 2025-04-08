@@ -1,6 +1,6 @@
 [project]
 name = "sdss-archon"
-version = "0.15.2a0"
+version = "0.15.2"
 description = "A library and actor to communicate with an STA Archon controller."
 authors = [
     { name = "José Sánchez-Gallego", email = "gallegoj@uw.edu" }
