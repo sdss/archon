@@ -6,6 +6,10 @@
 
 * Add comment to `OBSTIME` indicating the time is UTC.
 
+### 🔧 Fixed
+
+* Avoid removing the comment from the original header keyword when using `--extra-header`.
+
 
 ## 0.15.1 - January 11, 2025
 
