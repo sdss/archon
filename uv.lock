@@ -1679,7 +1679,7 @@ wheels = [
 
 [[package]]
 name = "sdss-archon"
-version = "0.15.2"
+version = "0.15.3a0"
 source = { editable = "." }
 dependencies = [
     { name = "astropy", version = "6.1.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
