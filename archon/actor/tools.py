@@ -98,7 +98,8 @@ def parallel_controllers(check=True):
                 tasks.append(asyncio.create_task(f(command, controllers[k], **kwargs)))
 
             done, pending = await asyncio.wait(
-                tasks, return_when=asyncio.FIRST_EXCEPTION
+                tasks,
+                return_when=asyncio.FIRST_EXCEPTION,
             )
 
             if len(pending) > 0:  # pragma: no cover
