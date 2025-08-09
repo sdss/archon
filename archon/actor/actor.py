@@ -93,7 +93,7 @@ class ArchonBaseActor(BaseActor):
 
         self.config_file_path: str | None = None
 
-    async def start(self):
+    async def start(self, **_):
         """Start the actor and connect the controllers."""
 
         connect_timeout = self.config["timeouts"]["controller_connect"]
