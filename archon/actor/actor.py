@@ -132,6 +132,8 @@ class ArchonBaseActor(BaseActor):
         if self.run_recovery_on_start:
             await self._recover_exposures()
 
+        return self
+
     async def stop(self):
         with suppress(asyncio.CancelledError):
             for task in self._fetch_log_jobs:

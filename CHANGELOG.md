@@ -1,5 +1,13 @@
 # Changelog
 
+## Next release
+
+### ✨ Improved
+
+* Return `self` in `ArchonBaseActor.start()`.
+* Ensure that Archon command is set done before setting the event.
+
+
 ## 0.15.2 - April 8, 2025
 
 ### ✨ Improved

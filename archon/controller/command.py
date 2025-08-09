@@ -164,14 +164,14 @@ class ArchonCommand(asyncio.Future):
     def _mark_done(self, status: ArchonCommandStatus = ArchonCommandStatus.DONE):
         """Marks the command done with ``status``."""
 
+        self.status = status
+        if not self.done():
+            self.set_result(self)
+
         # Release the event one last time to let the loop to finish and cancel timer.
         self.__event.set()
         if self.timer:
             self.timer.cancel()
-
-        self.status = status
-        if not self.done():
-            self.set_result(self)
 
         # Return ID to the pool
         if self.controller:
