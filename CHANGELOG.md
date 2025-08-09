@@ -6,6 +6,7 @@
 
 * Return `self` in `ArchonBaseActor.start()`.
 * Ensure that Archon command is set done before setting the event.
+* Update CLU to 2.5.0.
 
 
 ## 0.15.2 - April 8, 2025
