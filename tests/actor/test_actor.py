@@ -37,6 +37,15 @@ async def test_ping(actor):
     assert command.replies[1].message["text"] == "Pong."
 
 
+async def test_version(actor):
+    command = await actor.invoke_mock_command("version")
+    await command
+
+    assert command.status.did_succeed
+    assert len(command.replies) == 2
+    assert command.replies[1].message["version"] == "1.2.3"
+
+
 async def test_actor_no_config():
     with pytest.raises(RuntimeError):
         ArchonActor.from_config(None)

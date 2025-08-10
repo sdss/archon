@@ -77,7 +77,9 @@ class ArchonBaseActor(BaseActor):
         super().__init__(*args, **kwargs)
 
         self.observatory = os.environ.get("OBSERVATORY", "LCO")
-        self.version = __version__
+
+        actor_version = kwargs.get("version", None)
+        self.version = actor_version if actor_version else f"archon-{__version__}"
 
         # Issue status and system on a loop.
         # self.timed_commands.add_command("status", delay=60)  # type: ignore

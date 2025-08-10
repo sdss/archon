@@ -1,5 +1,12 @@
 # Changelog
 
+## Next release
+
+### 🔧 Fixed
+
+* Ensure that the actor version is correctly set from the configuration.
+
+
 ## 0.15.3 - August 9, 2025
 
 ### ✨ Improved
