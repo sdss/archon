@@ -1,5 +1,12 @@
 # Changelog
 
+## Next release
+
+### ✨ Improved
+
+* Update `sdss-clu` to 2.5.2.
+
+
 ## 0.15.4 - August 10, 2025
 
 ### 🔧 Fixed
