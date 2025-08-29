@@ -31,12 +31,16 @@ async def test_controller(controller: ArchonController):
 
 @pytest.mark.commands([["PING", [b"<{cid}:12345"]]])
 async def test_controller_binary_reply(controller: ArchonController):
+    controller.set_binary_reply_size(1024)
+
     command = controller.send_command("ping")
     await command
+
     assert command.status == command.status.DONE
     assert len(command.replies) == 1
     assert len(command.replies[0].reply) == 1024
     assert command.replies[0].reply.strip() == b"12345"
+
     with pytest.raises(ArchonError):
         str(command.replies[0])
 

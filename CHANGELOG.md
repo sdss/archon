@@ -6,6 +6,10 @@
 
 * Update `sdss-clu` to 2.5.3.
 
+### 🔧 Fixed
+
+* Fix pixel shifts in fetched buffers. The shifts were caused by a search-and-replace of the header values in the binary reply, which could remove additional data values when the read pixels matched the header values. The fix removes the header as each binary reply is processed.
+
 
 ## 0.15.4 - August 10, 2025
 

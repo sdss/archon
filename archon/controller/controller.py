@@ -322,26 +322,26 @@ class ArchonController(Device):
             else:
                 warnings.warn(f"Failed running {command_string}.", ArchonUserWarning)
 
-    async def process_message(self, line: bytes) -> None:  # type: ignore
+    async def process_message(self, reply: bytes) -> None:  # type: ignore
         """Processes a message from the Archon and associates it with its command."""
 
-        match = re.match(b"^[<|?]([0-9A-F]{2})", line)
-        if match is None:
+        header_match = re.match(b"^[<|?]([0-9A-F]{2})", reply)
+        if header_match is None:
             warnings.warn(
-                f"Received invalid reply {line.decode()}",
+                f"Received invalid reply {reply.decode()}",
                 ArchonControllerWarning,
             )
             return
 
-        command_id = int(match[1], 16)
+        command_id = int(header_match[1], 16)
         if command_id not in self.__running_commands:
             warnings.warn(
-                f"Cannot find running command for {line}",
+                f"Cannot find running command for {reply}",
                 ArchonControllerWarning,
             )
             return
 
-        self.__running_commands[command_id].process_reply(line)
+        self.__running_commands[command_id].process_reply(reply)
 
     async def stop(self):
         """Stops the client and cancels the command tracker."""
@@ -1276,9 +1276,9 @@ class ArchonController(Device):
         notifier("Reading frame buffer ...")
 
         # Set the expected length of binary buffer to read, including the prefixes.
-        self.set_binary_reply_size((1024 + 4) * n_blocks)
+        self.set_binary_reply_size(1024 * n_blocks)
 
-        cmd: ArchonCommand = await self.send_command(
+        cmd = await self.send_command(
             f"FETCH{start_address:08X}{n_blocks:08X}",
             timeout=None,
         )
@@ -1333,10 +1333,10 @@ class ArchonController(Device):
 
         return arr
 
-    def set_binary_reply_size(self, size: int):
+    def set_binary_reply_size(self, size: int | None):
         """Sets the size of the binary buffers."""
 
-        self._binary_reply = bytearray(size)
+        self._binary_reply = bytearray(size) if size else None
 
     async def _listen(self):
         """Listens to the reader stream and callbacks on message received."""
@@ -1346,7 +1346,9 @@ class ArchonController(Device):
 
         assert self._client and self._client.reader
 
+        # Number of binary bytes received.
         n_binary = 0
+
         while True:
             # Max length of a reply is 1024 bytes for the message preceded by <xx:
             # We read the first four characters (the maximum length of a complete
@@ -1354,16 +1356,17 @@ class ArchonController(Device):
             # if the message ends with ":", it means what follows are 1024 binary
             # characters without a newline; otherwise, read until the newline which
             # marks the end of this message. In binary, if the response is < 1024
-            # bytes, the remaining bytes are filled with NULL (0x00).
+            # bytes, the remaining bytes are filled with 0xFF.
             try:
-                line = await self._client.reader.readexactly(4)
+                header = await self._client.reader.readexactly(4)
             except asyncio.IncompleteReadError:
                 return
 
-            if line[-1] == ord(b"\n"):
-                pass
-            elif line[-1] == ord(b":"):
-                line += await self._client.reader.readexactly(1024)
+            if header[-1] == ord(b"\n"):
+                reply = header
+            elif header[-1] == ord(b":") and self._binary_reply is not None:
+                data = await self._client.reader.readexactly(1024)
+
                 # If we know the length of the binary reply to expect, we set that
                 # slice of the bytearray and continue. We wait until all the buffer
                 # has been read before sending the notification. This is significantly
@@ -1379,28 +1382,28 @@ class ArchonController(Device):
                 # and probably prevented by the controller, but it's worth keeping in
                 # mind.
                 #
-                if self._binary_reply:
-                    self._binary_reply[n_binary : n_binary + 1028] = line
-                    n_binary += 1028  # How many bytes of the binary reply have we read.
-                    if n_binary == len(self._binary_reply):
-                        # This was the last chunk. Set line to the full reply and
-                        # reset the binary reply and counter.
-                        line = self._binary_reply
-                        self._binary_reply = None
-                        n_binary = 0
-                    else:
-                        # Skip notifying because the binary reply is still incomplete.
-                        continue
+                self._binary_reply[n_binary : n_binary + 1024] = data
+                n_binary += 1024  # How many bytes of the binary reply have we read.
+                if n_binary == len(self._binary_reply):
+                    # This was the last chunk. Set reply to the full reply
+                    # (include one header) and reset the binary reply and counter.
+                    reply = header + bytes(self._binary_reply)
+                    self.set_binary_reply_size(None)
+                    n_binary = 0
+                else:
+                    # Skip notifying because the binary reply is still incomplete.
+                    continue
             else:
-                line += await self._client.reader.readuntil(b"\n")
+                data = await self._client.reader.readuntil(b"\n")
+                reply = header + data[:-1]
 
-            self.notify(line)
+            self.notify(reply)
 
     def _get_id(self) -> int:
         """Returns an identifier from the pool."""
 
         if len(self._id_pool) == 0:
-            raise ArchonControllerError("No ids reamining in the pool!")
+            raise ArchonControllerError("No ids remaining in the pool!")
 
         return self._id_pool.pop()
 
