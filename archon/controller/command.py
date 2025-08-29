@@ -225,7 +225,7 @@ class ArchonCommandReply:
         if self.is_binary:
             # If the reply is binary we have already removed all the headers except
             # the one for the first block.
-            self.reply = rmessage
+            self.reply = raw_reply[4:]
         else:
             if rmessage.endswith(b"\n"):
                 rmessage = rmessage[:-1]
