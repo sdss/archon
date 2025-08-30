@@ -77,7 +77,8 @@ async def controller(request, unused_tcp_port: int):
                             reply = (reply.format(cid=cid) + "\n").encode()
                         else:
                             reply = reply.replace(b"{cid}", cid.encode()).ljust(
-                                1028, b" "
+                                1028,
+                                b" ",
                             )
                         writer.write(reply)
                         await writer.drain()

@@ -219,15 +219,17 @@ class ArchonCommandReply:
         rtype, rcid, rbin, rmessage = parsed.groups()
         self.type: str = rtype.decode()
         self.command_id: int = int(rcid, 16)
-        self.is_binary: bool = rbin.decode() == ":"
+        self.is_binary: bool = rbin.decode("latin-1") == ":"
 
         self.reply: str | bytes
         if self.is_binary:
-            # If the reply is binary, remove the prefixes and save the full
-            # content as the reply.
-            self.reply = raw_reply.replace(b"<" + rcid + b":", b"")
+            # If the reply is binary we have already removed all the headers except
+            # the one for the first block.
+            self.reply = raw_reply[4:]
         else:
-            self.reply = rmessage.decode().strip()
+            if rmessage.endswith(b"\n"):
+                rmessage = rmessage[:-1]
+            self.reply = rmessage.decode("latin-1")
 
     def __str__(self) -> str:
         if isinstance(self.reply, bytes):
