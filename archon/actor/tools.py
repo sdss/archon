@@ -110,6 +110,7 @@ def parallel_controllers(check=True):
             results = [task.result() for task in done]
             if False in results:
                 return command.fail(error="Some controllers failed.")
+
             return command.finish()
 
         return functools.update_wrapper(wrapper, f)

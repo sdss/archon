@@ -1296,7 +1296,7 @@ class ArchonController(Device):
                 f"Buffer size is {arr.size}; expected size is {expected_size}."
             )
 
-        arr = arr.reshape(height, width)
+        arr = arr.reshape(height, width).copy()
 
         # Turn off FETCHING bit
         self.update_status(ControllerStatus.IDLE)

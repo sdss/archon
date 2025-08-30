@@ -1,5 +1,12 @@
 # Changelog
 
+## Next release
+
+### 🔧 Fixed
+
+* Copy data returned during fetching to make the array writeable.
+
+
 ## 0.15.5 - August 29, 2025
 
 ### ✨ Improved
