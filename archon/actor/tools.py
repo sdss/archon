@@ -105,11 +105,18 @@ def parallel_controllers(check=True):
             if len(pending) > 0:  # pragma: no cover
                 for p in pending:
                     p.cancel()
-                return command.fail("Some tasks raised exceptions.")
+                return command.fail(
+                    "Found pending tasks while running controllers in parallel."
+                )
 
-            results = [task.result() for task in done]
-            if False in results:
-                return command.fail(error="Some controllers failed.")
+            for task in done:
+                try:
+                    result = task.result()
+                except Exception as ee:
+                    return command.fail(error=f"Controllers failed with error: {ee}")
+                else:
+                    if result is False:
+                        return command.fail(error="Some controllers failed.")
 
             return command.finish()
 

@@ -56,3 +56,15 @@ async def test_reconnect_start_timesout(actor: ArchonActor, mocker):
 
     assert command.status.did_fail
     assert len(command.replies) == 3
+
+
+async def test_reconnect_fails(actor: ArchonActor):
+    # This will make the command fails
+    del actor.controllers["sp1"].name
+
+    command = await actor.invoke_mock_command("reconnect")
+    await command
+
+    assert command.status.did_fail
+    assert len(command.replies) == 2
+    assert "Controllers failed with error" in command.replies[-1].body["error"]

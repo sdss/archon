@@ -5,6 +5,7 @@
 ### 🔧 Fixed
 
 * Copy data returned during fetching to make the array writeable.
+* Improve handling of exceptions in commands decorated with `@parallel_controllers`.
 
 
 ## 0.15.5 - August 29, 2025
